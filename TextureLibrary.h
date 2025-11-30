@@ -1,0 +1,267 @@
+#pragma once
+#include <windows.h>
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <memory>
+
+// Forward declarations
+class BaseXVector;
+
+// Texture filtering modes
+enum class TextureFilter {
+    TF_Nearest,        // Point sampling
+    TF_Linear,         // Bilinear filtering
+    TF_Anisotropic     // Anisotropic filtering (simulated)
+};
+
+// Texture wrapping modes
+enum class TextureWrap {
+    TW_Repeat,         // Repeat texture
+    TW_Clamp,          // Clamp to edge
+    TW_Mirror          // Mirror repeat
+};
+
+// Texture formats
+enum class TextureFormat {
+    RGB24,          // 24-bit RGB
+    RGBA32,         // 32-bit RGBA
+    Grayscale8,     // 8-bit grayscale
+    Indexed8        // 8-bit indexed color
+};
+
+// Texture data structure
+struct TextureData {
+    int width;
+    int height;
+    int channels;           // 1=grayscale, 3=RGB, 4=RGBA
+    TextureFormat format;
+    std::vector<BYTE> pixels;
+    
+    TextureData() : width(0), height(0), channels(0), format(TextureFormat::RGB24) {}
+    TextureData(int w, int h, int ch, TextureFormat fmt) 
+        : width(w), height(h), channels(ch), format(fmt) {
+        pixels.resize(w * h * ch);
+    }
+};
+
+// Texture class - represents a single texture
+class Texture {
+public:
+    Texture();
+    Texture(const std::string& name, int width, int height, TextureFormat format);
+    ~Texture();
+
+    // Loading functions
+    bool LoadFromFile(const std::string& filename);
+    bool LoadFromBitmap(HBITMAP hBitmap);
+    bool LoadFromResource(HINSTANCE hInst, int resourceId);
+    bool CreateSolid(int width, int height, COLORREF color);
+    bool CreateGradient(int width, int height, COLORREF color1, COLORREF color2, bool horizontal = true);
+    bool CreateNoise(int width, int height, int seed = 0);
+    bool CreateCheckerboard(int width, int height, int checkerSize, COLORREF color1, COLORREF color2);
+
+    // Properties
+    int GetWidth() const { return m_data.width; }
+    int GetHeight() const { return m_data.height; }
+    int GetChannels() const { return m_data.channels; }
+    TextureFormat GetFormat() const { return m_data.format; }
+    const std::string& GetName() const { return m_name; }
+    
+    // Sampling functions
+    COLORREF Sample(float u, float v) const;
+    COLORREF SampleNearest(float u, float v) const;
+    COLORREF SampleLinear(float u, float v) const;
+    
+    // Direct pixel access
+    COLORREF GetPixel(int x, int y) const;
+    void SetPixel(int x, int y, COLORREF color);
+    
+    // Texture operations
+    void Resize(int newWidth, int newHeight);
+    void FlipHorizontal();
+    void FlipVertical();
+    void Rotate90();
+    void ApplyColorFilter(COLORREF filter);
+    void AdjustBrightness(float factor);
+    void AdjustContrast(float factor);
+    
+    // Filtering and wrapping
+    void SetFilter(TextureFilter filter) { m_filter = filter; }
+    void SetWrap(TextureWrap wrap) { m_wrap = wrap; }
+    TextureFilter GetFilter() const { return m_filter; }
+    TextureWrap GetWrap() const { return m_wrap; }
+    
+    // Bitmap conversion for rendering
+    HBITMAP CreateHBitmap(HDC hdc) const;
+    void UpdateHBitmap(HDC hdc, HBITMAP hBitmap) const;
+
+private:
+    std::string m_name;
+    TextureData m_data;
+    TextureFilter m_filter;
+    TextureWrap m_wrap;
+    
+    // Helper functions
+    void WrapCoordinates(float& u, float& v) const;
+    int ClampCoordinate(int coord, int max) const;
+    COLORREF BlendColors(COLORREF c1, COLORREF c2, float t) const;
+    void ConvertToRGB24();
+    void ConvertToRGBA32();
+};
+
+// Texture atlas for combining multiple textures
+class TextureAtlas {
+public:
+    struct AtlasEntry {
+        std::string name;
+        int x, y, width, height;
+        float u1, v1, u2, v2;  // UV coordinates
+    };
+
+    TextureAtlas(int width, int height);
+    ~TextureAtlas();
+    
+    bool AddTexture(const std::string& name, const Texture& texture);
+    bool AddTexture(const std::string& name, const std::string& filename);
+    const AtlasEntry* GetEntry(const std::string& name) const;
+    
+    // Atlas management
+    bool Build();  // Pack textures into atlas
+    void Clear();
+    
+    // Access the combined texture
+    const Texture& GetAtlasTexture() const { return m_atlasTexture; }
+    
+    // UV coordinate conversion
+    void ConvertUV(const std::string& textureName, float& u, float& v) const;
+    
+private:
+    int m_width, m_height;
+    std::vector<std::pair<std::string, Texture>> m_textures;
+    std::unordered_map<std::string, AtlasEntry> m_entries;
+    Texture m_atlasTexture;
+    bool m_built;
+    
+    // Packing algorithm
+    bool PackTextures();
+    bool FindBestFit(int width, int height, int& x, int& y);
+};
+
+// Main texture library manager
+class TextureLibrary {
+public:
+    static TextureLibrary& Instance();
+    
+    // Texture management
+    bool LoadTexture(const std::string& name, const std::string& filename);
+    bool LoadTextureFromResource(const std::string& name, HINSTANCE hInst, int resourceId);
+    bool CreateProceduralTexture(const std::string& name, int width, int height, 
+                                const std::string& type, const std::vector<COLORREF>& params);
+    
+    Texture* GetTexture(const std::string& name);
+    const Texture* GetTexture(const std::string& name) const;
+    
+    // Add method to set texture directly for animations
+    void SetTexture(const std::string& name, std::unique_ptr<Texture> texture);
+    
+    void UnloadTexture(const std::string& name);
+    void UnloadAll();
+    
+    // Atlas management
+    TextureAtlas* CreateAtlas(const std::string& name, int width, int height);
+    TextureAtlas* GetAtlas(const std::string& name);
+    void DestroyAtlas(const std::string& name);
+    
+    // Utility functions
+    std::vector<std::string> GetLoadedTextureNames() const;
+    int GetTextureCount() const { return (int)m_textures.size(); }
+    size_t GetMemoryUsage() const;
+    
+    // Built-in textures
+    void CreateBuiltInTextures();
+    
+    // Cache management
+    void SetCacheLimit(size_t maxBytes) { m_maxCacheSize = maxBytes; }
+    void FlushCache();
+    
+private:
+    TextureLibrary();
+    ~TextureLibrary();
+    
+    std::unordered_map<std::string, std::unique_ptr<Texture>> m_textures;
+    std::unordered_map<std::string, std::unique_ptr<TextureAtlas>> m_atlases;
+    size_t m_maxCacheSize;
+    
+    // Prevent copying
+    TextureLibrary(const TextureLibrary&) = delete;
+    TextureLibrary& operator=(const TextureLibrary&) = delete;
+    
+    // Cache management helpers
+    void CheckCacheLimit();
+    size_t CalculateTextureSize(const Texture& texture) const;
+};
+
+// Texture rendering utilities
+class TextureRenderer {
+public:
+    // Simple texture rendering
+    static void DrawTexture(HDC hdc, const Texture& texture, int x, int y);
+    static void DrawTexture(HDC hdc, const Texture& texture, int x, int y, int width, int height);
+    static void DrawTextureEx(HDC hdc, const Texture& texture, const RECT& dest, const RECT& src);
+    
+    // Advanced rendering
+    static void DrawTexturedQuad(HDC hdc, const Texture& texture, 
+                                const POINT points[4], const POINT uvs[4]);
+    static void DrawTexturedTriangle(HDC hdc, const Texture& texture,
+                                   const POINT& p1, const POINT& p2, const POINT& p3,
+                                   const POINT& uv1, const POINT& uv2, const POINT& uv3);
+    
+    // Blending modes
+    enum BlendMode {
+        Normal,
+        Additive,
+        Multiply,
+        Screen,
+        Overlay
+    };
+    
+    static void SetBlendMode(BlendMode mode) { s_blendMode = mode; }
+    static BlendMode GetBlendMode() { return s_blendMode; }
+    
+    // Tiling functions
+    static void DrawTiledTexture(HDC hdc, const Texture& texture, const RECT& area, 
+                               int tileWidth, int tileHeight);
+    
+private:
+    static BlendMode s_blendMode;
+    
+    // Helper functions
+    static COLORREF BlendPixels(COLORREF src, COLORREF dest, BlendMode mode, float alpha = 1.0f);
+    static void RasterizeTriangle(HDC hdc, const Texture& texture,
+                                const POINT& p1, const POINT& p2, const POINT& p3,
+                                const POINT& uv1, const POINT& uv2, const POINT& uv3);
+};
+
+// Procedural texture generators
+namespace ProceduralTextures {
+    // Generate various procedural textures
+    Texture CreateNoise(int width, int height, int seed = 0, float scale = 1.0f);
+    Texture CreatePerlinNoise(int width, int height, int octaves = 4, float persistence = 0.5f);
+    Texture CreateMarble(int width, int height, COLORREF color1, COLORREF color2);
+    Texture CreateWood(int width, int height, COLORREF color1, COLORREF color2);
+    Texture CreateClouds(int width, int height, int seed = 0);
+    Texture CreateBrick(int width, int height, COLORREF brickColor, COLORREF mortarColor);
+    Texture CreateMetal(int width, int height, COLORREF baseColor);
+    Texture CreateConcrete(int width, int height, COLORREF baseColor);
+    Texture CreateFabric(int width, int height, COLORREF color1, COLORREF color2);
+    Texture CreateWater(int width, int height, float time = 0.0f);
+    
+    // Utility functions
+    float Noise(float x, float y, int seed = 0);
+    float PerlinNoise(float x, float y, int octaves = 4, float persistence = 0.5f);
+    float SmoothNoise(float x, float y, int seed = 0);
+}
+
+// Global functions for easy access
+inline TextureLibrary& GetTextureLibrary() { return TextureLibrary::Instance(); }
