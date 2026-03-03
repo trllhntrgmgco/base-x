@@ -70,19 +70,32 @@ void ABaseXTornadoDemo::BeginPlay()
     if (CylMesh)
         FunnelISM->SetStaticMesh(CylMesh);
 
-    // Create material that reads per-instance custom data for color
+    // Create material — must have bUsedWithInstancedStaticMeshes
     UMaterialInterface* BaseMat = LoadObject<UMaterialInterface>(nullptr,
         TEXT("/Game/BaseX/Materials/M_BaseX_Structure.M_BaseX_Structure"));
     if (!BaseMat)
         BaseMat = UMaterial::GetDefaultMaterial(MD_Surface);
 
+    // Ensure ISM flag is set on the base material
+    if (UMaterial* ParentMat = BaseMat ? BaseMat->GetMaterial() : nullptr)
+    {
+        if (!ParentMat->bUsedWithInstancedStaticMeshes)
+        {
+            ParentMat->bUsedWithInstancedStaticMeshes = true;
+            ParentMat->PreEditChange(nullptr);
+            ParentMat->PostEditChange();
+            UE_LOG(LogTemp, Log, TEXT("BaseXTornadoDemo: Set bUsedWithInstancedStaticMeshes on %s"), *ParentMat->GetName());
+        }
+    }
+
     if (BaseMat)
     {
         UMaterialInstanceDynamic* DebrisMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+        DebrisMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.8f, 0.6f, 0.2f));
         DebrisISM->SetMaterial(0, DebrisMat);
 
         UMaterialInstanceDynamic* FunnelMat = UMaterialInstanceDynamic::Create(BaseMat, this);
-        FunnelMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.5f, 0.55f, 0.6f, 0.3f));
+        FunnelMat->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.5f, 0.55f, 0.6f));
         FunnelISM->SetMaterial(0, FunnelMat);
     }
 
