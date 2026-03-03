@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPC-004: EVA Spacewalk | Base-X Engine Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --void: #030308;
+            --panel: rgba(6, 10, 20, 0.94);
+            --panel-border: rgba(0, 180, 255, 0.2);
+            --cyan: #00b4ff;
+            --cyan-dim: #006699;
+            --green: #00ff88;
+            --green-dim: #00aa55;
+            --orange: #ff9500;
+            --red: #ff3344;
+            --yellow: #ffd000;
+            --white: #d0dae8;
+            --dim: #445566;
+            --b64: #00ff88;
+            --b48: #00ccff;
+            --b32: #ffd000;
+            --b16: #ff8800;
+            --b8: #ff3344;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--void);
+            color: var(--white);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ═══ HEADER ═══ */
+        .header {
+            height: 48px;
+            background: linear-gradient(180deg, rgba(0,180,255,0.06), transparent);
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            flex-shrink: 0;
+        }
+        .hdr-left { display: flex; align-items: center; gap: 12px; }
+        .hdr-badge {
+            font-family: 'Orbitron', monospace;
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--cyan), #0066aa);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 3px;
+        }
+        .hdr-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--cyan);
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px rgba(0,180,255,0.3);
+        }
+        .hdr-right {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--dim);
+            display: flex; gap: 20px;
+        }
+        .hdr-right span { color: var(--cyan); }
+
+        /* ═══ MAIN LAYOUT ═══ */
+        .main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 230px 1fr 280px;
+            gap: 0;
+            overflow: hidden;
+        }
+
+        /* ═══ PANELS ═══ */
+        .side-panel {
+            background: var(--panel);
+            border-right: 1px solid var(--panel-border);
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .right-panel {
+            background: var(--panel);
+            border-left: 1px solid var(--panel-border);
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .panel-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--cyan-dim);
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(0,180,255,0.1);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        .stat-label { color: var(--dim); font-size: 11px; }
+        .stat-val { font-family: 'Share Tech Mono', monospace; font-size: 12px; }
+
+        .section-gap { height: 14px; }
+
+        /* ═══ CANVAS ═══ */
+        .canvas-wrap {
+            position: relative;
+            overflow: hidden;
+            background: var(--void);
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ═══ HUD OVERLAY ═══ */
+        .hud-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+        }
+        .hud-tl, .hud-tr, .hud-bl, .hud-br {
+            position: absolute;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            color: var(--cyan-dim);
+            padding: 10px;
+        }
+        .hud-tl { top: 0; left: 0; }
+        .hud-tr { top: 0; right: 0; text-align: right; }
+        .hud-bl { bottom: 0; left: 0; }
+        .hud-br { bottom: 0; right: 0; text-align: right; }
+
+        .hud-base-indicator {
+            position: absolute;
+            top: 50%;
+            left: 12px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .base-pip {
+            width: 6px; height: 22px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: all 0.3s;
+        }
+        .base-pip.active { box-shadow: 0 0 6px; }
+
+        .crosshair {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px; height: 40px;
+        }
+        .crosshair::before, .crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(0,180,255,0.3);
+        }
+        .crosshair::before {
+            width: 1px; height: 100%;
+            left: 50%; top: 0;
+        }
+        .crosshair::after {
+            width: 100%; height: 1px;
+            top: 50%; left: 0;
+        }
+
+        /* ═══ CONTROLS BAR ═══ */
+        .controls-bar {
+            height: 44px;
+            background: var(--panel);
+            border-top: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 16px;
+            flex-shrink: 0;
+        }
+        .ctrl-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 5px 14px;
+            border: 1px solid var(--panel-border);
+            background: rgba(0,180,255,0.04);
+            color: var(--dim);
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+            letter-spacing: 1px;
+        }
+        .ctrl-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+        .ctrl-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,180,255,0.1); box-shadow: 0 0 8px rgba(0,180,255,0.15); }
+        .ctrl-btn.danger { border-color: var(--red); color: var(--red); }
+        .ctrl-btn.danger:hover { background: rgba(255,51,68,0.1); }
+
+        .ctrl-sep {
+            width: 1px; height: 24px;
+            background: rgba(255,255,255,0.06);
+        }
+
+        /* ═══ DRO BAR ═══ */
+        .dro-bar {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 3px;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(0,180,255,0.15);
+        }
+        .dro-seg {
+            width: 28px; height: 8px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.04);
+            transition: all 0.3s;
+            position: relative;
+        }
+        .dro-seg.lit { box-shadow: 0 0 6px; }
+        .dro-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 8px;
+            color: var(--dim);
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        /* ═══ TASK PANEL ═══ */
+        .task-item {
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            border-radius: 3px;
+            border-left: 3px solid var(--dim);
+            background: rgba(255,255,255,0.015);
+            font-size: 11px;
+        }
+        .task-item.active { border-left-color: var(--cyan); background: rgba(0,180,255,0.05); }
+        .task-item.done { border-left-color: var(--green); opacity: 0.5; }
+        .task-item .task-name { font-weight: 600; }
+        .task-item .task-detail { color: var(--dim); font-size: 10px; margin-top: 2px; }
+
+        /* ═══ LOG ═══ */
+        .log-wrap {
+            max-height: 120px;
+            overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+        }
+        .log-entry { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .log-time { color: var(--dim); }
+        .log-msg { color: var(--white); }
+        .log-msg.info { color: var(--cyan); }
+        .log-msg.success { color: var(--green); }
+        .log-msg.warn { color: var(--orange); }
+        .log-msg.error { color: var(--red); }
+
+        /* ═══ TETHER GAUGE ═══ */
+        .tether-gauge {
+            height: 6px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 6px 0;
+        }
+        .tether-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s, background 0.3s;
+        }
+
+        /* ═══ O2 GAUGE ═══ */
+        .o2-gauge {
+            height: 6px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 6px 0;
+        }
+        .o2-fill {
+            height: 100%;
+            background: var(--green);
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .tool-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 5px 6px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.02);
+            color: var(--dim);
+            cursor: pointer;
+            border-radius: 2px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .tool-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+        .tool-btn.selected { border-color: var(--cyan); color: var(--cyan); background: rgba(0,180,255,0.08); }
+
+        @media (max-width: 1000px) {
+            .main { grid-template-columns: 1fr; }
+            .side-panel, .right-panel { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="hdr-left">
+        <div class="hdr-badge">BASE-X</div>
+        <div class="hdr-title">SPC-004 · EVA SPACEWALK</div>
+    </div>
+    <div class="hdr-right">
+        <div>MET <span id="met">00:00:00</span></div>
+        <div>O₂ <span id="o2Hdr">100%</span></div>
+        <div>SUIT <span id="suitStatus">NOMINAL</span></div>
+    </div>
+</div>
+
+<div class="main">
+    <!-- LEFT PANEL -->
+    <div class="side-panel">
+        <div class="panel-title">SUIT TELEMETRY</div>
+
+        <div class="stat-row"><span class="stat-label">O₂ Remaining</span><span class="stat-val" id="o2Pct" style="color:var(--green)">100.0%</span></div>
+        <div class="o2-gauge"><div class="o2-fill" id="o2Bar" style="width:100%"></div></div>
+
+        <div class="stat-row"><span class="stat-label">Suit Pressure</span><span class="stat-val" id="suitPsi">4.3 psi</span></div>
+        <div class="stat-row"><span class="stat-label">Suit Temp</span><span class="stat-val" id="suitTemp">72.1°F</span></div>
+        <div class="stat-row"><span class="stat-label">Heart Rate</span><span class="stat-val" id="heartRate">72 bpm</span></div>
+        <div class="stat-row"><span class="stat-label">CO₂ Scrubber</span><span class="stat-val" id="co2" style="color:var(--green)">NOMINAL</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">TETHER STATUS</div>
+
+        <div class="stat-row"><span class="stat-label">Length</span><span class="stat-val" id="tetherLen">0.0 m</span></div>
+        <div class="stat-row"><span class="stat-label">Max Length</span><span class="stat-val">25.0 m</span></div>
+        <div class="tether-gauge"><div class="tether-fill" id="tetherBar" style="width:0%;background:var(--green)"></div></div>
+        <div class="stat-row"><span class="stat-label">Tension</span><span class="stat-val" id="tetherTension">0.00 N</span></div>
+        <div class="stat-row"><span class="stat-label">Anchor Point</span><span class="stat-val" id="anchorPt">AIRLOCK-3</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">POSITION</div>
+
+        <div class="stat-row"><span class="stat-label">X</span><span class="stat-val" id="posX">0.000 m</span></div>
+        <div class="stat-row"><span class="stat-label">Y</span><span class="stat-val" id="posY">0.000 m</span></div>
+        <div class="stat-row"><span class="stat-label">Z</span><span class="stat-val" id="posZ">0.000 m</span></div>
+        <div class="stat-row"><span class="stat-label">Velocity</span><span class="stat-val" id="velocity">0.000 m/s</span></div>
+        <div class="stat-row"><span class="stat-label">Angular Vel</span><span class="stat-val" id="angVel">0.00 °/s</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">TOOLS</div>
+        <div class="tool-grid">
+            <div class="tool-btn selected" data-tool="hand" onclick="selectTool('hand')">✋ HAND</div>
+            <div class="tool-btn" data-tool="wrench" onclick="selectTool('wrench')">🔧 WRENCH</div>
+            <div class="tool-btn" data-tool="drill" onclick="selectTool('drill')">⚙️ DRILL</div>
+            <div class="tool-btn" data-tool="welder" onclick="selectTool('welder')">🔥 WELDER</div>
+            <div class="tool-btn" data-tool="scanner" onclick="selectTool('scanner')">📡 SCANNER</div>
+            <div class="tool-btn" data-tool="camera" onclick="selectTool('camera')">📷 CAMERA</div>
+        </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div class="canvas-wrap">
+        <canvas id="spaceCanvas"></canvas>
+
+        <div class="hud-overlay">
+            <div class="hud-tl">
+                <div>DRO ACTIVE BASE: <span id="hudBase" style="color:var(--b48)">BASE-48</span></div>
+                <div>PRECISION: <span id="hudPrec">±0.01 mm</span></div>
+                <div>OPS/FRAME: <span id="hudOps">2,847</span></div>
+            </div>
+            <div class="hud-tr">
+                <div>STATION: <span style="color:var(--green)">ISS-OMEGA</span></div>
+                <div>MODULE: <span id="hudModule">TRUSS P3</span></div>
+                <div>ORBIT ALT: <span>408.2 km</span></div>
+            </div>
+            <div class="hud-bl">
+                <div>TOOL: <span id="hudTool" style="color:var(--cyan)">HAND</span></div>
+                <div>GRIP: <span id="hudGrip">RELEASED</span></div>
+            </div>
+            <div class="hud-br">
+                <div>FIVE PILLARS</div>
+                <div>DIST: <span id="pillarDist">0.42</span> VEL: <span id="pillarVel">0.10</span></div>
+                <div>INT: <span id="pillarInt">0.85</span> PHS: <span id="pillarPhs">0.60</span></div>
+                <div>PER: <span id="pillarPer">0.70</span></div>
+            </div>
+
+            <div class="crosshair"></div>
+
+            <div class="dro-bar">
+                <div>
+                    <div class="dro-seg" id="seg8" style="background:var(--b8);opacity:0.15"></div>
+                    <div class="dro-label">8</div>
+                </div>
+                <div>
+                    <div class="dro-seg" id="seg16" style="background:var(--b16);opacity:0.15"></div>
+                    <div class="dro-label">16</div>
+                </div>
+                <div>
+                    <div class="dro-seg" id="seg32" style="background:var(--b32);opacity:0.15"></div>
+                    <div class="dro-label">32</div>
+                </div>
+                <div>
+                    <div class="dro-seg lit" id="seg48" style="background:var(--b48)"></div>
+                    <div class="dro-label">48</div>
+                </div>
+                <div>
+                    <div class="dro-seg" id="seg64" style="background:var(--b64);opacity:0.15"></div>
+                    <div class="dro-label">64</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+        <div class="panel-title">EVA TASK LIST</div>
+
+        <div class="task-item active" id="task0">
+            <div class="task-name">1. Exit Airlock</div>
+            <div class="task-detail">Attach tether, verify suit seal</div>
+        </div>
+        <div class="task-item" id="task1">
+            <div class="task-name">2. Translate to P3 Truss</div>
+            <div class="task-detail">Use handrails, maintain tether</div>
+        </div>
+        <div class="task-item" id="task2">
+            <div class="task-name">3. Remove Damaged Panel</div>
+            <div class="task-detail">4 bolts, EVA drill, Base-48</div>
+        </div>
+        <div class="task-item" id="task3">
+            <div class="task-name">4. Inspect Wiring</div>
+            <div class="task-detail">Scanner check, document damage</div>
+        </div>
+        <div class="task-item" id="task4">
+            <div class="task-name">5. Splice Connections</div>
+            <div class="task-detail">Welder, sub-mm precision, Base-64</div>
+        </div>
+        <div class="task-item" id="task5">
+            <div class="task-name">6. Install New Panel</div>
+            <div class="task-detail">Align, drill 4 bolts, torque verify</div>
+        </div>
+        <div class="task-item" id="task6">
+            <div class="task-name">7. Photo Documentation</div>
+            <div class="task-detail">Camera, capture all repair points</div>
+        </div>
+        <div class="task-item" id="task7">
+            <div class="task-name">8. Return to Airlock</div>
+            <div class="task-detail">Retract tether, ingress</div>
+        </div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">DRO ANALYSIS</div>
+
+        <div class="stat-row"><span class="stat-label">Active Base</span><span class="stat-val" id="droBase" style="color:var(--b48)">48</span></div>
+        <div class="stat-row"><span class="stat-label">Precision</span><span class="stat-val" id="droPrecision">±0.01 mm</span></div>
+        <div class="stat-row"><span class="stat-label">Ops/Frame</span><span class="stat-val" id="droOps">2,847</span></div>
+        <div class="stat-row"><span class="stat-label">Base Switches</span><span class="stat-val" id="droSwitches">0</span></div>
+        <div class="stat-row"><span class="stat-label">Avg Base</span><span class="stat-val" id="droAvg">48.0</span></div>
+        <div class="stat-row"><span class="stat-label">Savings vs B64</span><span class="stat-val" id="droSavings" style="color:var(--green)">38%</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">CONTEXT TRIGGERS</div>
+        <div class="stat-row"><span class="stat-label">Hand Near Object</span><span class="stat-val" id="trigHand">—</span></div>
+        <div class="stat-row"><span class="stat-label">Tool Active</span><span class="stat-val" id="trigTool">NO</span></div>
+        <div class="stat-row"><span class="stat-label">Bolt Interaction</span><span class="stat-val" id="trigBolt">—</span></div>
+        <div class="stat-row"><span class="stat-label">Tether Strain</span><span class="stat-val" id="trigTether">LOW</span></div>
+        <div class="stat-row"><span class="stat-label">Drift Detected</span><span class="stat-val" id="trigDrift">NO</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">COMMS LOG</div>
+        <div class="log-wrap" id="logWrap"></div>
+    </div>
+</div>
+
+<div class="controls-bar">
+    <button class="ctrl-btn active" id="btnPlay" onclick="toggleSim()">▶ RESUME</button>
+    <button class="ctrl-btn" onclick="resetSim()">↺ RESET</button>
+    <div class="ctrl-sep"></div>
+    <button class="ctrl-btn" onclick="skipToTask(0)">AIRLOCK</button>
+    <button class="ctrl-btn" onclick="skipToTask(2)">PANEL</button>
+    <button class="ctrl-btn" onclick="skipToTask(4)">SPLICE</button>
+    <button class="ctrl-btn" onclick="skipToTask(7)">RETURN</button>
+    <div class="ctrl-sep"></div>
+    <button class="ctrl-btn" onclick="toggleAutoDemo()">AUTO DEMO</button>
+    <button class="ctrl-btn danger" onclick="simulateEmergency()">⚠ EMERGENCY</button>
+</div>
+
+<script>
+// ════════════════════════════════════════
+// SPC-004: EVA SPACEWALK
+// Base-X Engine — Dynamic Radix Optimization
+// Hands: Base-64 | Tools: Base-48 | Hull: Base-32
+// ════════════════════════════════════════
+
+const canvas = document.getElementById('spaceCanvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+    const wrap = canvas.parentElement;
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── STATE ──
+const state = {
+    running: true,
+    time: 0,
+    met: 0, // mission elapsed time in seconds
+    autoDemo: false,
+    emergency: false,
+
+    // Astronaut
+    astro: {
+        x: 0, y: 0, z: 0,
+        vx: 0, vy: 0, vz: 0,
+        rotation: 0,
+        angularVel: 0,
+        gripping: false,
+        gripTarget: null,
+    },
+
+    // Tether
+    tether: {
+        length: 0,
+        maxLength: 25,
+        tension: 0,
+        anchor: { x: 0, y: 0 },
+        segments: [],
+    },
+
+    // Suit
+    suit: {
+        o2: 100,
+        pressure: 4.3,
+        temp: 72.1,
+        heartRate: 72,
+        co2: 'NOMINAL',
+    },
+
+    // DRO
+    dro: {
+        currentBase: 48,
+        targetBase: 48,
+        switches: 0,
+        history: [],
+        avgBase: 48,
+        pillars: { dist: 0.42, vel: 0.10, int: 0.85, phs: 0.60, per: 0.70 },
+    },
+
+    // Tasks
+    currentTask: 0,
+    taskProgress: [0,0,0,0,0,0,0,0],
+
+    // Tool
+    currentTool: 'hand',
+
+    // Scene objects
+    bolts: [],
+    panels: [],
+    handrails: [],
+    stars: [],
+    debris: [],
+
+    // Interaction
+    nearestObject: null,
+    nearestDist: Infinity,
+};
+
+// ── INIT SCENE ──
+function initScene() {
+    // Stars
+    state.stars = [];
+    for (let i = 0; i < 400; i++) {
+        state.stars.push({
+            x: Math.random() * 2000 - 1000,
+            y: Math.random() * 2000 - 1000,
+            brightness: Math.random() * 0.8 + 0.2,
+            size: Math.random() * 1.5 + 0.3,
+            twinkleSpeed: Math.random() * 3 + 1,
+        });
+    }
+
+    // Station structure (truss segments)
+    state.handrails = [];
+    for (let i = 0; i < 12; i++) {
+        state.handrails.push({
+            x: -100 + i * 40,
+            y: -20,
+            width: 30,
+            height: 8,
+            id: `HR-${i+1}`,
+        });
+    }
+
+    // Bolts on repair panel
+    state.bolts = [
+        { x: 160, y: -60, removed: false, torque: 0, id: 'B1' },
+        { x: 220, y: -60, removed: false, torque: 0, id: 'B2' },
+        { x: 160, y: -100, removed: false, torque: 0, id: 'B3' },
+        { x: 220, y: -100, removed: false, torque: 0, id: 'B4' },
+    ];
+
+    // Panel
+    state.panels = [
+        { x: 140, y: -110, width: 100, height: 60, damaged: true, removed: false, installed: false, id: 'P3-PANEL' },
+    ];
+
+    // Tether segments
+    state.tether.segments = [];
+    state.tether.anchor = { x: 0, y: 0 };
+
+    log('EVA suit powered on', 'info');
+    log('Tether attached to AIRLOCK-3', 'success');
+    log('Awaiting egress command...', 'info');
+}
+
+// ── DRO SYSTEM ──
+function computeDRO() {
+    const a = state.astro;
+    const vel = Math.sqrt(a.vx*a.vx + a.vy*a.vy);
+
+    // Five Pillars
+    const dist = state.nearestDist < 0.5 ? 1.0 : state.nearestDist < 2 ? 0.7 : state.nearestDist < 5 ? 0.4 : 0.2;
+    const velFactor = vel < 0.01 ? 0.9 : vel < 0.1 ? 0.6 : vel < 0.5 ? 0.3 : 0.1;
+    const interaction = (state.astro.gripping || state.currentTool !== 'hand') ? 0.9 : 0.3;
+
+    let phase = 0.5;
+    if (state.currentTask === 4) phase = 0.95; // splicing = max precision
+    else if (state.currentTask === 2 || state.currentTask === 5) phase = 0.8; // bolt work
+    else if (state.currentTask === 3) phase = 0.7; // inspection
+    else if (state.currentTask === 1 || state.currentTask === 7) phase = 0.3; // translation
+
+    const perceptual = state.currentTool === 'welder' ? 0.95 :
+                       state.currentTool === 'drill' ? 0.85 :
+                       state.currentTool === 'scanner' ? 0.7 :
+                       state.currentTool === 'hand' && state.astro.gripping ? 0.8 : 0.5;
+
+    state.dro.pillars = { dist, vel: velFactor, int: interaction, phs: phase, per: perceptual };
+
+    // Weighted composite → base selection
+    const composite = dist * 0.2 + velFactor * 0.1 + interaction * 0.25 + phase * 0.3 + perceptual * 0.15;
+
+    let targetBase;
+    if (composite > 0.85) targetBase = 64;
+    else if (composite > 0.65) targetBase = 48;
+    else if (composite > 0.45) targetBase = 32;
+    else if (composite > 0.25) targetBase = 16;
+    else targetBase = 8;
+
+    if (targetBase !== state.dro.currentBase) {
+        state.dro.switches++;
+        const oldBase = state.dro.currentBase;
+        state.dro.currentBase = targetBase;
+        state.dro.targetBase = targetBase;
+        log(`DRO: Base-${oldBase} → Base-${targetBase}`, 'info');
+    }
+
+    state.dro.history.push(state.dro.currentBase);
+    if (state.dro.history.length > 300) state.dro.history.shift();
+    state.dro.avgBase = state.dro.history.reduce((a,b) => a+b, 0) / state.dro.history.length;
+}
+
+function getBasePrecision(base) {
+    switch(base) {
+        case 64: return { str: '±0.001 mm', val: 0.001, ops: 4096 };
+        case 48: return { str: '±0.01 mm', val: 0.01, ops: 2847 };
+        case 32: return { str: '±0.1 mm', val: 0.1, ops: 1024 };
+        case 16: return { str: '±1.0 mm', val: 1.0, ops: 256 };
+        case 8:  return { str: '±10 mm', val: 10, ops: 64 };
+        default: return { str: '±1.0 mm', val: 1.0, ops: 256 };
+    }
+}
+
+function getBaseColor(base) {
+    switch(base) {
+        case 64: return '#00ff88';
+        case 48: return '#00ccff';
+        case 32: return '#ffd000';
+        case 16: return '#ff8800';
+        case 8:  return '#ff3344';
+        default: return '#ffffff';
+    }
+}
+
+// ── PHYSICS ──
+function updatePhysics(dt) {
+    const a = state.astro;
+
+    // Zero-G drift with micro-corrections
+    a.x += a.vx * dt * 60;
+    a.y += a.vy * dt * 60;
+    a.rotation += a.angularVel * dt;
+
+    // Gentle damping (suit thrusters auto-stabilize)
+    a.vx *= 0.998;
+    a.vy *= 0.998;
+    a.angularVel *= 0.995;
+
+    // Tether physics
+    const dx = a.x - state.tether.anchor.x;
+    const dy = a.y - state.tether.anchor.y;
+    state.tether.length = Math.sqrt(dx*dx + dy*dy);
+
+    if (state.tether.length > state.tether.maxLength * 40) { // scaled to canvas units
+        const angle = Math.atan2(dy, dx);
+        const overflow = state.tether.length - state.tether.maxLength * 40;
+        state.tether.tension = overflow * 0.02;
+        a.vx -= Math.cos(angle) * state.tether.tension * 0.1;
+        a.vy -= Math.sin(angle) * state.tether.tension * 0.1;
+        a.x = state.tether.anchor.x + Math.cos(angle) * state.tether.maxLength * 40;
+        a.y = state.tether.anchor.y + Math.sin(angle) * state.tether.maxLength * 40;
+    } else {
+        state.tether.tension = 0;
+    }
+
+    // Suit systems
+    state.suit.o2 = Math.max(0, state.suit.o2 - 0.0008 * dt * 60);
+    state.suit.heartRate = 72 + Math.sin(state.time * 0.5) * 4 + (state.emergency ? 30 : 0);
+    state.suit.temp = 72.1 + Math.sin(state.time * 0.2) * 0.8;
+    state.suit.pressure = 4.3 + Math.sin(state.time * 0.1) * 0.05;
+
+    if (state.suit.o2 < 15) state.suit.co2 = 'WARNING';
+    if (state.suit.o2 < 5) state.suit.co2 = 'CRITICAL';
+
+    // Find nearest interactable
+    state.nearestDist = Infinity;
+    state.nearestObject = null;
+
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const aScreenX = cx + a.x;
+    const aScreenY = cy + a.y;
+
+    state.bolts.forEach(b => {
+        if (b.removed) return;
+        const d = Math.sqrt((aScreenX - (cx + b.x))**2 + (aScreenY - (cy + b.y))**2);
+        const dMeters = d / 40; // scale
+        if (dMeters < state.nearestDist) {
+            state.nearestDist = dMeters;
+            state.nearestObject = b;
+        }
+    });
+
+    state.handrails.forEach(h => {
+        const hcx = cx + h.x + h.width/2;
+        const hcy = cy + h.y + h.height/2;
+        const d = Math.sqrt((aScreenX - hcx)**2 + (aScreenY - hcy)**2);
+        const dMeters = d / 40;
+        if (dMeters < state.nearestDist) {
+            state.nearestDist = dMeters;
+            state.nearestObject = h;
+        }
+    });
+
+    // Debris in emergency
+    state.debris.forEach(d => {
+        d.x += d.vx * dt * 60;
+        d.y += d.vy * dt * 60;
+        d.rotation += d.rotSpeed * dt;
+    });
+}
+
+// ── AUTO DEMO ──
+function updateAutoDemo(dt) {
+    if (!state.autoDemo) return;
+
+    const task = state.currentTask;
+    const a = state.astro;
+    const progress = state.taskProgress[task];
+
+    // Auto-advance tasks
+    state.taskProgress[task] += dt * 0.15;
+
+    if (state.taskProgress[task] >= 1.0) {
+        state.taskProgress[task] = 1.0;
+        completeTask(task);
+        if (task < 7) {
+            state.currentTask = task + 1;
+            log(`Starting task ${task + 2}`, 'info');
+        } else {
+            state.autoDemo = false;
+            log('EVA COMPLETE — All tasks finished!', 'success');
+        }
+    }
+
+    // Auto movement
+    const targets = [
+        {x: 0, y: 0},       // 0: airlock
+        {x: 80, y: -30},    // 1: translate
+        {x: 190, y: -80},   // 2: panel
+        {x: 190, y: -80},   // 3: inspect
+        {x: 190, y: -80},   // 4: splice
+        {x: 190, y: -80},   // 5: install
+        {x: 200, y: -70},   // 6: photo
+        {x: 0, y: 0},       // 7: return
+    ];
+
+    const target = targets[task];
+    const tdx = target.x - a.x;
+    const tdy = target.y - a.y;
+    const dist = Math.sqrt(tdx*tdx + tdy*tdy);
+
+    if (dist > 2) {
+        a.vx += (tdx / dist) * 0.015;
+        a.vy += (tdy / dist) * 0.015;
+    }
+
+    // Auto tool selection
+    const toolMap = ['hand', 'hand', 'drill', 'scanner', 'welder', 'drill', 'camera', 'hand'];
+    if (state.currentTool !== toolMap[task]) {
+        selectTool(toolMap[task]);
+    }
+
+    // Bolt interaction during task 2
+    if (task === 2 && progress > 0.2) {
+        const boltIdx = Math.min(3, Math.floor((progress - 0.2) / 0.2));
+        if (!state.bolts[boltIdx].removed) {
+            state.bolts[boltIdx].torque += dt * 2;
+            if (state.bolts[boltIdx].torque >= 1) {
+                state.bolts[boltIdx].removed = true;
+                log(`Bolt ${state.bolts[boltIdx].id} removed`, 'success');
+            }
+        }
+    }
+
+    // Panel removal at task 2 end
+    if (task === 2 && progress > 0.95) {
+        state.panels[0].removed = true;
+    }
+
+    // Panel install at task 5
+    if (task === 5 && progress > 0.9) {
+        state.panels[0].installed = true;
+    }
+
+    // Gripping during work tasks
+    state.astro.gripping = (task >= 2 && task <= 6);
+}
+
+function completeTask(idx) {
+    const el = document.getElementById(`task${idx}`);
+    el.classList.remove('active');
+    el.classList.add('done');
+    if (idx + 1 <= 7) {
+        document.getElementById(`task${idx+1}`).classList.add('active');
+    }
+    log(`Task ${idx+1} complete ✓`, 'success');
+}
+
+// ── RENDER ──
+function render() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const cx = W / 2;
+    const cy = H / 2;
+
+    ctx.fillStyle = '#030308';
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    state.stars.forEach(s => {
+        const sx = ((s.x + cx + state.astro.x * 0.05) % W + W) % W;
+        const sy = ((s.y + cy + state.astro.y * 0.05) % H + H) % H;
+        const twinkle = 0.5 + 0.5 * Math.sin(state.time * s.twinkleSpeed);
+        const alpha = s.brightness * twinkle;
+        ctx.fillStyle = `rgba(200, 220, 255, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, s.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Earth glow (bottom right)
+    const earthGrad = ctx.createRadialGradient(W * 0.85, H * 0.9, 0, W * 0.85, H * 0.9, 300);
+    earthGrad.addColorStop(0, 'rgba(40, 100, 200, 0.15)');
+    earthGrad.addColorStop(0.5, 'rgba(30, 80, 160, 0.06)');
+    earthGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = earthGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Camera offset
+    const camX = cx - state.astro.x * 0.3;
+    const camY = cy - state.astro.y * 0.3;
+
+    ctx.save();
+    ctx.translate(camX - cx, camY - cy);
+
+    // ── Station Truss ──
+    ctx.strokeStyle = '#334455';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(cx - 200, cy);
+    ctx.lineTo(cx + 400, cy);
+    ctx.stroke();
+
+    // Truss cross members
+    for (let i = -4; i < 10; i++) {
+        const tx = cx + i * 40;
+        ctx.strokeStyle = '#2a3844';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(tx, cy - 30);
+        ctx.lineTo(tx + 20, cy + 10);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tx + 20, cy - 30);
+        ctx.lineTo(tx, cy + 10);
+        ctx.stroke();
+    }
+
+    // Handrails
+    state.handrails.forEach(h => {
+        const hx = cx + h.x;
+        const hy = cy + h.y;
+        ctx.fillStyle = '#556677';
+        ctx.fillRect(hx, hy, h.width, h.height);
+        ctx.strokeStyle = '#778899';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(hx, hy, h.width, h.height);
+
+        // Grip indicators when near
+        const d = Math.sqrt((cx + state.astro.x - hx - h.width/2)**2 + (cy + state.astro.y - hy - h.height/2)**2);
+        if (d < 60) {
+            ctx.strokeStyle = `rgba(0, 180, 255, ${0.3 * (1 - d/60)})`;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(hx - 2, hy - 2, h.width + 4, h.height + 4);
+        }
+    });
+
+    // ── Repair Panel Area ──
+    const panel = state.panels[0];
+    const px = cx + panel.x;
+    const py = cy + panel.y;
+
+    // Panel backing
+    ctx.fillStyle = '#1a2530';
+    ctx.fillRect(px - 5, py - 5, panel.width + 10, panel.height + 10);
+
+    if (!panel.removed) {
+        // Panel surface
+        ctx.fillStyle = panel.damaged ? '#553322' : '#445566';
+        ctx.fillRect(px, py, panel.width, panel.height);
+
+        // Damage marks
+        if (panel.damaged) {
+            ctx.strokeStyle = '#ff4444';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(px + 20 + i * 15, py + 10);
+                ctx.lineTo(px + 25 + i * 15, py + panel.height - 10);
+                ctx.stroke();
+            }
+        }
+    } else if (!panel.installed) {
+        // Exposed wiring
+        ctx.strokeStyle = '#ff8800';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 6; i++) {
+            ctx.beginPath();
+            ctx.moveTo(px + 10, py + 8 + i * 9);
+            ctx.bezierCurveTo(px + 30, py + 5 + i * 9, px + 60, py + 12 + i * 9, px + 90, py + 8 + i * 9);
+            ctx.stroke();
+        }
+        // Sparks at damage point
+        if (state.currentTask === 4) {
+            for (let i = 0; i < 3; i++) {
+                const sparkX = px + 50 + (Math.random() - 0.5) * 20;
+                const sparkY = py + 30 + (Math.random() - 0.5) * 20;
+                ctx.fillStyle = `rgba(255, 200, 50, ${Math.random()})`;
+                ctx.beginPath();
+                ctx.arc(sparkX, sparkY, Math.random() * 2 + 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    } else {
+        // New panel installed
+        ctx.fillStyle = '#556677';
+        ctx.fillRect(px, py, panel.width, panel.height);
+        ctx.strokeStyle = '#00ff88';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px, py, panel.width, panel.height);
+    }
+
+    // ── Bolts ──
+    state.bolts.forEach(b => {
+        const bx = cx + b.x;
+        const by = cy + b.y;
+
+        if (!b.removed) {
+            // Bolt head
+            ctx.fillStyle = '#889900';
+            ctx.beginPath();
+            ctx.arc(bx, by, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#aabb22';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Hex pattern
+            ctx.strokeStyle = '#667700';
+            ctx.beginPath();
+            ctx.moveTo(bx - 2, by - 2);
+            ctx.lineTo(bx + 2, by + 2);
+            ctx.moveTo(bx + 2, by - 2);
+            ctx.lineTo(bx - 2, by + 2);
+            ctx.stroke();
+
+            // Torque progress
+            if (b.torque > 0) {
+                ctx.strokeStyle = '#00ccff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(bx, by, 8, -Math.PI/2, -Math.PI/2 + Math.PI * 2 * b.torque);
+                ctx.stroke();
+            }
+
+            // Precision ring when near
+            const asx = cx + state.astro.x;
+            const asy = cy + state.astro.y;
+            const d = Math.sqrt((asx - bx)**2 + (asy - by)**2);
+            if (d < 40) {
+                ctx.strokeStyle = `rgba(0, 255, 136, ${0.5 * (1 - d/40)})`;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2, 3]);
+                ctx.beginPath();
+                ctx.arc(bx, by, 12, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        } else {
+            // Empty bolt hole
+            ctx.fillStyle = '#111';
+            ctx.beginPath();
+            ctx.arc(bx, by, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+
+    // ── Tether Line ──
+    const ax = cx + state.astro.x;
+    const ay = cy + state.astro.y;
+    const anchorX = cx + state.tether.anchor.x;
+    const anchorY = cy + state.tether.anchor.y;
+
+    ctx.strokeStyle = state.tether.tension > 0.5 ? '#ff8800' : '#ffdd44';
+    ctx.lineWidth = state.tether.tension > 0.5 ? 2 : 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(anchorX, anchorY);
+
+    // Catenary sag
+    const midX = (anchorX + ax) / 2;
+    const midY = (anchorY + ay) / 2 + 15;
+    ctx.quadraticCurveTo(midX, midY, ax, ay);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Anchor point
+    ctx.fillStyle = '#ffdd44';
+    ctx.beginPath();
+    ctx.arc(anchorX, anchorY, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── Astronaut ──
+    ctx.save();
+    ctx.translate(ax, ay);
+    ctx.rotate(state.astro.rotation);
+
+    // Suit body
+    ctx.fillStyle = '#dde4ea';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 14, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#99aabb';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Helmet
+    ctx.fillStyle = '#223344';
+    ctx.beginPath();
+    ctx.arc(0, -14, 10, 0, Math.PI * 2);
+    ctx.fill();
+    // Visor
+    ctx.fillStyle = 'rgba(0, 180, 255, 0.3)';
+    ctx.beginPath();
+    ctx.arc(0, -14, 7, -0.5, 0.5);
+    ctx.fill();
+
+    // Backpack PLSS
+    ctx.fillStyle = '#aabbcc';
+    ctx.fillRect(-10, -8, 6, 16);
+
+    // Arms
+    ctx.strokeStyle = '#ccd4da';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    // Right arm
+    const armAngle = state.astro.gripping ? 0.3 : Math.sin(state.time * 2) * 0.1;
+    ctx.beginPath();
+    ctx.moveTo(12, -4);
+    ctx.lineTo(22 + Math.cos(armAngle) * 4, -8 + Math.sin(armAngle) * 4);
+    ctx.stroke();
+    // Left arm
+    ctx.beginPath();
+    ctx.moveTo(-12, -4);
+    ctx.lineTo(-22 - Math.cos(armAngle) * 4, -8 - Math.sin(armAngle) * 4);
+    ctx.stroke();
+
+    // Tool in hand
+    if (state.currentTool !== 'hand') {
+        const toolColors = {
+            wrench: '#bbaa33', drill: '#33aadd', welder: '#ff6633',
+            scanner: '#33ddaa', camera: '#dddddd'
+        };
+        ctx.fillStyle = toolColors[state.currentTool] || '#888';
+        ctx.fillRect(20, -14, 8, 4);
+    }
+
+    // Grip indicator
+    if (state.astro.gripping) {
+        ctx.strokeStyle = 'rgba(0, 255, 136, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 24, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // Lights
+    ctx.fillStyle = `rgba(255, 255, 200, ${0.3 + 0.1 * Math.sin(state.time * 3)})`;
+    ctx.beginPath();
+    ctx.arc(8, -13, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    // ── DRO Precision Visualization ──
+    const baseColor = getBaseColor(state.dro.currentBase);
+    const prec = getBasePrecision(state.dro.currentBase);
+
+    // Precision circle around astronaut
+    ctx.strokeStyle = baseColor;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.25;
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath();
+    ctx.arc(ax, ay, 30 + state.dro.currentBase * 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+
+    // ── Debris (emergency) ──
+    state.debris.forEach(d => {
+        ctx.save();
+        ctx.translate(cx + d.x, cy + d.y);
+        ctx.rotate(d.rotation);
+        ctx.fillStyle = d.color;
+        ctx.fillRect(-d.size/2, -d.size/2, d.size, d.size);
+        ctx.restore();
+    });
+
+    ctx.restore();
+
+    // ── Sun flare ──
+    const sunGrad = ctx.createRadialGradient(80, 60, 0, 80, 60, 200);
+    sunGrad.addColorStop(0, 'rgba(255, 240, 200, 0.15)');
+    sunGrad.addColorStop(0.3, 'rgba(255, 220, 150, 0.04)');
+    sunGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = sunGrad;
+    ctx.fillRect(0, 0, W, H);
+}
+
+// ── UI UPDATE ──
+function updateUI() {
+    const a = state.astro;
+    const vel = Math.sqrt(a.vx*a.vx + a.vy*a.vy);
+    const prec = getBasePrecision(state.dro.currentBase);
+    const baseColor = getBaseColor(state.dro.currentBase);
+
+    // MET
+    const metH = String(Math.floor(state.met / 3600)).padStart(2, '0');
+    const metM = String(Math.floor((state.met % 3600) / 60)).padStart(2, '0');
+    const metS = String(Math.floor(state.met % 60)).padStart(2, '0');
+    document.getElementById('met').textContent = `${metH}:${metM}:${metS}`;
+
+    // O2
+    document.getElementById('o2Hdr').textContent = state.suit.o2.toFixed(0) + '%';
+    document.getElementById('o2Hdr').style.color = state.suit.o2 < 20 ? '#ff3344' : state.suit.o2 < 50 ? '#ffd000' : '#00ff88';
+    document.getElementById('o2Pct').textContent = state.suit.o2.toFixed(1) + '%';
+    document.getElementById('o2Pct').style.color = state.suit.o2 < 20 ? '#ff3344' : '#00ff88';
+    document.getElementById('o2Bar').style.width = state.suit.o2 + '%';
+    document.getElementById('o2Bar').style.background = state.suit.o2 < 20 ? '#ff3344' : state.suit.o2 < 50 ? '#ffd000' : '#00ff88';
+
+    // Suit
+    document.getElementById('suitPsi').textContent = state.suit.pressure.toFixed(1) + ' psi';
+    document.getElementById('suitTemp').textContent = state.suit.temp.toFixed(1) + '°F';
+    document.getElementById('heartRate').textContent = Math.round(state.suit.heartRate) + ' bpm';
+    document.getElementById('heartRate').style.color = state.suit.heartRate > 100 ? '#ff3344' : '#00ff88';
+    document.getElementById('co2').textContent = state.suit.co2;
+    document.getElementById('co2').style.color = state.suit.co2 === 'NOMINAL' ? '#00ff88' : '#ff3344';
+    document.getElementById('suitStatus').textContent = state.emergency ? 'EMERGENCY' : 'NOMINAL';
+    document.getElementById('suitStatus').style.color = state.emergency ? '#ff3344' : '#00ff88';
+
+    // Tether
+    const tetherMeters = state.tether.length / 40;
+    document.getElementById('tetherLen').textContent = tetherMeters.toFixed(1) + ' m';
+    document.getElementById('tetherBar').style.width = (tetherMeters / state.tether.maxLength * 100) + '%';
+    const tetherPct = tetherMeters / state.tether.maxLength;
+    document.getElementById('tetherBar').style.background = tetherPct > 0.9 ? '#ff3344' : tetherPct > 0.7 ? '#ffd000' : '#00ff88';
+    document.getElementById('tetherTension').textContent = state.tether.tension.toFixed(2) + ' N';
+    document.getElementById('tetherTension').style.color = state.tether.tension > 0.5 ? '#ff8800' : '#00ff88';
+
+    // Position
+    document.getElementById('posX').textContent = (a.x / 40).toFixed(3) + ' m';
+    document.getElementById('posY').textContent = (a.y / 40).toFixed(3) + ' m';
+    document.getElementById('posZ').textContent = (a.z / 40).toFixed(3) + ' m';
+    document.getElementById('velocity').textContent = (vel * 1.5).toFixed(3) + ' m/s';
+    document.getElementById('angVel').textContent = (a.angularVel * 57.3).toFixed(2) + ' °/s';
+
+    // DRO
+    document.getElementById('hudBase').textContent = 'BASE-' + state.dro.currentBase;
+    document.getElementById('hudBase').style.color = baseColor;
+    document.getElementById('hudPrec').textContent = prec.str;
+    document.getElementById('hudOps').textContent = prec.ops.toLocaleString();
+    document.getElementById('droBase').textContent = state.dro.currentBase;
+    document.getElementById('droBase').style.color = baseColor;
+    document.getElementById('droPrecision').textContent = prec.str;
+    document.getElementById('droOps').textContent = prec.ops.toLocaleString();
+    document.getElementById('droSwitches').textContent = state.dro.switches;
+    document.getElementById('droAvg').textContent = state.dro.avgBase.toFixed(1);
+
+    const savings = ((4096 - prec.ops) / 4096 * 100).toFixed(0);
+    document.getElementById('droSavings').textContent = savings + '%';
+
+    // DRO bar segments
+    [8, 16, 32, 48, 64].forEach(b => {
+        const el = document.getElementById('seg' + b);
+        if (b === state.dro.currentBase) {
+            el.style.opacity = 1;
+            el.classList.add('lit');
+        } else {
+            el.style.opacity = 0.15;
+            el.classList.remove('lit');
+        }
+    });
+
+    // Pillars
+    const p = state.dro.pillars;
+    document.getElementById('pillarDist').textContent = p.dist.toFixed(2);
+    document.getElementById('pillarVel').textContent = p.vel.toFixed(2);
+    document.getElementById('pillarInt').textContent = p.int.toFixed(2);
+    document.getElementById('pillarPhs').textContent = p.phs.toFixed(2);
+    document.getElementById('pillarPer').textContent = p.per.toFixed(2);
+
+    // HUD
+    document.getElementById('hudTool').textContent = state.currentTool.toUpperCase();
+    document.getElementById('hudGrip').textContent = state.astro.gripping ? 'LOCKED' : 'RELEASED';
+    document.getElementById('hudGrip').style.color = state.astro.gripping ? '#00ff88' : '#ffd000';
+    document.getElementById('hudModule').textContent = state.currentTask >= 2 && state.currentTask <= 6 ? 'P3 REPAIR SITE' : 'TRUSS SEGMENT';
+
+    // Triggers
+    document.getElementById('trigHand').textContent = state.nearestDist < 1 ? `${state.nearestDist.toFixed(2)}m` : '—';
+    document.getElementById('trigHand').style.color = state.nearestDist < 0.5 ? '#00ff88' : '#ffd000';
+    document.getElementById('trigTool').textContent = state.currentTool !== 'hand' ? 'YES' : 'NO';
+    document.getElementById('trigTool').style.color = state.currentTool !== 'hand' ? '#00ff88' : '#445566';
+    document.getElementById('trigBolt').textContent = state.nearestObject?.id?.startsWith('B') ? state.nearestObject.id : '—';
+    document.getElementById('trigTether').textContent = state.tether.tension > 0.5 ? 'HIGH' : state.tether.tension > 0.1 ? 'MED' : 'LOW';
+    document.getElementById('trigTether').style.color = state.tether.tension > 0.5 ? '#ff3344' : '#00ff88';
+    document.getElementById('trigDrift').textContent = vel > 0.3 ? 'YES' : 'NO';
+    document.getElementById('trigDrift').style.color = vel > 0.3 ? '#ff8800' : '#445566';
+}
+
+// ── CONTROLS ──
+function selectTool(tool) {
+    state.currentTool = tool;
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector(`[data-tool="${tool}"]`).classList.add('selected');
+    log(`Tool: ${tool.toUpperCase()}`, 'info');
+}
+
+function toggleSim() {
+    state.running = !state.running;
+    document.getElementById('btnPlay').textContent = state.running ? '⏸ PAUSE' : '▶ RESUME';
+    document.getElementById('btnPlay').classList.toggle('active', state.running);
+}
+
+function resetSim() {
+    state.time = 0;
+    state.met = 0;
+    state.astro = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, rotation: 0, angularVel: 0, gripping: false, gripTarget: null };
+    state.suit = { o2: 100, pressure: 4.3, temp: 72.1, heartRate: 72, co2: 'NOMINAL' };
+    state.dro = { currentBase: 48, targetBase: 48, switches: 0, history: [], avgBase: 48, pillars: { dist: 0.42, vel: 0.10, int: 0.85, phs: 0.60, per: 0.70 } };
+    state.currentTask = 0;
+    state.taskProgress = [0,0,0,0,0,0,0,0];
+    state.autoDemo = false;
+    state.emergency = false;
+    state.debris = [];
+    state.currentTool = 'hand';
+    initScene();
+
+    document.querySelectorAll('.task-item').forEach((el, i) => {
+        el.classList.remove('done', 'active');
+        if (i === 0) el.classList.add('active');
+    });
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector('[data-tool="hand"]').classList.add('selected');
+
+    document.getElementById('logWrap').innerHTML = '';
+    log('System reset — EVA reinitialized', 'info');
+}
+
+function skipToTask(idx) {
+    // Complete all prior tasks
+    for (let i = 0; i < idx; i++) {
+        state.taskProgress[i] = 1.0;
+        completeTask(i);
+    }
+    state.currentTask = idx;
+    document.querySelectorAll('.task-item').forEach((el, i) => {
+        el.classList.remove('active');
+        if (i < idx) { el.classList.add('done'); }
+    });
+    document.getElementById(`task${idx}`).classList.add('active');
+
+    // Move astronaut to position
+    const positions = [
+        {x:0,y:0}, {x:80,y:-30}, {x:190,y:-80}, {x:190,y:-80},
+        {x:190,y:-80}, {x:190,y:-80}, {x:200,y:-70}, {x:0,y:0}
+    ];
+    state.astro.x = positions[idx].x;
+    state.astro.y = positions[idx].y;
+    state.astro.vx = 0;
+    state.astro.vy = 0;
+
+    if (idx >= 3) {
+        state.bolts.forEach(b => b.removed = true);
+        state.panels[0].removed = true;
+    }
+    if (idx >= 5) {
+        state.panels[0].installed = true;
+    }
+
+    log(`Skipped to task ${idx + 1}`, 'warn');
+}
+
+function toggleAutoDemo() {
+    state.autoDemo = !state.autoDemo;
+    log(state.autoDemo ? 'Auto demo STARTED' : 'Auto demo STOPPED', 'info');
+}
+
+function simulateEmergency() {
+    state.emergency = true;
+    state.debris = [];
+    for (let i = 0; i < 20; i++) {
+        state.debris.push({
+            x: 100 + Math.random() * 200,
+            y: -100 + Math.random() * 100,
+            vx: (Math.random() - 0.5) * 3,
+            vy: (Math.random() - 0.5) * 3,
+            rotation: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.1,
+            size: Math.random() * 6 + 2,
+            color: ['#888', '#aa6633', '#556677', '#445566'][Math.floor(Math.random()*4)],
+        });
+    }
+    log('⚠ DEBRIS IMPACT DETECTED', 'error');
+    log('⚠ Micrometeorite strike — P3 truss', 'error');
+    log('Return to airlock immediately!', 'warn');
+
+    // DRO spikes to handle emergency
+    state.dro.currentBase = 32;
+    state.dro.switches++;
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+    const force = 0.08;
+    switch(e.key) {
+        case 'w': case 'ArrowUp':    state.astro.vy -= force; break;
+        case 's': case 'ArrowDown':  state.astro.vy += force; break;
+        case 'a': case 'ArrowLeft':  state.astro.vx -= force; break;
+        case 'd': case 'ArrowRight': state.astro.vx += force; break;
+        case 'q': state.astro.angularVel -= 0.01; break;
+        case 'e': state.astro.angularVel += 0.01; break;
+        case 'g': state.astro.gripping = !state.astro.gripping; break;
+        case ' ': e.preventDefault(); toggleSim(); break;
+        case '1': selectTool('hand'); break;
+        case '2': selectTool('wrench'); break;
+        case '3': selectTool('drill'); break;
+        case '4': selectTool('welder'); break;
+        case '5': selectTool('scanner'); break;
+        case '6': selectTool('camera'); break;
+    }
+});
+
+// ── LOG ──
+function log(msg, type = 'info') {
+    const wrap = document.getElementById('logWrap');
+    const metH = String(Math.floor(state.met / 3600)).padStart(2, '0');
+    const metM = String(Math.floor((state.met % 3600) / 60)).padStart(2, '0');
+    const metS = String(Math.floor(state.met % 60)).padStart(2, '0');
+
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `<span class="log-time">${metH}:${metM}:${metS}</span> <span class="log-msg ${type}">${msg}</span>`;
+    wrap.appendChild(entry);
+    wrap.scrollTop = wrap.scrollHeight;
+
+    // Keep log manageable
+    while (wrap.children.length > 50) wrap.removeChild(wrap.firstChild);
+}
+
+// ── GAME LOOP ──
+let lastTime = 0;
+
+function gameLoop(timestamp) {
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+    lastTime = timestamp;
+
+    if (state.running) {
+        state.time += dt;
+        state.met += dt;
+
+        updatePhysics(dt);
+        updateAutoDemo(dt);
+        computeDRO();
+    }
+
+    render();
+    updateUI();
+    requestAnimationFrame(gameLoop);
+}
+
+// ── INIT ──
+initScene();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>

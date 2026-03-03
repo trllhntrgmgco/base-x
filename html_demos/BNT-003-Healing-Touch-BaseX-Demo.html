@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BNT-003: Healing Touch | The Way, The Truth and The Life — Base-X Engine</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Share+Tech+Mono&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --divine-gold: #d4a853;
+            --divine-light: #fff8e0;
+            --divine-white: #fffff0;
+            --heal-green: #66eea0;
+            --heal-glow: #33ff88;
+            --tissue-pink: #e8a0a0;
+            --tissue-healthy: #f0c0b0;
+            --blood-red: #cc3333;
+            --bone-white: #f0ece0;
+            --nerve-blue: #8899dd;
+            --skin-tone: #d4a574;
+            --bg-dark: #0a0806;
+            --bg-panel: rgba(12, 10, 8, 0.92);
+            --text-primary: #e8dcc8;
+            --text-dim: #887755;
+            --faith-purple: #aa88dd;
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Divine atmosphere */
+        .divine-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse at 50% 30%, rgba(212, 168, 83, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 100%, rgba(40, 25, 10, 0.8) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .divine-rays {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 500px;
+            z-index: 0;
+            background: conic-gradient(
+                from 250deg,
+                transparent 0deg, rgba(212,168,83,0.03) 5deg, transparent 10deg,
+                transparent 20deg, rgba(212,168,83,0.04) 25deg, transparent 30deg,
+                transparent 40deg, rgba(212,168,83,0.02) 45deg, transparent 50deg,
+                transparent 60deg, rgba(212,168,83,0.05) 65deg, transparent 70deg,
+                transparent 80deg, rgba(212,168,83,0.03) 85deg, transparent 90deg,
+                transparent 100deg
+            );
+            opacity: 0.5;
+            pointer-events: none;
+            animation: rayRotate 30s linear infinite;
+        }
+        @keyframes rayRotate { to { transform: translateX(-50%) rotate(360deg); } }
+
+        /* Header */
+        .header {
+            position: relative;
+            z-index: 2;
+            height: 56px;
+            background: linear-gradient(180deg, rgba(212, 168, 83, 0.1) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(212, 168, 83, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .header-badge {
+            background: linear-gradient(135deg, var(--divine-gold), #a07830);
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-family: 'Cinzel', serif;
+            font-weight: 900;
+            font-size: 0.6em;
+            color: #1a1008;
+            letter-spacing: 1.5px;
+        }
+
+        .header-title {
+            font-family: 'Cinzel', serif;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: var(--divine-gold);
+            letter-spacing: 2px;
+        }
+
+        .header-sub {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+        }
+        .hstat { display: flex; align-items: center; gap: 6px; }
+        .hstat-label { color: var(--text-dim); }
+        .hstat-val { color: var(--divine-gold); }
+        .hstat-val.heal { color: var(--heal-green); }
+        .hstat-val.faith { color: var(--faith-purple); }
+
+        /* Main Layout */
+        .main {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: 280px 1fr 260px;
+            gap: 12px;
+            padding: 12px 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+            min-height: calc(100vh - 56px);
+        }
+
+        /* Panel Base */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid rgba(212, 168, 83, 0.15);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            height: 30px;
+            border-bottom: 1px solid rgba(212, 168, 83, 0.1);
+        }
+
+        .panel-head-cap {
+            height: 100%;
+            width: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cinzel', serif;
+            font-size: 0.5em;
+            font-weight: 700;
+            color: #1a1008;
+            letter-spacing: 1px;
+        }
+
+        .panel-head-title {
+            padding: 0 10px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.65em;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--divine-gold);
+        }
+
+        .panel-body {
+            padding: 10px;
+        }
+
+        /* Healing Scenarios */
+        .scenario-card {
+            background: rgba(212, 168, 83, 0.04);
+            border: 1px solid rgba(212, 168, 83, 0.12);
+            border-radius: 5px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .scenario-card:hover {
+            background: rgba(212, 168, 83, 0.08);
+            border-color: rgba(212, 168, 83, 0.3);
+        }
+        .scenario-card.active {
+            background: rgba(212, 168, 83, 0.1);
+            border-color: var(--divine-gold);
+            box-shadow: 0 0 15px rgba(212, 168, 83, 0.1);
+        }
+
+        .sc-title {
+            font-family: 'Cinzel', serif;
+            font-size: 0.72em;
+            font-weight: 600;
+            color: var(--divine-gold);
+            margin-bottom: 2px;
+        }
+        .sc-ref {
+            font-size: 0.7em;
+            font-style: italic;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .sc-desc {
+            font-size: 0.72em;
+            color: rgba(232, 220, 200, 0.6);
+            line-height: 1.3;
+        }
+        .sc-tags {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        .sc-tag {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.58em;
+            padding: 1px 5px;
+            border-radius: 2px;
+            background: rgba(212, 168, 83, 0.08);
+            border: 1px solid rgba(212, 168, 83, 0.15);
+        }
+
+        /* Central Healing Visualization */
+        .heal-viewport {
+            position: relative;
+            background: #080604;
+            border-radius: 4px;
+            overflow: hidden;
+            height: 380px;
+        }
+
+        .heal-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .viewport-overlay {
+            position: absolute;
+            top: 8px;
+            left: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            color: rgba(212, 168, 83, 0.5);
+        }
+
+        .viewport-phase {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Cinzel', serif;
+            font-size: 0.8em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(212, 168, 83, 0.5);
+            transition: all 0.5s;
+        }
+
+        .viewport-base {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+        }
+
+        /* Tissue Health Bars */
+        .tissue-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .tissue-bar {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(212, 168, 83, 0.1);
+            border-radius: 4px;
+            padding: 6px 8px;
+        }
+        .tb-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            color: var(--text-dim);
+            margin-bottom: 3px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .tb-track {
+            height: 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .tb-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease, background 0.3s;
+        }
+
+        /* Controls */
+        .ctrl-group {
+            margin-bottom: 10px;
+        }
+        .ctrl-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+            color: var(--text-dim);
+            margin-bottom: 3px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .ctrl-val { color: var(--divine-gold); }
+
+        .divine-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 5px;
+            border-radius: 3px;
+            background: rgba(212, 168, 83, 0.12);
+            outline: none;
+            cursor: pointer;
+        }
+        .divine-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: var(--divine-gold);
+            border: 2px solid #1a1008;
+            box-shadow: 0 0 8px rgba(212, 168, 83, 0.4);
+            cursor: pointer;
+        }
+        .divine-slider::-moz-range-thumb {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: var(--divine-gold);
+            border: 2px solid #1a1008;
+            box-shadow: 0 0 8px rgba(212, 168, 83, 0.4);
+            cursor: pointer;
+        }
+
+        .btn-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+        .divine-btn {
+            padding: 5px 12px;
+            border: 1px solid rgba(212, 168, 83, 0.3);
+            border-radius: 14px;
+            background: rgba(212, 168, 83, 0.08);
+            font-family: 'Cinzel', serif;
+            font-size: 0.6em;
+            font-weight: 600;
+            color: var(--divine-gold);
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+        .divine-btn:hover {
+            background: rgba(212, 168, 83, 0.15);
+            border-color: var(--divine-gold);
+            box-shadow: 0 0 10px rgba(212, 168, 83, 0.15);
+        }
+        .divine-btn:active { transform: scale(0.96); }
+        .divine-btn.primary {
+            background: linear-gradient(135deg, var(--divine-gold), #a07830);
+            color: #1a1008;
+            border-color: transparent;
+        }
+        .divine-btn.heal {
+            background: rgba(102, 238, 160, 0.1);
+            border-color: rgba(102, 238, 160, 0.3);
+            color: var(--heal-green);
+        }
+
+        /* DRO Panel */
+        .dro-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 5px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.62em;
+        }
+        .dro-lbl { width: 75px; text-align: right; color: var(--text-dim); }
+        .dro-track {
+            flex: 1; height: 8px;
+            background: rgba(212,168,83,0.08);
+            border-radius: 4px; overflow: hidden;
+        }
+        .dro-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease, background 0.4s;
+        }
+        .dro-val { width: 40px; font-weight: 600; }
+
+        /* Log */
+        .log-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(212,168,83,0.08);
+            border-radius: 3px;
+            padding: 6px;
+            height: 160px;
+            overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            line-height: 1.5;
+        }
+        .log-box::-webkit-scrollbar { width: 3px; }
+        .log-box::-webkit-scrollbar-thumb { background: rgba(212,168,83,0.2); border-radius: 2px; }
+
+        .log-divine { color: var(--divine-gold); }
+        .log-heal { color: var(--heal-green); }
+        .log-tissue { color: var(--tissue-pink); }
+        .log-dro { color: #66bbcc; }
+        .log-faith { color: var(--faith-purple); }
+        .log-dim { color: var(--text-dim); }
+        .log-scripture { color: #ccaa66; font-style: italic; }
+
+        /* Scripture Banner */
+        .scripture-banner {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 8px 20px;
+            background: rgba(212, 168, 83, 0.04);
+            border-top: 1px solid rgba(212, 168, 83, 0.1);
+            font-style: italic;
+            font-size: 0.85em;
+            color: rgba(212, 168, 83, 0.6);
+        }
+
+        @media (max-width: 1100px) {
+            .main { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 700px) {
+            .main { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="divine-bg"></div>
+    <div class="divine-rays" id="divineRays"></div>
+
+    <div class="header">
+        <div class="header-left">
+            <div class="header-badge">BNT-003</div>
+            <div>
+                <div class="header-title">HEALING TOUCH</div>
+                <div class="header-sub">The Way, The Truth and The Life — Bible NT VR</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="hstat"><span class="hstat-label">HEALINGS:</span><span class="hstat-val heal" id="hHealCount">0</span></div>
+            <div class="hstat"><span class="hstat-label">FAITH:</span><span class="hstat-val faith" id="hFaith">0</span></div>
+            <div class="hstat"><span class="hstat-label">DIMENSION:</span><span class="hstat-val" id="hDimension">4</span></div>
+            <div class="hstat"><span class="hstat-label">DEMO:</span><span class="hstat-val" style="color:var(--heal-green)">34 / 91</span></div>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- LEFT: Scenario Selector -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="panel" style="flex:1">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:var(--divine-gold)">MIRACLES</div>
+                    <div class="panel-head-title">HEALING SCENARIOS</div>
+                </div>
+                <div class="panel-body" id="scenarioList"></div>
+            </div>
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:var(--heal-green);color:#0a2210">TISSUE</div>
+                    <div class="panel-head-title">RESTORATION STATUS</div>
+                </div>
+                <div class="panel-body">
+                    <div class="tissue-grid" id="tissueGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER: Visualization + Controls -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="panel" style="flex:1">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:var(--faith-purple);color:#fff">DIVINE</div>
+                    <div class="panel-head-title">HEALING VISUALIZATION</div>
+                </div>
+                <div class="panel-body">
+                    <div class="heal-viewport">
+                        <canvas class="heal-canvas" id="healCanvas"></canvas>
+                        <div class="viewport-overlay" id="vpOverlay">CELLULAR VIEW — AWAITING SCENARIO</div>
+                        <div class="viewport-phase" id="vpPhase" style="color:var(--text-dim)">SELECT A HEALING MIRACLE</div>
+                        <div class="viewport-base" id="vpBase"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:#a07830;color:#1a1008">CTRL</div>
+                    <div class="panel-head-title">DIVINE PARAMETERS</div>
+                </div>
+                <div class="panel-body">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>DIVINE PRESENCE</span><span class="ctrl-val" id="cvPresence">0.5</span></div>
+                            <input type="range" class="divine-slider" min="0" max="100" value="50" oninput="setParam('presence',this.value)">
+                        </div>
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>FAITH LEVEL</span><span class="ctrl-val" id="cvFaith">0.7</span></div>
+                            <input type="range" class="divine-slider" min="0" max="100" value="70" oninput="setParam('faith',this.value)">
+                        </div>
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>HEAL SPEED</span><span class="ctrl-val" id="cvSpeed">1.0x</span></div>
+                            <input type="range" class="divine-slider" min="10" max="300" value="100" oninput="setParam('speed',this.value)">
+                        </div>
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>CELLULAR DETAIL</span><span class="ctrl-val" id="cvDetail">HIGH</span></div>
+                            <input type="range" class="divine-slider" min="0" max="100" value="75" oninput="setParam('detail',this.value)">
+                        </div>
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>DIVINE PARTICLES</span><span class="ctrl-val" id="cvParticles">ON</span></div>
+                            <input type="range" class="divine-slider" min="0" max="100" value="80" oninput="setParam('particles',this.value)">
+                        </div>
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>DIMENSION SHIFT</span><span class="ctrl-val" id="cvDimension">AUTO</span></div>
+                            <input type="range" class="divine-slider" min="1" max="64" value="4" oninput="setParam('dimension',this.value)">
+                        </div>
+                    </div>
+                    <div class="btn-row">
+                        <button class="divine-btn primary" onclick="performHealing()">✝ PERFORM HEALING</button>
+                        <button class="divine-btn heal" onclick="instantHeal()">INSTANT RESTORE</button>
+                        <button class="divine-btn" onclick="resetScenario()">RESET</button>
+                        <button class="divine-btn" onclick="toggleSlowMo()">SLOW MOTION</button>
+                        <button class="divine-btn" onclick="toggleCellView()">CELL / BODY VIEW</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: DRO + Log -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:#66bbcc;color:#0a1a1a">DRO</div>
+                    <div class="panel-head-title">BASE-X MONITOR</div>
+                </div>
+                <div class="panel-body" id="droPanel"></div>
+            </div>
+            <div class="panel" style="flex:1">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:var(--text-dim);color:#1a1008">LOG</div>
+                    <div class="panel-head-title">DIVINE PROCESS LOG</div>
+                </div>
+                <div class="panel-body">
+                    <div class="log-box" id="logBox"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scripture-banner" id="scriptureBanner">
+        "He healed them all." — Matthew 12:15
+    </div>
+
+    <script>
+    // ─── Scenarios ───────────────────────────────────────────
+    const SCENARIOS = [
+        {
+            id: 'leper',
+            title: 'Cleansing the Leper',
+            ref: 'Matthew 8:1-4; Mark 1:40-45',
+            desc: 'Jesus touches a man with leprosy — skin tissue regenerates, nerve endings restore, bone damage reverses.',
+            scripture: '"I am willing. Be clean!" — Matthew 8:3',
+            tags: ['SKIN', 'NERVE', 'BONE'],
+            tissue: { skin: 15, muscle: 60, nerve: 10, bone: 30, blood: 70 },
+            colors: { affected: '#9a7060', healing: '#f0c0b0' },
+            dro: { tissue: 64, cellular: 64, divine: 48, visual: 32, aura: 24 },
+            dimension: 24, faithGen: 300, miraclePower: 0.7,
+            phases: ['ASSESSMENT', 'DIVINE CONTACT', 'CELLULAR REGENERATION', 'NERVE RESTORATION', 'SKIN RENEWAL', 'COMPLETE']
+        },
+        {
+            id: 'paralytic',
+            title: 'Healing the Paralytic',
+            ref: 'Mark 2:1-12; Luke 5:17-26',
+            desc: 'A man lowered through the roof. Spinal cord repairs, muscle atrophy reverses, legs strengthen.',
+            scripture: '"Son, your sins are forgiven... Rise, take up your bed and walk." — Mark 2:5,11',
+            tags: ['SPINE', 'MUSCLE', 'NERVE'],
+            tissue: { skin: 80, muscle: 10, nerve: 5, bone: 40, blood: 50 },
+            colors: { affected: '#887070', healing: '#d4a574' },
+            dro: { tissue: 64, cellular: 48, divine: 64, visual: 32, aura: 32 },
+            dimension: 28, faithGen: 400, miraclePower: 0.8,
+            phases: ['FORGIVENESS', 'SPINAL REPAIR', 'NERVE RECONNECTION', 'MUSCLE REBUILD', 'STRENGTH RESTORATION', 'RISE AND WALK']
+        },
+        {
+            id: 'blind',
+            title: 'Sight to the Blind',
+            ref: 'John 9:1-7; Mark 10:46-52',
+            desc: 'Born blind — optic nerve forms, retinal cells generate, cornea clears. Light enters for the first time.',
+            scripture: '"Go, wash in the Pool of Siloam... He came back seeing." — John 9:7',
+            tags: ['OPTIC', 'RETINA', 'CORNEA'],
+            tissue: { skin: 90, muscle: 80, nerve: 0, bone: 90, blood: 60 },
+            colors: { affected: '#a0a0a0', healing: '#80a0c0' },
+            dro: { tissue: 48, cellular: 64, divine: 48, visual: 64, aura: 32 },
+            dimension: 26, faithGen: 350, miraclePower: 0.75,
+            phases: ['CLAY APPLICATION', 'CORNEA FORMATION', 'RETINAL GENESIS', 'OPTIC NERVE GROWTH', 'NEURAL MAPPING', 'FIRST LIGHT']
+        },
+        {
+            id: 'withered',
+            title: 'Restoring the Withered Hand',
+            ref: 'Matthew 12:9-14; Mark 3:1-6',
+            desc: 'An atrophied hand — muscles regenerate, tendons restring, bones reshape. Full dexterity returns.',
+            scripture: '"Stretch out your hand." He stretched it out, and it was restored. — Matthew 12:13',
+            tags: ['MUSCLE', 'TENDON', 'BONE'],
+            tissue: { skin: 60, muscle: 8, nerve: 30, bone: 25, blood: 40 },
+            colors: { affected: '#907060', healing: '#d4a574' },
+            dro: { tissue: 64, cellular: 48, divine: 32, visual: 32, aura: 16 },
+            dimension: 20, faithGen: 250, miraclePower: 0.6,
+            phases: ['ASSESSMENT', 'BONE RESHAPING', 'TENDON REGROWTH', 'MUSCLE REGENERATION', 'NERVE RECONNECTION', 'FULL DEXTERITY']
+        },
+        {
+            id: 'bleeding',
+            title: 'Woman with the Issue of Blood',
+            ref: 'Mark 5:25-34; Luke 8:43-48',
+            desc: 'Twelve years of hemorrhaging — blood vessels seal, tissue repairs, iron levels restore. Healed by faith alone.',
+            scripture: '"Daughter, your faith has made you well." — Mark 5:34',
+            tags: ['BLOOD', 'VESSEL', 'FAITH'],
+            tissue: { skin: 70, muscle: 50, nerve: 60, bone: 80, blood: 5 },
+            colors: { affected: '#cc6666', healing: '#e8a0a0' },
+            dro: { tissue: 48, cellular: 64, divine: 64, visual: 24, aura: 48 },
+            dimension: 30, faithGen: 500, miraclePower: 0.9,
+            phases: ['TOUCH OF FAITH', 'POWER RELEASED', 'VESSEL REPAIR', 'BLOOD RESTORATION', 'IRON REPLENISHMENT', 'WHOLENESS']
+        },
+        {
+            id: 'deaf',
+            title: 'Ephphatha — Be Opened',
+            ref: 'Mark 7:31-37',
+            desc: 'A deaf man with a speech impediment — inner ear structures form, auditory nerve connects, tongue loosens.',
+            scripture: '"Ephphatha!" — that is, "Be opened!" — Mark 7:34',
+            tags: ['EAR', 'NERVE', 'SPEECH'],
+            tissue: { skin: 85, muscle: 70, nerve: 5, bone: 60, blood: 75 },
+            colors: { affected: '#a09080', healing: '#d4b89a' },
+            dro: { tissue: 48, cellular: 64, divine: 48, visual: 32, aura: 32 },
+            dimension: 22, faithGen: 280, miraclePower: 0.65,
+            phases: ['FINGERS IN EARS', 'EPHPHATHA', 'COCHLEA FORMATION', 'AUDITORY NERVE', 'TONGUE FREED', 'FIRST SOUNDS']
+        }
+    ];
+
+    // ─── State ───────────────────────────────────────────────
+    let state = {
+        scenario: null,
+        phase: 0,
+        healing: false,
+        healProgress: 0,
+        tissueHealth: { skin: 100, muscle: 100, nerve: 100, bone: 100, blood: 100 },
+        presence: 0.5,
+        faith: 0.7,
+        speed: 1.0,
+        detail: 0.75,
+        particles: 0.8,
+        dimension: 4,
+        healCount: 0,
+        totalFaith: 0,
+        slowMo: false,
+        cellView: true,
+        divineParticles: [],
+        healParticles: [],
+        cells: [],
+        time: 0,
+    };
+
+    const canvas = document.getElementById('healCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // ─── Init ────────────────────────────────────────────────
+    function init() {
+        resizeCanvas();
+        renderScenarios();
+        renderDRO(null);
+        renderTissue();
+        log('SYSTEM', 'Healing Touch demo initialized', 'dim');
+        log('DIVINE', 'Divine Intervention Physics — online', 'divine');
+        log('DRO', 'Base-X precision engine — standby', 'dro');
+        log('SCRIPTURE', '"He healed them all." — Matthew 12:15', 'scripture');
+        requestAnimationFrame(gameLoop);
+    }
+
+    function resizeCanvas() {
+        const r = canvas.parentElement.getBoundingClientRect();
+        canvas.width = r.width;
+        canvas.height = r.height;
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // ─── Rendering ───────────────────────────────────────────
+
+    function renderScenarios() {
+        document.getElementById('scenarioList').innerHTML = SCENARIOS.map(s => `
+            <div class="scenario-card ${state.scenario?.id === s.id ? 'active' : ''}" onclick="selectScenario('${s.id}')">
+                <div class="sc-title">${s.title}</div>
+                <div class="sc-ref">${s.ref}</div>
+                <div class="sc-desc">${s.desc}</div>
+                <div class="sc-tags">${s.tags.map(t => `<span class="sc-tag">${t}</span>`).join('')}
+                    <span class="sc-tag" style="color:var(--faith-purple)">DIM-${s.dimension}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderDRO(sc) {
+        const el = document.getElementById('droPanel');
+        if (!sc) {
+            el.innerHTML = '<div style="opacity:0.3;font-family:Share Tech Mono,monospace;font-size:0.7em;text-align:center;padding:15px">AWAITING SCENARIO</div>';
+            return;
+        }
+        const colors = { tissue: '#e8a0a0', cellular: '#66eea0', divine: '#d4a853', visual: '#8899dd', aura: '#aa88dd' };
+        el.innerHTML = Object.entries(sc.dro).map(([k, v]) => `
+            <div class="dro-row">
+                <span class="dro-lbl">${k.toUpperCase()}</span>
+                <div class="dro-track"><div class="dro-fill" style="width:${v/64*100}%;background:${colors[k]}"></div></div>
+                <span class="dro-val" style="color:${colors[k]}">B-${v}</span>
+            </div>
+        `).join('');
+    }
+
+    function renderTissue() {
+        const colors = { skin: '#d4a574', muscle: '#cc6666', nerve: '#8899dd', bone: '#f0ece0', blood: '#cc3333' };
+        document.getElementById('tissueGrid').innerHTML = Object.entries(state.tissueHealth).map(([k, v]) => `
+            <div class="tissue-bar">
+                <div class="tb-label"><span>${k.toUpperCase()}</span><span style="color:${v > 70 ? 'var(--heal-green)' : v > 30 ? 'var(--divine-gold)' : 'var(--blood-red)'}">${Math.round(v)}%</span></div>
+                <div class="tb-track"><div class="tb-fill" style="width:${v}%;background:${v > 70 ? 'var(--heal-green)' : v > 30 ? colors[k] : 'var(--blood-red)'}"></div></div>
+            </div>
+        `).join('');
+    }
+
+    // ─── Canvas Drawing ──────────────────────────────────────
+
+    function gameLoop(t) {
+        state.time = t;
+        const dt = state.slowMo ? 0.3 : 1.0;
+
+        if (state.healing) {
+            state.healProgress += 0.003 * state.speed * dt * (0.5 + state.presence * 0.5) * (0.5 + state.faith * 0.5);
+            if (state.healProgress >= 1) {
+                state.healProgress = 1;
+                state.healing = false;
+                completeHealing();
+            }
+            updateTissue();
+            updatePhase();
+        }
+
+        // Spawn particles
+        if (state.healing && Math.random() < state.particles * 0.3) {
+            state.divineParticles.push({
+                x: canvas.width * 0.3 + Math.random() * canvas.width * 0.4,
+                y: -10,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: 0.5 + Math.random() * 1.5,
+                life: 1,
+                size: 2 + Math.random() * 4,
+                type: 'divine'
+            });
+        }
+        if (state.healing && Math.random() < 0.4) {
+            const cx = canvas.width / 2 + (Math.random() - 0.5) * 80;
+            const cy = canvas.height / 2 + (Math.random() - 0.5) * 60;
+            state.healParticles.push({
+                x: cx, y: cy,
+                vx: (Math.random() - 0.5) * 2,
+                vy: (Math.random() - 0.5) * 2,
+                life: 1,
+                size: 1 + Math.random() * 3,
+                type: 'heal'
+            });
+        }
+
+        // Update particles
+        state.divineParticles = state.divineParticles.filter(p => {
+            p.x += p.vx * dt; p.y += p.vy * dt; p.life -= 0.005 * dt;
+            return p.life > 0 && p.y < canvas.height + 20;
+        });
+        state.healParticles = state.healParticles.filter(p => {
+            p.x += p.vx * dt; p.y += p.vy * dt; p.life -= 0.015 * dt;
+            return p.life > 0;
+        });
+
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function draw() {
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        // Background
+        const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.6);
+        grad.addColorStop(0, state.healing ? 'rgba(30,20,10,1)' : 'rgba(15,12,8,1)');
+        grad.addColorStop(1, 'rgba(5,4,3,1)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        if (!state.scenario) {
+            // Idle state
+            ctx.save();
+            ctx.globalAlpha = 0.15;
+            ctx.strokeStyle = '#d4a853';
+            ctx.lineWidth = 1;
+            // Draw cross
+            ctx.beginPath();
+            ctx.moveTo(W/2, H*0.2); ctx.lineTo(W/2, H*0.8);
+            ctx.moveTo(W*0.35, H*0.35); ctx.lineTo(W*0.65, H*0.35);
+            ctx.stroke();
+            ctx.restore();
+            return;
+        }
+
+        const sc = state.scenario;
+        const prog = state.healProgress;
+        const cx = W / 2, cy = H / 2;
+
+        // Divine glow behind body
+        if (state.healing || prog > 0) {
+            const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 120 + prog * 80);
+            glow.addColorStop(0, `rgba(212,168,83,${0.08 + prog * 0.12})`);
+            glow.addColorStop(0.5, `rgba(102,238,160,${0.04 + prog * 0.06})`);
+            glow.addColorStop(1, 'transparent');
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        if (state.cellView) {
+            drawCellularView(cx, cy, prog, sc);
+        } else {
+            drawBodyView(cx, cy, prog, sc);
+        }
+
+        // Divine particles
+        state.divineParticles.forEach(p => {
+            ctx.save();
+            ctx.globalAlpha = p.life * 0.7;
+            ctx.fillStyle = '#d4a853';
+            ctx.shadowColor = '#d4a853';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+
+        // Heal particles
+        state.healParticles.forEach(p => {
+            ctx.save();
+            ctx.globalAlpha = p.life * 0.8;
+            ctx.fillStyle = '#66eea0';
+            ctx.shadowColor = '#66eea0';
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+    }
+
+    function drawCellularView(cx, cy, prog, sc) {
+        const W = canvas.width, H = canvas.height;
+        const t = state.time * 0.001;
+
+        // Cell cluster
+        const cellCount = Math.floor(20 + state.detail * 40);
+        for (let i = 0; i < cellCount; i++) {
+            const angle = (i / cellCount) * Math.PI * 2 + Math.sin(t + i) * 0.1;
+            const dist = 30 + (i % 7) * 18 + Math.sin(t * 0.5 + i * 0.7) * 8;
+            const x = cx + Math.cos(angle) * dist;
+            const y = cy + Math.sin(angle) * dist;
+
+            // Cell health based on progress
+            const cellHealth = Math.min(1, prog * 1.2 + (i % 3) * 0.1);
+            const damaged = i / cellCount > prog * 1.1;
+
+            const r = 8 + Math.sin(t + i) * 2;
+
+            // Cell membrane
+            ctx.save();
+            if (damaged) {
+                ctx.fillStyle = sc.colors.affected;
+                ctx.globalAlpha = 0.4 + Math.random() * 0.2;
+            } else {
+                ctx.fillStyle = sc.colors.healing;
+                ctx.globalAlpha = 0.5 + cellHealth * 0.4;
+                if (state.healing) {
+                    ctx.shadowColor = '#66eea0';
+                    ctx.shadowBlur = 4 + cellHealth * 6;
+                }
+            }
+            ctx.beginPath();
+            ctx.ellipse(x, y, r, r * 0.85, angle * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Nucleus
+            if (!damaged) {
+                ctx.fillStyle = `rgba(100,60,40,${0.3 + cellHealth * 0.4})`;
+                ctx.beginPath();
+                ctx.arc(x, y, r * 0.35, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // Nerve fibers (if relevant)
+        if (sc.tags.includes('NERVE') || sc.tags.includes('OPTIC') || sc.tags.includes('SPINE')) {
+            ctx.save();
+            ctx.strokeStyle = `rgba(136,153,221,${0.2 + prog * 0.5})`;
+            ctx.lineWidth = 1.5;
+            if (state.healing) { ctx.shadowColor = '#8899dd'; ctx.shadowBlur = 6; }
+            for (let n = 0; n < 6; n++) {
+                ctx.beginPath();
+                const startX = cx - 100 + n * 35;
+                const startY = cy - 80;
+                ctx.moveTo(startX, startY);
+                for (let s = 0; s < 10; s++) {
+                    const sy = startY + s * 18;
+                    const sx = startX + Math.sin(t + n + s * 0.5) * (8 + prog * 6);
+                    const opacity = s / 10 < prog ? 1 : 0.15;
+                    ctx.globalAlpha = opacity;
+                    ctx.lineTo(sx, sy);
+                }
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Blood vessels
+        if (sc.tags.includes('BLOOD') || sc.tags.includes('VESSEL')) {
+            ctx.save();
+            ctx.strokeStyle = `rgba(204,51,51,${0.3 + prog * 0.5})`;
+            ctx.lineWidth = 2;
+            if (state.healing && prog > 0.3) { ctx.shadowColor = '#cc3333'; ctx.shadowBlur = 4; }
+            for (let v = 0; v < 4; v++) {
+                ctx.beginPath();
+                const bx = cx - 60 + v * 40;
+                ctx.moveTo(bx, cy - 90);
+                for (let s = 0; s < 12; s++) {
+                    const py = cy - 90 + s * 15;
+                    const px = bx + Math.sin(t * 1.5 + v * 2 + s * 0.8) * (5 + prog * 3);
+                    ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Hand of Jesus reaching in from top
+        if (state.healing && prog < 0.8) {
+            ctx.save();
+            const handY = -20 + prog * 80;
+            ctx.globalAlpha = 0.3 + state.presence * 0.4;
+            const handGrad = ctx.createRadialGradient(cx, handY, 0, cx, handY, 60);
+            handGrad.addColorStop(0, 'rgba(212,168,83,0.5)');
+            handGrad.addColorStop(0.5, 'rgba(212,168,83,0.15)');
+            handGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = handGrad;
+            ctx.fillRect(cx - 80, handY - 40, 160, 80);
+            // Fingers of light
+            for (let f = -2; f <= 2; f++) {
+                ctx.strokeStyle = `rgba(255,248,224,${0.2 + state.presence * 0.3})`;
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#d4a853';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.moveTo(cx + f * 15, handY);
+                ctx.lineTo(cx + f * 10, handY + 50 + prog * 40);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+    }
+
+    function drawBodyView(cx, cy, prog, sc) {
+        const t = state.time * 0.001;
+
+        // Simple body silhouette
+        ctx.save();
+        ctx.strokeStyle = `rgba(212,168,83,${0.2 + prog * 0.3})`;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = state.healing ? '#66eea0' : '#d4a853';
+        ctx.shadowBlur = state.healing ? 10 : 4;
+
+        // Head
+        ctx.beginPath();
+        ctx.arc(cx, cy - 90, 20, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Body
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 70); ctx.lineTo(cx, cy + 20);
+        ctx.stroke();
+
+        // Arms
+        ctx.beginPath();
+        ctx.moveTo(cx - 50, cy - 40); ctx.lineTo(cx, cy - 55); ctx.lineTo(cx + 50, cy - 40);
+        ctx.stroke();
+
+        // Legs
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 20); ctx.lineTo(cx - 30, cy + 80);
+        ctx.moveTo(cx, cy + 20); ctx.lineTo(cx + 30, cy + 80);
+        ctx.stroke();
+
+        // Healing highlight on affected area
+        const areas = {
+            leper: { x: cx, y: cy - 30, r: 70 },
+            paralytic: { x: cx, y: cy + 10, r: 60 },
+            blind: { x: cx, y: cy - 90, r: 25 },
+            withered: { x: cx + 50, y: cy - 40, r: 30 },
+            bleeding: { x: cx, y: cy + 10, r: 40 },
+            deaf: { x: cx, y: cy - 85, r: 28 },
+        };
+        const area = areas[sc.id];
+        if (area) {
+            const glow = ctx.createRadialGradient(area.x, area.y, 0, area.x, area.y, area.r);
+            glow.addColorStop(0, `rgba(102,238,160,${prog * 0.4})`);
+            glow.addColorStop(0.6, `rgba(212,168,83,${prog * 0.2})`);
+            glow.addColorStop(1, 'transparent');
+            ctx.fillStyle = glow;
+            ctx.fillRect(area.x - area.r, area.y - area.r, area.r * 2, area.r * 2);
+        }
+
+        ctx.restore();
+    }
+
+    // ─── Logic ───────────────────────────────────────────────
+
+    function selectScenario(id) {
+        const sc = SCENARIOS.find(s => s.id === id);
+        if (!sc) return;
+        state.scenario = sc;
+        state.healProgress = 0;
+        state.healing = false;
+        state.phase = 0;
+        state.tissueHealth = { ...sc.tissue };
+        state.divineParticles = [];
+        state.healParticles = [];
+
+        renderScenarios();
+        renderDRO(sc);
+        renderTissue();
+
+        document.getElementById('vpOverlay').textContent = `CELLULAR VIEW — ${sc.title.toUpperCase()}`;
+        document.getElementById('vpPhase').textContent = sc.phases[0];
+        document.getElementById('vpPhase').style.color = 'var(--divine-gold)';
+        document.getElementById('vpBase').innerHTML = `<span style="color:var(--heal-green)">B-${sc.dro.tissue}</span> TISSUE`;
+        document.getElementById('scriptureBanner').textContent = sc.scripture;
+
+        log('DIVINE', `Selected: ${sc.title}`, 'divine');
+        log('SCRIPTURE', sc.scripture, 'scripture');
+        log('TISSUE', `Damage — Skin:${sc.tissue.skin}% Muscle:${sc.tissue.muscle}% Nerve:${sc.tissue.nerve}% Bone:${sc.tissue.bone}% Blood:${sc.tissue.blood}%`, 'tissue');
+        log('DRO', `Allocated — Tissue:B-${sc.dro.tissue} Cell:B-${sc.dro.cellular} Divine:B-${sc.dro.divine}`, 'dro');
+    }
+
+    function performHealing() {
+        if (!state.scenario || state.healing) return;
+        state.healing = true;
+        state.healProgress = 0;
+        state.phase = 0;
+
+        const sc = state.scenario;
+        state.dimension = sc.dimension;
+        document.getElementById('hDimension').textContent = state.dimension;
+        document.getElementById('divineRays').style.opacity = 0.5 + state.presence * 0.5;
+
+        log('DIVINE', '✝ Divine healing initiated', 'divine');
+        log('FAITH', `Faith level: ${(state.faith * 100).toFixed(0)}% — Dimension shift to ${state.dimension}`, 'faith');
+        log('DRO', `Precision escalating to B-${sc.dro.tissue} for tissue reconstruction`, 'dro');
+    }
+
+    function instantHeal() {
+        if (!state.scenario) return;
+        state.healProgress = 1;
+        state.healing = false;
+        state.tissueHealth = { skin: 100, muscle: 100, nerve: 100, bone: 100, blood: 100 };
+        renderTissue();
+        completeHealing();
+    }
+
+    function completeHealing() {
+        const sc = state.scenario;
+        state.healCount++;
+        state.totalFaith += sc.faithGen;
+        state.phase = sc.phases.length - 1;
+
+        document.getElementById('hHealCount').textContent = state.healCount;
+        document.getElementById('hFaith').textContent = state.totalFaith;
+        document.getElementById('vpPhase').textContent = sc.phases[sc.phases.length - 1];
+        document.getElementById('vpPhase').style.color = 'var(--heal-green)';
+        document.getElementById('divineRays').style.opacity = '0.3';
+
+        log('DIVINE', `✝ HEALING COMPLETE — ${sc.title}`, 'heal');
+        log('FAITH', `+${sc.faithGen} faith generated. Total: ${state.totalFaith}`, 'faith');
+        log('TISSUE', 'All tissue restored to 100%', 'heal');
+        log('DRO', 'Precision returning to baseline', 'dro');
+    }
+
+    function updateTissue() {
+        if (!state.scenario) return;
+        const sc = state.scenario;
+        const p = state.healProgress;
+        Object.keys(state.tissueHealth).forEach(k => {
+            const start = sc.tissue[k];
+            state.tissueHealth[k] = start + (100 - start) * Math.min(1, p * 1.1);
+        });
+        renderTissue();
+    }
+
+    function updatePhase() {
+        if (!state.scenario) return;
+        const sc = state.scenario;
+        const newPhase = Math.min(sc.phases.length - 1, Math.floor(state.healProgress * sc.phases.length));
+        if (newPhase !== state.phase) {
+            state.phase = newPhase;
+            document.getElementById('vpPhase').textContent = sc.phases[newPhase];
+            log('DIVINE', `Phase: ${sc.phases[newPhase]}`, 'divine');
+        }
+    }
+
+    function resetScenario() {
+        if (!state.scenario) return;
+        selectScenario(state.scenario.id);
+        log('SYSTEM', 'Scenario reset', 'dim');
+    }
+
+    function setParam(key, val) {
+        const v = parseInt(val);
+        switch (key) {
+            case 'presence':
+                state.presence = v / 100;
+                document.getElementById('cvPresence').textContent = state.presence.toFixed(2);
+                document.getElementById('divineRays').style.opacity = 0.2 + state.presence * 0.6;
+                break;
+            case 'faith':
+                state.faith = v / 100;
+                document.getElementById('cvFaith').textContent = state.faith.toFixed(2);
+                break;
+            case 'speed':
+                state.speed = v / 100;
+                document.getElementById('cvSpeed').textContent = state.speed.toFixed(1) + 'x';
+                break;
+            case 'detail':
+                state.detail = v / 100;
+                document.getElementById('cvDetail').textContent = v > 66 ? 'HIGH' : v > 33 ? 'MED' : 'LOW';
+                break;
+            case 'particles':
+                state.particles = v / 100;
+                document.getElementById('cvParticles').textContent = v > 10 ? 'ON' : 'OFF';
+                break;
+            case 'dimension':
+                state.dimension = v;
+                document.getElementById('cvDimension').textContent = v <= 4 ? 'PHYSICAL' : v <= 16 ? 'SPIRITUAL' : v <= 32 ? 'ANGELIC' : 'DIVINE';
+                document.getElementById('hDimension').textContent = v;
+                break;
+        }
+    }
+
+    function toggleSlowMo() { state.slowMo = !state.slowMo; log('SYSTEM', state.slowMo ? 'Slow motion ON' : 'Slow motion OFF', 'dim'); }
+    function toggleCellView() { state.cellView = !state.cellView; log('SYSTEM', state.cellView ? 'Cellular view' : 'Body view', 'dim'); }
+
+    // ─── Logger ──────────────────────────────────────────────
+    function log(prefix, msg, cls) {
+        const box = document.getElementById('logBox');
+        const now = new Date();
+        const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+        const entry = document.createElement('div');
+        entry.innerHTML = `<span class="log-dim">${ts}</span> <span class="log-${cls}">[${prefix}]</span> ${msg}`;
+        box.appendChild(entry);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    init();
+    </script>
+</body>
+</html>

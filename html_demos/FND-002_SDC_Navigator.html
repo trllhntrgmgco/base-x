@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASE-X ENGINE | FND-002: SDC Navigator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-void: #000008;
+            --bg-panel: rgba(8, 12, 20, 0.95);
+            --accent-cyan: #00ffcc;
+            --accent-gold: #ffcc00;
+            --accent-orange: #ff8844;
+            --accent-red: #ff4466;
+            --accent-purple: #aa66ff;
+            --text-primary: #e8e8e8;
+            --text-dim: #667788;
+            --grid-line: rgba(0, 255, 204, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg-void);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            cursor: crosshair;
+        }
+        
+        /* MAIN CANVAS */
+        #spaceCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* HEADER */
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(180deg, var(--bg-panel), transparent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            z-index: 100;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 14px;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 10px var(--accent-cyan);
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        
+        .logo-sub {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+        
+        .scale-indicator {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        .scale-label {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        
+        .scale-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-gold);
+            text-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+        }
+        
+        /* LEFT PANEL - COORDINATES */
+        .coord-panel {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            width: 380px;
+            background: var(--bg-panel);
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--accent-cyan);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+        }
+        
+        /* SDC COORDINATE DISPLAY */
+        .sdc-display {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .sdc-label {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        
+        .sdc-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 16px;
+            color: var(--accent-cyan);
+            letter-spacing: 1px;
+            word-break: break-all;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+        
+        .sdc-value .integer {
+            color: var(--accent-gold);
+        }
+        
+        .sdc-value .decimal {
+            color: var(--accent-cyan);
+        }
+        
+        .sdc-value .separator {
+            color: var(--text-primary);
+            font-weight: bold;
+        }
+        
+        /* DIRECTION COMPASS */
+        .compass-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .compass {
+            width: 140px;
+            height: 140px;
+            position: relative;
+            background: radial-gradient(circle, rgba(0,255,204,0.05) 0%, transparent 70%);
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            border-radius: 50%;
+        }
+        
+        .compass-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px dashed rgba(0, 255, 204, 0.2);
+            border-radius: 50%;
+        }
+        
+        .compass-direction {
+            position: absolute;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s;
+        }
+        
+        .compass-direction.active {
+            color: var(--accent-gold);
+            text-shadow: 0 0 10px var(--accent-gold);
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .compass-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--accent-cyan);
+        }
+        
+        .direction-info {
+            flex: 1;
+            font-size: 11px;
+        }
+        
+        .direction-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .direction-row:last-child {
+            border-bottom: none;
+        }
+        
+        .direction-key {
+            color: var(--text-dim);
+        }
+        
+        .direction-val {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--accent-cyan);
+        }
+        
+        /* RIGHT PANEL - OBJECTS */
+        .objects-panel {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            width: 280px;
+            background: var(--bg-panel);
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        
+        .object-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .object-item:hover {
+            background: rgba(0, 255, 204, 0.1);
+            border-color: rgba(0, 255, 204, 0.3);
+        }
+        
+        .object-item.selected {
+            background: rgba(0, 255, 204, 0.15);
+            border-color: var(--accent-cyan);
+        }
+        
+        .object-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .object-name {
+            flex: 1;
+            font-size: 13px;
+        }
+        
+        .object-distance {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+        
+        /* BOTTOM PANEL - SCALE SLIDER */
+        .scale-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            background: var(--bg-panel);
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        
+        .scale-track {
+            position: relative;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        
+        .scale-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                var(--accent-purple) 0%, 
+                var(--accent-cyan) 25%, 
+                var(--accent-gold) 50%, 
+                var(--accent-orange) 75%, 
+                var(--accent-red) 100%
+            );
+            opacity: 0.3;
+        }
+        
+        .scale-markers {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            align-items: center;
+        }
+        
+        .scale-marker {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 9px;
+            color: var(--text-dim);
+            text-align: center;
+        }
+        
+        .scale-handle {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 50px;
+            background: var(--accent-cyan);
+            border-radius: 4px;
+            cursor: ew-resize;
+            box-shadow: 0 0 20px var(--accent-cyan);
+            z-index: 10;
+        }
+        
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+        
+        .current-scale {
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .current-scale-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            color: var(--accent-gold);
+        }
+        
+        .current-scale-unit {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-left: 8px;
+        }
+        
+        /* CONTROLS HINT */
+        .controls-hint {
+            position: absolute;
+            bottom: 140px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: center;
+            z-index: 100;
+        }
+        
+        .controls-hint kbd {
+            background: rgba(0, 255, 204, 0.2);
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin: 0 3px;
+            color: var(--accent-cyan);
+        }
+        
+        /* PRECISION INDICATOR */
+        .precision-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: var(--bg-panel);
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            border-radius: 10px;
+            padding: 15px 20px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        
+        .precision-title {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        
+        .precision-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            color: var(--accent-cyan);
+        }
+        
+        .precision-bar {
+            margin-top: 10px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .precision-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-gold));
+            transition: width 0.3s;
+        }
+        
+        /* INFO TOOLTIP */
+        .tooltip {
+            position: absolute;
+            background: var(--bg-panel);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 6px;
+            padding: 12px 15px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+            max-width: 250px;
+        }
+        
+        .tooltip.visible {
+            display: block;
+        }
+        
+        .tooltip-name {
+            color: var(--accent-gold);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 3px 0;
+        }
+        
+        .tooltip-key {
+            color: var(--text-dim);
+        }
+        
+        .tooltip-val {
+            color: var(--accent-cyan);
+        }
+        
+        /* STARFIELD EFFECT */
+        .starfield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="spaceCanvas"></canvas>
+    
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">14</div>
+            <div>
+                <div class="logo-text">SDC NAVIGATOR</div>
+                <div class="logo-sub">FND-002 | Sum Dia Const Coordinate System</div>
+            </div>
+        </div>
+        <div class="scale-indicator">
+            <div>
+                <div class="scale-label">CURRENT VIEW</div>
+                <div class="scale-value" id="viewScale">1 AU</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="coord-panel">
+        <div class="panel-title">Camera Position (SDC)</div>
+        
+        <div class="sdc-display">
+            <div class="sdc-label">X-Axis (Direction 1-8)</div>
+            <div class="sdc-value" id="sdcX">
+                <span class="integer">00000000000001</span><span class="separator">.</span><span class="decimal">00000000000000</span>
+            </div>
+        </div>
+        
+        <div class="sdc-display">
+            <div class="sdc-label">Y-Axis (Direction 2-7)</div>
+            <div class="sdc-value" id="sdcY">
+                <span class="integer">00000000000000</span><span class="separator">.</span><span class="decimal">00000000000000</span>
+            </div>
+        </div>
+        
+        <div class="sdc-display">
+            <div class="sdc-label">Z-Axis (Direction 0-9)</div>
+            <div class="sdc-value" id="sdcZ">
+                <span class="integer">00000000000000</span><span class="separator">.</span><span class="decimal">00000000000000</span>
+            </div>
+        </div>
+        
+        <div class="compass-container">
+            <div class="compass" id="compass">
+                <div class="compass-ring" style="width: 120px; height: 120px;"></div>
+                <div class="compass-ring" style="width: 80px; height: 80px;"></div>
+                <div class="compass-ring" style="width: 40px; height: 40px;"></div>
+                <div class="compass-center"></div>
+                <!-- Directions populated by JS -->
+            </div>
+            <div class="direction-info">
+                <div class="direction-row">
+                    <span class="direction-key">0 (Down)</span>
+                    <span class="direction-val" id="dir0">0.000</span>
+                </div>
+                <div class="direction-row">
+                    <span class="direction-key">9 (Up)</span>
+                    <span class="direction-val" id="dir9">0.000</span>
+                </div>
+                <div class="direction-row">
+                    <span class="direction-key">1 (Earth-Anchor)</span>
+                    <span class="direction-val" id="dir1">1.000</span>
+                </div>
+                <div class="direction-row">
+                    <span class="direction-key">8 (Opposite)</span>
+                    <span class="direction-val" id="dir8">0.000</span>
+                </div>
+                <div class="direction-row">
+                    <span class="direction-key">Dominant</span>
+                    <span class="direction-val" id="dirDominant">1</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="objects-panel">
+        <div class="panel-title">Celestial Objects</div>
+        <div id="objectList">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+    
+    <div class="scale-panel">
+        <div class="scale-track">
+            <div class="scale-gradient"></div>
+            <div class="scale-markers">
+                <div class="scale-marker">1mm</div>
+                <div class="scale-marker">1m</div>
+                <div class="scale-marker">1km</div>
+                <div class="scale-marker">1000km</div>
+                <div class="scale-marker">1 AU</div>
+                <div class="scale-marker">10 AU</div>
+            </div>
+            <div class="scale-handle" id="scaleHandle"></div>
+        </div>
+        <div class="scale-labels">
+            <span>MICROSCOPIC</span>
+            <span>HUMAN</span>
+            <span>PLANETARY</span>
+            <span>SOLAR SYSTEM</span>
+        </div>
+        <div class="current-scale">
+            <span class="current-scale-value" id="scaleDisplay">1.000</span>
+            <span class="current-scale-unit" id="scaleUnit">AU per 100px</span>
+        </div>
+    </div>
+    
+    <div class="controls-hint">
+        <kbd>Scroll</kbd> Zoom | <kbd>Drag</kbd> Pan | <kbd>Click</kbd> Select Object | <kbd>1-9</kbd> Jump to Planet
+    </div>
+    
+    <div class="precision-panel">
+        <div class="precision-title">SDC Precision at Scale</div>
+        <div class="precision-value" id="precisionValue">150 μm (0.15 mm)</div>
+        <div class="precision-bar">
+            <div class="precision-fill" id="precisionFill" style="width: 100%"></div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip">
+        <div class="tooltip-name" id="tooltipName">Object</div>
+        <div class="tooltip-row">
+            <span class="tooltip-key">Distance</span>
+            <span class="tooltip-val" id="tooltipDist">0 km</span>
+        </div>
+        <div class="tooltip-row">
+            <span class="tooltip-key">SDC Position</span>
+            <span class="tooltip-val" id="tooltipSDC">0.000 AU</span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // SDC NAVIGATOR - SUM DIA CONST COORDINATE SYSTEM DEMO
+        // ============================================================
+        
+        const canvas = document.getElementById('spaceCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // ============================================================
+        // CONSTANTS
+        // ============================================================
+        
+        const AU_IN_KM = 149597870.7;  // 1 AU in kilometers
+        const AU_IN_M = AU_IN_KM * 1000;
+        
+        // The 14 SDC directions (unit vectors)
+        const SDC_DIRECTIONS = {
+            0: { name: 'Down', vec: [0, -1, 0] },
+            9: { name: 'Up', vec: [0, 1, 0] },
+            1: { name: 'Earth-Anchor', vec: [1, 0, 0] },
+            8: { name: 'Opposite', vec: [-1, 0, 0] },
+            2: { name: '90° CCW', vec: [0, 0, 1] },
+            7: { name: '90° CW', vec: [0, 0, -1] },
+            'a': { name: '45° Up NE', vec: [0.707, 0.5, 0.5] },
+            'b': { name: '45° Up NW', vec: [-0.707, 0.5, 0.5] },
+            'c': { name: '45° Up SW', vec: [-0.707, 0.5, -0.5] },
+            'd': { name: '45° Up SE', vec: [0.707, 0.5, -0.5] },
+            3: { name: '45° Down NE', vec: [0.707, -0.5, 0.5] },
+            4: { name: '45° Down NW', vec: [-0.707, -0.5, 0.5] },
+            5: { name: '45° Down SW', vec: [-0.707, -0.5, -0.5] },
+            6: { name: '45° Down SE', vec: [0.707, -0.5, -0.5] }
+        };
+        
+        // Celestial objects (distances in AU from Sol)
+        const CELESTIAL_OBJECTS = [
+            { name: 'Sol', distance: 0, radius: 0.00465, color: '#ffdd44', type: 'star' },
+            { name: 'Mercury', distance: 0.387, radius: 0.000016, color: '#b5b5b5', type: 'planet' },
+            { name: 'Venus', distance: 0.723, radius: 0.00004, color: '#e6c87a', type: 'planet' },
+            { name: 'Earth', distance: 1.0, radius: 0.0000426, color: '#6b93d6', type: 'planet' },
+            { name: 'Mars', distance: 1.524, radius: 0.0000227, color: '#c1440e', type: 'planet' },
+            { name: 'Jupiter', distance: 5.203, radius: 0.000477, color: '#d8ca9d', type: 'planet' },
+            { name: 'Saturn', distance: 9.537, radius: 0.000402, color: '#f4d59e', type: 'planet' },
+            { name: 'Uranus', distance: 19.19, radius: 0.00017, color: '#d1e7e7', type: 'planet' },
+            { name: 'Neptune', distance: 30.07, radius: 0.000165, color: '#5b5ddf', type: 'planet' },
+            { name: 'Pluto', distance: 39.48, radius: 0.0000079, color: '#9ca6b7', type: 'dwarf' }
+        ];
+        
+        // ============================================================
+        // STATE
+        // ============================================================
+        
+        let camera = {
+            x: 1.0,      // Position in AU (start at Earth)
+            y: 0,
+            z: 0.5,      // Slightly above ecliptic for better view
+            scale: 0.1,  // AU per pixel (zoom level)
+            minScale: 0.0000000001,  // ~15 meters per pixel
+            maxScale: 1.0            // 1 AU per pixel
+        };
+        
+        let selectedObject = null;
+        let hoveredObject = null;
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let stars = [];
+        
+        // ============================================================
+        // SDC COORDINATE SYSTEM
+        // ============================================================
+        
+        class SDCCoordinate {
+            constructor(x = 0, y = 0, z = 0) {
+                // Store as AU (double precision)
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
+            
+            // Convert to SDC string notation: XXXXXXXXXXXXXX.XXXXXXXXXXXXXX
+            toSDCString(axis) {
+                let value;
+                switch(axis) {
+                    case 'x': value = this.x; break;
+                    case 'y': value = this.y; break;
+                    case 'z': value = this.z; break;
+                }
+                
+                // Handle negative values (would use direction 8, 7, or 0)
+                const absValue = Math.abs(value);
+                
+                // Integer part (14 digits)
+                const intPart = Math.floor(absValue);
+                const intStr = intPart.toString().padStart(14, '0').slice(-14);
+                
+                // Fractional part (14 digits)
+                const fracPart = absValue - intPart;
+                const fracStr = fracPart.toFixed(14).slice(2, 16);
+                
+                return { integer: intStr, decimal: fracStr };
+            }
+            
+            // Get the dominant direction based on position
+            getDominantDirection() {
+                const ax = Math.abs(this.x);
+                const ay = Math.abs(this.y);
+                const az = Math.abs(this.z);
+                
+                if (ay > ax && ay > az) {
+                    return this.y > 0 ? '9' : '0';  // Up or Down
+                } else if (az > ax) {
+                    return this.z > 0 ? '2' : '7';  // 90° CCW or CW
+                } else {
+                    return this.x > 0 ? '1' : '8';  // Earth-Anchor or Opposite
+                }
+            }
+            
+            // Calculate direction weights (how much each direction contributes)
+            getDirectionWeights() {
+                const weights = {};
+                const magnitude = Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z);
+                
+                if (magnitude === 0) {
+                    for (const dir in SDC_DIRECTIONS) {
+                        weights[dir] = 0;
+                    }
+                    return weights;
+                }
+                
+                // Normalized position
+                const nx = this.x / magnitude;
+                const ny = this.y / magnitude;
+                const nz = this.z / magnitude;
+                
+                // Calculate dot product with each direction
+                for (const [dir, data] of Object.entries(SDC_DIRECTIONS)) {
+                    const dot = nx * data.vec[0] + ny * data.vec[1] + nz * data.vec[2];
+                    weights[dir] = Math.max(0, dot);  // Only positive contributions
+                }
+                
+                return weights;
+            }
+            
+            // Get distance from origin in AU
+            magnitude() {
+                return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z);
+            }
+            
+            // Get distance from another coordinate
+            distanceTo(other) {
+                const dx = this.x - other.x;
+                const dy = this.y - other.y;
+                const dz = this.z - other.z;
+                return Math.sqrt(dx*dx + dy*dy + dz*dz);
+            }
+        }
+        
+        // ============================================================
+        // RENDERING
+        // ============================================================
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            generateStars();
+        }
+        
+        function generateStars() {
+            stars = [];
+            const count = 500;
+            for (let i = 0; i < count; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5 + 0.5,
+                    brightness: Math.random() * 0.5 + 0.5
+                });
+            }
+        }
+        
+        function render() {
+            // Clear
+            ctx.fillStyle = '#000008';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw stars (static background)
+            drawStars();
+            
+            // Draw grid
+            drawGrid();
+            
+            // Draw orbital paths
+            drawOrbits();
+            
+            // Draw celestial objects
+            drawObjects();
+            
+            // Draw scale reference
+            drawScaleReference();
+            
+            // Update UI
+            updateUI();
+            
+            requestAnimationFrame(render);
+        }
+        
+        function drawStars() {
+            for (const star of stars) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness * 0.7})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function drawGrid() {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            
+            // Determine grid spacing based on scale
+            let gridSpacing = getGridSpacing();
+            let gridPixels = gridSpacing / camera.scale;
+            
+            // Ensure grid is visible but not too dense
+            while (gridPixels < 50) {
+                gridSpacing *= 5;
+                gridPixels = gridSpacing / camera.scale;
+            }
+            while (gridPixels > 250) {
+                gridSpacing /= 5;
+                gridPixels = gridSpacing / camera.scale;
+            }
+            
+            // Draw grid lines
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.1)';
+            ctx.lineWidth = 1;
+            
+            // Calculate visible range
+            const halfWidth = (canvas.width / 2) * camera.scale;
+            const halfHeight = (canvas.height / 2) * camera.scale;
+            
+            const startX = Math.floor((camera.x - halfWidth) / gridSpacing) * gridSpacing;
+            const endX = Math.ceil((camera.x + halfWidth) / gridSpacing) * gridSpacing;
+            const startY = Math.floor((camera.z - halfHeight) / gridSpacing) * gridSpacing;
+            const endY = Math.ceil((camera.z + halfHeight) / gridSpacing) * gridSpacing;
+            
+            // Vertical lines
+            for (let x = startX; x <= endX; x += gridSpacing) {
+                const screenX = cx + (x - camera.x) / camera.scale;
+                ctx.beginPath();
+                ctx.moveTo(screenX, 0);
+                ctx.lineTo(screenX, canvas.height);
+                ctx.stroke();
+            }
+            
+            // Horizontal lines
+            for (let y = startY; y <= endY; y += gridSpacing) {
+                const screenY = cy + (y - camera.z) / camera.scale;
+                ctx.beginPath();
+                ctx.moveTo(0, screenY);
+                ctx.lineTo(canvas.width, screenY);
+                ctx.stroke();
+            }
+            
+            // Draw origin crosshair (Sol)
+            const solX = cx - camera.x / camera.scale;
+            const solY = cy - camera.z / camera.scale;
+            
+            ctx.strokeStyle = 'rgba(255, 221, 68, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(solX, 0);
+            ctx.lineTo(solX, canvas.height);
+            ctx.moveTo(0, solY);
+            ctx.lineTo(canvas.width, solY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        function getGridSpacing() {
+            // Return appropriate grid spacing in AU based on zoom level
+            if (camera.scale > 0.5) return 10;
+            if (camera.scale > 0.1) return 1;
+            if (camera.scale > 0.01) return 0.1;
+            if (camera.scale > 0.001) return 0.01;
+            if (camera.scale > 0.0001) return 0.001;
+            if (camera.scale > 0.00001) return 0.0001;
+            return 0.00001;
+        }
+        
+        function drawOrbits() {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            
+            for (const obj of CELESTIAL_OBJECTS) {
+                if (obj.distance === 0) continue;  // Skip Sol
+                
+                const radiusPixels = obj.distance / camera.scale;
+                
+                // Only draw if orbit is visible
+                if (radiusPixels > 5 && radiusPixels < canvas.width * 2) {
+                    const orbitCenterX = cx - camera.x / camera.scale;
+                    const orbitCenterY = cy - camera.z / camera.scale;
+                    
+                    ctx.beginPath();
+                    ctx.arc(orbitCenterX, orbitCenterY, radiusPixels, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        function drawObjects() {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            
+            for (const obj of CELESTIAL_OBJECTS) {
+                // Calculate position (simplified: all on X axis for demo)
+                const angle = Date.now() * 0.00001 * (1 / (obj.distance + 0.1));  // Orbital motion
+                const objX = obj.distance * Math.cos(angle);
+                const objZ = obj.distance * Math.sin(angle);
+                
+                // Screen position
+                const screenX = cx + (objX - camera.x) / camera.scale;
+                const screenY = cy + (objZ - camera.z) / camera.scale;
+                
+                // Check if on screen
+                if (screenX < -100 || screenX > canvas.width + 100 ||
+                    screenY < -100 || screenY > canvas.height + 100) {
+                    continue;
+                }
+                
+                // Calculate display radius (minimum 3px, scale with zoom)
+                let displayRadius = obj.radius / camera.scale;
+                displayRadius = Math.max(3, Math.min(displayRadius, 100));
+                
+                // Special case for Sol - always visible
+                if (obj.name === 'Sol') {
+                    displayRadius = Math.max(8, displayRadius);
+                }
+                
+                // Draw glow
+                const gradient = ctx.createRadialGradient(
+                    screenX, screenY, 0,
+                    screenX, screenY, displayRadius * 3
+                );
+                gradient.addColorStop(0, obj.color + '60');
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, displayRadius * 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw object
+                ctx.fillStyle = obj.color;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, displayRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Highlight if selected
+                if (selectedObject === obj) {
+                    ctx.strokeStyle = '#00ffcc';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, displayRadius + 8, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                // Draw label if large enough
+                if (displayRadius > 4 || obj.name === 'Sol') {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '11px "Share Tech Mono", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(obj.name, screenX, screenY + displayRadius + 15);
+                }
+                
+                // Store screen position for hit testing
+                obj._screenX = screenX;
+                obj._screenY = screenY;
+                obj._displayRadius = displayRadius;
+                obj._worldX = objX;
+                obj._worldZ = objZ;
+            }
+        }
+        
+        function drawScaleReference() {
+            // Draw a scale bar
+            const barLength = 100;  // pixels
+            const scaleValue = barLength * camera.scale;  // AU
+            
+            const x = canvas.width - 150;
+            const y = canvas.height - 100;
+            
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + barLength, y);
+            ctx.moveTo(x, y - 5);
+            ctx.lineTo(x, y + 5);
+            ctx.moveTo(x + barLength, y - 5);
+            ctx.lineTo(x + barLength, y + 5);
+            ctx.stroke();
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = '10px "Share Tech Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(formatDistance(scaleValue), x + barLength/2, y + 20);
+        }
+        
+        // ============================================================
+        // UI UPDATES
+        // ============================================================
+        
+        function updateUI() {
+            // Create SDC coordinate for camera position
+            const sdc = new SDCCoordinate(camera.x, camera.y, camera.z);
+            
+            // Update SDC displays
+            const xParts = sdc.toSDCString('x');
+            const yParts = sdc.toSDCString('y');
+            const zParts = sdc.toSDCString('z');
+            
+            document.getElementById('sdcX').innerHTML = 
+                `<span class="integer">${xParts.integer}</span><span class="separator">.</span><span class="decimal">${xParts.decimal}</span>`;
+            document.getElementById('sdcY').innerHTML = 
+                `<span class="integer">${yParts.integer}</span><span class="separator">.</span><span class="decimal">${yParts.decimal}</span>`;
+            document.getElementById('sdcZ').innerHTML = 
+                `<span class="integer">${zParts.integer}</span><span class="separator">.</span><span class="decimal">${zParts.decimal}</span>`;
+            
+            // Update direction weights
+            const weights = sdc.getDirectionWeights();
+            document.getElementById('dir0').textContent = weights['0'].toFixed(3);
+            document.getElementById('dir9').textContent = weights['9'].toFixed(3);
+            document.getElementById('dir1').textContent = weights['1'].toFixed(3);
+            document.getElementById('dir8').textContent = weights['8'].toFixed(3);
+            document.getElementById('dirDominant').textContent = sdc.getDominantDirection();
+            
+            // Update compass
+            updateCompass(weights);
+            
+            // Update scale display
+            document.getElementById('viewScale').textContent = formatDistance(camera.scale * canvas.width / 2);
+            document.getElementById('scaleDisplay').textContent = formatScaleValue(camera.scale);
+            document.getElementById('scaleUnit').textContent = getScaleUnit(camera.scale);
+            
+            // Update scale handle position
+            const handlePos = scaleToHandlePosition(camera.scale);
+            document.getElementById('scaleHandle').style.left = handlePos + '%';
+            
+            // Update precision indicator
+            updatePrecisionIndicator();
+            
+            // Update object list
+            updateObjectList();
+        }
+        
+        function updateCompass(weights) {
+            const compass = document.getElementById('compass');
+            
+            // Remove old direction markers
+            const oldMarkers = compass.querySelectorAll('.compass-direction');
+            oldMarkers.forEach(m => m.remove());
+            
+            // Direction positions on compass (polar coordinates)
+            const dirPositions = {
+                '9': { angle: -90, dist: 55 },   // Up (top)
+                '0': { angle: 90, dist: 55 },    // Down (bottom)
+                '1': { angle: 0, dist: 55 },     // Right
+                '8': { angle: 180, dist: 55 },   // Left
+                '2': { angle: -45, dist: 55 },   // Upper right
+                '7': { angle: 45, dist: 55 },    // Lower right
+                'a': { angle: -30, dist: 45 },
+                'b': { angle: -150, dist: 45 },
+                'c': { angle: 150, dist: 45 },
+                'd': { angle: 30, dist: 45 },
+                '3': { angle: -60, dist: 45 },
+                '4': { angle: -120, dist: 45 },
+                '5': { angle: 120, dist: 45 },
+                '6': { angle: 60, dist: 45 }
+            };
+            
+            for (const [dir, pos] of Object.entries(dirPositions)) {
+                const marker = document.createElement('div');
+                marker.className = 'compass-direction' + (weights[dir] > 0.3 ? ' active' : '');
+                marker.textContent = dir;
+                
+                const rad = pos.angle * Math.PI / 180;
+                const x = 70 + Math.cos(rad) * pos.dist;
+                const y = 70 + Math.sin(rad) * pos.dist;
+                
+                marker.style.left = x + 'px';
+                marker.style.top = y + 'px';
+                marker.style.opacity = 0.3 + weights[dir] * 0.7;
+                
+                compass.appendChild(marker);
+            }
+        }
+        
+        function updatePrecisionIndicator() {
+            // Calculate effective precision at current scale
+            // SDC has 14.14 digits = ~150 micrometer precision at any scale
+            const basePrecision = 0.00000000000001;  // AU (14 decimal places)
+            const precisionInMeters = basePrecision * AU_IN_M;
+            
+            // At current zoom, what's the smallest distinguishable distance?
+            const pixelPrecision = camera.scale * AU_IN_M;  // meters per pixel
+            
+            let precisionText;
+            if (pixelPrecision < 0.001) {
+                precisionText = `${(pixelPrecision * 1000000).toFixed(1)} μm per pixel`;
+            } else if (pixelPrecision < 1) {
+                precisionText = `${(pixelPrecision * 1000).toFixed(1)} mm per pixel`;
+            } else if (pixelPrecision < 1000) {
+                precisionText = `${pixelPrecision.toFixed(1)} m per pixel`;
+            } else {
+                precisionText = `${(pixelPrecision / 1000).toFixed(1)} km per pixel`;
+            }
+            
+            document.getElementById('precisionValue').textContent = precisionText;
+            
+            // Fill bar based on zoom level (more zoomed = more precision used)
+            const zoomFactor = Math.log10(camera.maxScale / camera.scale) / Math.log10(camera.maxScale / camera.minScale);
+            document.getElementById('precisionFill').style.width = (zoomFactor * 100) + '%';
+        }
+        
+        function updateObjectList() {
+            const list = document.getElementById('objectList');
+            list.innerHTML = '';
+            
+            const sdc = new SDCCoordinate(camera.x, camera.y, camera.z);
+            
+            for (const obj of CELESTIAL_OBJECTS) {
+                const objSDC = new SDCCoordinate(obj._worldX || obj.distance, 0, obj._worldZ || 0);
+                const dist = sdc.distanceTo(objSDC);
+                
+                const item = document.createElement('div');
+                item.className = 'object-item' + (selectedObject === obj ? ' selected' : '');
+                item.innerHTML = `
+                    <div class="object-color" style="background: ${obj.color}"></div>
+                    <div class="object-name">${obj.name}</div>
+                    <div class="object-distance">${formatDistance(dist)}</div>
+                `;
+                item.onclick = () => {
+                    selectedObject = obj;
+                    // Fly to object
+                    flyTo(obj._worldX || obj.distance, obj._worldZ || 0);
+                };
+                list.appendChild(item);
+            }
+        }
+        
+        // ============================================================
+        // HELPERS
+        // ============================================================
+        
+        function formatDistance(au) {
+            const km = au * AU_IN_KM;
+            const m = au * AU_IN_M;
+            
+            if (au >= 1) {
+                return au.toFixed(2) + ' AU';
+            } else if (km >= 1000000) {
+                return (km / 1000000).toFixed(2) + ' M km';
+            } else if (km >= 1000) {
+                return (km / 1000).toFixed(1) + ' k km';
+            } else if (km >= 1) {
+                return km.toFixed(1) + ' km';
+            } else if (m >= 1) {
+                return m.toFixed(1) + ' m';
+            } else {
+                return (m * 1000).toFixed(1) + ' mm';
+            }
+        }
+        
+        function formatScaleValue(scale) {
+            if (scale >= 0.1) return scale.toFixed(2);
+            if (scale >= 0.001) return scale.toFixed(4);
+            if (scale >= 0.00001) return scale.toFixed(6);
+            return scale.toExponential(2);
+        }
+        
+        function getScaleUnit(scale) {
+            if (scale >= 0.01) return 'AU per pixel';
+            if (scale >= 0.00001) return 'AU per pixel';
+            const km = scale * AU_IN_KM;
+            if (km >= 1) return 'km per pixel';
+            const m = scale * AU_IN_M;
+            if (m >= 1) return 'm per pixel';
+            return 'mm per pixel';
+        }
+        
+        function scaleToHandlePosition(scale) {
+            const logMin = Math.log10(camera.minScale);
+            const logMax = Math.log10(camera.maxScale);
+            const logCurrent = Math.log10(scale);
+            return ((logCurrent - logMin) / (logMax - logMin)) * 100;
+        }
+        
+        function handlePositionToScale(percent) {
+            const logMin = Math.log10(camera.minScale);
+            const logMax = Math.log10(camera.maxScale);
+            const logValue = logMin + (percent / 100) * (logMax - logMin);
+            return Math.pow(10, logValue);
+        }
+        
+        function flyTo(x, z, targetScale = null) {
+            // Animate camera to position
+            const startX = camera.x;
+            const startZ = camera.z;
+            const startScale = camera.scale;
+            
+            const endX = x;
+            const endZ = z;
+            const endScale = targetScale || Math.min(0.01, camera.scale);
+            
+            const duration = 1000;
+            const startTime = Date.now();
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const t = Math.min(1, elapsed / duration);
+                const ease = 1 - Math.pow(1 - t, 3);  // Ease out cubic
+                
+                camera.x = startX + (endX - startX) * ease;
+                camera.z = startZ + (endZ - startZ) * ease;
+                camera.scale = startScale * Math.pow(endScale / startScale, ease);
+                
+                if (t < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            
+            animate();
+        }
+        
+        // ============================================================
+        // EVENT HANDLERS
+        // ============================================================
+        
+        // Mouse wheel zoom
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            const zoomFactor = e.deltaY > 0 ? 1.15 : 0.87;
+            const newScale = camera.scale * zoomFactor;
+            
+            // Clamp to valid range
+            camera.scale = Math.max(camera.minScale, Math.min(camera.maxScale, newScale));
+        });
+        
+        // Mouse drag pan
+        canvas.addEventListener('mousedown', (e) => {
+            // Check if clicked on an object
+            for (const obj of CELESTIAL_OBJECTS) {
+                if (obj._screenX && obj._displayRadius) {
+                    const dx = e.clientX - obj._screenX;
+                    const dy = e.clientY - obj._screenY;
+                    if (Math.sqrt(dx*dx + dy*dy) < obj._displayRadius + 10) {
+                        selectedObject = obj;
+                        return;
+                    }
+                }
+            }
+            
+            isDragging = true;
+            dragStart = { x: e.clientX, y: e.clientY };
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const dx = e.clientX - dragStart.x;
+                const dy = e.clientY - dragStart.y;
+                
+                camera.x -= dx * camera.scale;
+                camera.z -= dy * camera.scale;
+                
+                dragStart = { x: e.clientX, y: e.clientY };
+            }
+            
+            // Update tooltip
+            updateTooltip(e);
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+            document.getElementById('tooltip').classList.remove('visible');
+        });
+        
+        function updateTooltip(e) {
+            const tooltip = document.getElementById('tooltip');
+            
+            for (const obj of CELESTIAL_OBJECTS) {
+                if (obj._screenX && obj._displayRadius) {
+                    const dx = e.clientX - obj._screenX;
+                    const dy = e.clientY - obj._screenY;
+                    if (Math.sqrt(dx*dx + dy*dy) < obj._displayRadius + 10) {
+                        const objSDC = new SDCCoordinate(obj._worldX || obj.distance, 0, obj._worldZ || 0);
+                        const camSDC = new SDCCoordinate(camera.x, camera.y, camera.z);
+                        const dist = camSDC.distanceTo(objSDC);
+                        
+                        document.getElementById('tooltipName').textContent = obj.name;
+                        document.getElementById('tooltipDist').textContent = formatDistance(dist);
+                        document.getElementById('tooltipSDC').textContent = formatDistance(obj.distance) + ' from Sol';
+                        
+                        tooltip.style.left = (e.clientX + 15) + 'px';
+                        tooltip.style.top = (e.clientY + 15) + 'px';
+                        tooltip.classList.add('visible');
+                        return;
+                    }
+                }
+            }
+            
+            tooltip.classList.remove('visible');
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            const key = e.key;
+            
+            // Number keys jump to planets
+            const planetIndex = parseInt(key);
+            if (planetIndex >= 0 && planetIndex <= 9) {
+                const obj = CELESTIAL_OBJECTS[planetIndex];
+                if (obj) {
+                    selectedObject = obj;
+                    flyTo(obj._worldX || obj.distance, obj._worldZ || 0);
+                }
+            }
+            
+            // Arrow keys pan
+            const panSpeed = 0.1 * camera.scale * canvas.width;
+            switch(key) {
+                case 'ArrowLeft': camera.x -= panSpeed; break;
+                case 'ArrowRight': camera.x += panSpeed; break;
+                case 'ArrowUp': camera.z -= panSpeed; break;
+                case 'ArrowDown': camera.z += panSpeed; break;
+                case '+':
+                case '=':
+                    camera.scale = Math.max(camera.minScale, camera.scale * 0.8);
+                    break;
+                case '-':
+                    camera.scale = Math.min(camera.maxScale, camera.scale * 1.25);
+                    break;
+                case 'Home':
+                    // Return to Sol
+                    flyTo(0, 0, 0.1);
+                    break;
+            }
+        });
+        
+        // Scale slider
+        const scaleHandle = document.getElementById('scaleHandle');
+        let scaleDragging = false;
+        
+        scaleHandle.addEventListener('mousedown', (e) => {
+            scaleDragging = true;
+            e.stopPropagation();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (scaleDragging) {
+                const track = scaleHandle.parentElement;
+                const rect = track.getBoundingClientRect();
+                const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+                camera.scale = handlePositionToScale(percent);
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            scaleDragging = false;
+        });
+        
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        render();
+        
+        // Start at Earth view
+        flyTo(1.0, 0, 0.01);
+    </script>
+</body>
+</html>

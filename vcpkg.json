@@ -1,0 +1,15 @@
+{
+  "name": "basex-engine",
+  "version": "1.0.0",
+  "description": "Base-X Game Engine - VR-first engine with Dynamic Radix Optimization",
+  "dependencies": [
+    "vulkan",
+    "glfw3",
+    "glm",
+    "imgui",
+    "bullet3",
+    "openxr-loader",
+    "gtest"
+  ],
+  "builtin-baseline": "aa2d37682e3318d93aef87efa7b0e88e81cd3d59"
+}

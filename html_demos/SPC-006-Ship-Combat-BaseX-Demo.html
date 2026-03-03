@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPC-006: Ship Combat | Base-X Engine Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --void: #040206;
+            --panel: rgba(10, 6, 16, 0.95);
+            --panel-border: rgba(255, 50, 60, 0.2);
+            --red: #ff3344;
+            --red-dim: #882233;
+            --cyan: #00b4ff;
+            --green: #00ff88;
+            --orange: #ff9500;
+            --yellow: #ffd000;
+            --white: #d0d4e8;
+            --dim: #4a5060;
+            --b64: #00ff88;
+            --b48: #00ccff;
+            --b32: #ffd000;
+            --b16: #ff8800;
+            --b8: #ff3344;
+            --shield-blue: #4488ff;
+            --hull-orange: #ff6622;
+            --laser-red: #ff2244;
+            --torp-cyan: #00eeff;
+            --rail-yellow: #ffee00;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--void);
+            color: var(--white);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            height: 46px;
+            background: linear-gradient(180deg, rgba(255,50,60,0.06), transparent);
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            flex-shrink: 0;
+        }
+        .hdr-left { display: flex; align-items: center; gap: 12px; }
+        .hdr-badge {
+            font-family: 'Orbitron', monospace;
+            font-size: 9px; font-weight: 900; letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--red), #881122);
+            color: #fff; padding: 4px 10px; border-radius: 3px;
+        }
+        .hdr-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 15px; font-weight: 700; color: var(--red);
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px rgba(255,50,60,0.3);
+        }
+        .hdr-right {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px; color: var(--dim);
+            display: flex; gap: 18px;
+        }
+        .hdr-right span { color: var(--red); }
+        .alert-flash { animation: alertPulse 0.5s ease infinite; }
+        @keyframes alertPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        .main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 230px 1fr 270px;
+            overflow: hidden;
+        }
+
+        .side-panel, .right-panel {
+            background: var(--panel);
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .side-panel { border-right: 1px solid var(--panel-border); }
+        .right-panel { border-left: 1px solid var(--panel-border); }
+
+        .panel-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 10px; font-weight: 600;
+            color: var(--red-dim);
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255,50,60,0.1);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        .stat-label { color: var(--dim); font-size: 11px; }
+        .stat-val { font-family: 'Share Tech Mono', monospace; font-size: 12px; }
+        .section-gap { height: 12px; }
+
+        .canvas-wrap { position: relative; overflow: hidden; background: var(--void); }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* HUD */
+        .hud-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+        }
+        .hud-tl, .hud-tr, .hud-bl, .hud-br {
+            position: absolute;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px; color: var(--red-dim); padding: 10px;
+        }
+        .hud-tl { top: 0; left: 0; }
+        .hud-tr { top: 0; right: 0; text-align: right; }
+        .hud-bl { bottom: 0; left: 0; }
+        .hud-br { bottom: 0; right: 0; text-align: right; }
+
+        .crosshair {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px; height: 60px;
+        }
+        .crosshair::before, .crosshair::after {
+            content: ''; position: absolute;
+            background: rgba(255,50,60,0.35);
+        }
+        .crosshair::before { width: 1px; height: 100%; left: 50%; }
+        .crosshair::after { width: 100%; height: 1px; top: 50%; }
+        .ch-ring {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            width: 36px; height: 36px;
+            border: 1px solid rgba(255,50,60,0.3);
+            border-radius: 50%;
+        }
+
+        .dro-bar {
+            position: absolute; bottom: 8px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; gap: 3px;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 8px; border-radius: 4px;
+            border: 1px solid rgba(255,50,60,0.15);
+        }
+        .dro-seg {
+            width: 28px; height: 8px; border-radius: 2px;
+            background: rgba(255,255,255,0.04);
+            transition: all 0.3s;
+        }
+        .dro-seg.lit { box-shadow: 0 0 6px; }
+        .dro-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 8px; color: var(--dim);
+            text-align: center; margin-top: 2px;
+        }
+
+        /* Bars */
+        .bar-wrap { height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px; overflow: hidden; margin: 4px 0; }
+        .bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+        /* Weapon selector */
+        .wpn-grid {
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px; margin-top: 6px;
+        }
+        .wpn-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 10px; font-weight: 600;
+            padding: 6px 4px; border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.02);
+            color: var(--dim); cursor: pointer;
+            border-radius: 2px; text-align: center;
+            transition: all 0.2s;
+        }
+        .wpn-btn:hover { border-color: var(--red); color: var(--red); }
+        .wpn-btn.selected { border-color: var(--red); color: var(--red); background: rgba(255,50,60,0.08); }
+
+        /* Target list */
+        .tgt-item {
+            padding: 5px 8px; margin-bottom: 3px;
+            border-radius: 3px; border-left: 3px solid var(--dim);
+            background: rgba(255,255,255,0.015); font-size: 11px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .tgt-item:hover { background: rgba(255,50,60,0.04); }
+        .tgt-item.targeted { border-left-color: var(--red); background: rgba(255,50,60,0.06); }
+        .tgt-item.destroyed { border-left-color: var(--dim); opacity: 0.3; text-decoration: line-through; }
+        .tgt-name { font-weight: 600; }
+        .tgt-detail { color: var(--dim); font-size: 10px; }
+
+        /* Damage sections */
+        .dmg-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 4px; margin-top: 6px;
+        }
+        .dmg-cell {
+            padding: 5px; border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 3px; text-align: center; font-size: 10px;
+        }
+        .dmg-cell .dmg-name { color: var(--dim); font-size: 9px; font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; }
+        .dmg-cell .dmg-pct { font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700; }
+
+        /* Controls */
+        .controls-bar {
+            height: 42px;
+            background: var(--panel);
+            border-top: 1px solid var(--panel-border);
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 0 16px; flex-shrink: 0;
+        }
+        .ctrl-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 11px; font-weight: 600;
+            padding: 5px 12px;
+            border: 1px solid var(--panel-border);
+            background: rgba(255,50,60,0.04);
+            color: var(--dim); cursor: pointer;
+            border-radius: 3px; transition: all 0.2s;
+            letter-spacing: 1px;
+        }
+        .ctrl-btn:hover { border-color: var(--red); color: var(--red); }
+        .ctrl-btn.active { border-color: var(--red); color: var(--red); background: rgba(255,50,60,0.1); box-shadow: 0 0 8px rgba(255,50,60,0.15); }
+        .ctrl-btn.danger { border-color: #ff0022; color: #ff0022; }
+        .ctrl-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.06); }
+
+        /* Log */
+        .log-wrap {
+            max-height: 110px; overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace; font-size: 10px;
+        }
+        .log-entry { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .log-time { color: var(--dim); }
+        .log-msg { color: var(--white); }
+        .log-msg.info { color: var(--cyan); }
+        .log-msg.success { color: var(--green); }
+        .log-msg.warn { color: var(--orange); }
+        .log-msg.error { color: var(--red); }
+        .log-msg.gold { color: var(--yellow); }
+
+        @media (max-width: 1000px) {
+            .main { grid-template-columns: 1fr; }
+            .side-panel, .right-panel { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="hdr-left">
+        <div class="hdr-badge">BASE-X</div>
+        <div class="hdr-title">SPC-006 · SHIP COMBAT</div>
+    </div>
+    <div class="hdr-right">
+        <div>ALERT <span id="alertLvl">GREEN</span></div>
+        <div>SHIELDS <span id="shieldHdr">100%</span></div>
+        <div>HULL <span id="hullHdr">100%</span></div>
+    </div>
+</div>
+
+<div class="main">
+    <!-- LEFT PANEL -->
+    <div class="side-panel">
+        <div class="panel-title">SHIP STATUS</div>
+
+        <div class="stat-row"><span class="stat-label">Shield Strength</span><span class="stat-val" id="shieldPct" style="color:var(--shield-blue)">100%</span></div>
+        <div class="bar-wrap"><div class="bar-fill" id="shieldBar" style="width:100%;background:var(--shield-blue)"></div></div>
+
+        <div class="stat-row"><span class="stat-label">Hull Integrity</span><span class="stat-val" id="hullPct" style="color:var(--green)">100%</span></div>
+        <div class="bar-wrap"><div class="bar-fill" id="hullBar" style="width:100%;background:var(--green)"></div></div>
+
+        <div class="stat-row"><span class="stat-label">Reactor Power</span><span class="stat-val" id="reactorPwr" style="color:var(--cyan)">100%</span></div>
+        <div class="bar-wrap"><div class="bar-fill" id="reactorBar" style="width:100%;background:var(--cyan)"></div></div>
+
+        <div class="stat-row"><span class="stat-label">Speed</span><span class="stat-val" id="speed">0.0 km/s</span></div>
+        <div class="stat-row"><span class="stat-label">Heading</span><span class="stat-val" id="heading">000°</span></div>
+        <div class="stat-row"><span class="stat-label">Throttle</span><span class="stat-val" id="throttle">0%</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">WEAPONS</div>
+
+        <div class="wpn-grid">
+            <div class="wpn-btn selected" data-wpn="laser" onclick="selectWeapon('laser')">⚡ LASER</div>
+            <div class="wpn-btn" data-wpn="torpedo" onclick="selectWeapon('torpedo')">💥 TORPEDO</div>
+            <div class="wpn-btn" data-wpn="railgun" onclick="selectWeapon('railgun')">🔩 RAILGUN</div>
+        </div>
+
+        <div class="section-gap"></div>
+
+        <div class="stat-row"><span class="stat-label">Weapon</span><span class="stat-val" id="wpnName" style="color:var(--laser-red)">LASER</span></div>
+        <div class="stat-row"><span class="stat-label">Charge</span><span class="stat-val" id="wpnCharge">100%</span></div>
+        <div class="bar-wrap"><div class="bar-fill" id="wpnChargeBar" style="width:100%;background:var(--laser-red)"></div></div>
+        <div class="stat-row"><span class="stat-label">Damage</span><span class="stat-val" id="wpnDmg">12/hit</span></div>
+        <div class="stat-row"><span class="stat-label">Rate</span><span class="stat-val" id="wpnRate">4.0/s</span></div>
+        <div class="stat-row"><span class="stat-label">Range</span><span class="stat-val" id="wpnRange">2.5 km</span></div>
+        <div class="stat-row"><span class="stat-label">Torpedoes</span><span class="stat-val" id="torpCount">12</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">DAMAGE CONTROL</div>
+
+        <div class="dmg-grid">
+            <div class="dmg-cell"><div class="dmg-name">FWD</div><div class="dmg-pct" id="dmgFwd" style="color:var(--green)">100</div></div>
+            <div class="dmg-cell"><div class="dmg-name">AFT</div><div class="dmg-pct" id="dmgAft" style="color:var(--green)">100</div></div>
+            <div class="dmg-cell"><div class="dmg-name">PORT</div><div class="dmg-pct" id="dmgPort" style="color:var(--green)">100</div></div>
+            <div class="dmg-cell"><div class="dmg-name">STAR</div><div class="dmg-pct" id="dmgStar" style="color:var(--green)">100</div></div>
+            <div class="dmg-cell"><div class="dmg-name">BRIDGE</div><div class="dmg-pct" id="dmgBridge" style="color:var(--green)">100</div></div>
+            <div class="dmg-cell"><div class="dmg-name">ENGINE</div><div class="dmg-pct" id="dmgEngine" style="color:var(--green)">100</div></div>
+        </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div class="canvas-wrap">
+        <canvas id="combatCanvas"></canvas>
+
+        <div class="hud-overlay">
+            <div class="hud-tl">
+                <div>DRO ACTIVE BASE: <span id="hudBase" style="color:var(--b32)">BASE-32</span></div>
+                <div>PRECISION: <span id="hudPrec">±1.0 mm</span></div>
+                <div>OPS/FRAME: <span id="hudOps">1,024</span></div>
+            </div>
+            <div class="hud-tr">
+                <div>SECTOR: <span style="color:var(--red)">CONTESTED</span></div>
+                <div>HOSTILES: <span id="hudHostiles" style="color:var(--red)">5</span></div>
+                <div>KILLS: <span id="hudKills" style="color:var(--green)">0</span></div>
+            </div>
+            <div class="hud-bl">
+                <div>WPN: <span id="hudWpn" style="color:var(--laser-red)">LASER</span></div>
+                <div>TGT: <span id="hudTgt">NONE</span></div>
+                <div>DIST: <span id="hudDist">—</span></div>
+            </div>
+            <div class="hud-br">
+                <div>FIVE PILLARS</div>
+                <div>DIST: <span id="pillarDist">0.30</span> VEL: <span id="pillarVel">0.20</span></div>
+                <div>INT: <span id="pillarInt">0.50</span> PHS: <span id="pillarPhs">0.40</span></div>
+                <div>PER: <span id="pillarPer">0.60</span></div>
+            </div>
+
+            <div class="crosshair"><div class="ch-ring"></div></div>
+
+            <div class="dro-bar">
+                <div><div class="dro-seg" id="seg8" style="background:var(--b8);opacity:0.15"></div><div class="dro-label">8</div></div>
+                <div><div class="dro-seg" id="seg16" style="background:var(--b16);opacity:0.15"></div><div class="dro-label">16</div></div>
+                <div><div class="dro-seg lit" id="seg32" style="background:var(--b32)"></div><div class="dro-label">32</div></div>
+                <div><div class="dro-seg" id="seg48" style="background:var(--b48);opacity:0.15"></div><div class="dro-label">48</div></div>
+                <div><div class="dro-seg" id="seg64" style="background:var(--b64);opacity:0.15"></div><div class="dro-label">64</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+        <div class="panel-title">TACTICAL — CONTACTS</div>
+
+        <div class="tgt-item targeted" id="tgt0" onclick="selectTarget(0)">
+            <div class="tgt-name">🔴 RAIDER-01 <span style="color:var(--red);font-size:10px">HOSTILE</span></div>
+            <div class="tgt-detail">Corvette · 1.8km · Shield 100%</div>
+        </div>
+        <div class="tgt-item" id="tgt1" onclick="selectTarget(1)">
+            <div class="tgt-name">🔴 RAIDER-02 <span style="color:var(--red);font-size:10px">HOSTILE</span></div>
+            <div class="tgt-detail">Corvette · 2.4km · Shield 100%</div>
+        </div>
+        <div class="tgt-item" id="tgt2" onclick="selectTarget(2)">
+            <div class="tgt-name">🔴 VIPER-01 <span style="color:var(--red);font-size:10px">HOSTILE</span></div>
+            <div class="tgt-detail">Fighter · 1.2km · Shield 100%</div>
+        </div>
+        <div class="tgt-item" id="tgt3" onclick="selectTarget(3)">
+            <div class="tgt-name">🔴 VIPER-02 <span style="color:var(--red);font-size:10px">HOSTILE</span></div>
+            <div class="tgt-detail">Fighter · 3.1km · Shield 100%</div>
+        </div>
+        <div class="tgt-item" id="tgt4" onclick="selectTarget(4)">
+            <div class="tgt-name">🔴 DREADNOUGHT <span style="color:var(--red);font-size:10px">CAPITAL</span></div>
+            <div class="tgt-detail">Battleship · 5.0km · Shield 100%</div>
+        </div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">DRO ANALYSIS</div>
+
+        <div class="stat-row"><span class="stat-label">Active Base</span><span class="stat-val" id="droBase" style="color:var(--b32)">32</span></div>
+        <div class="stat-row"><span class="stat-label">Precision</span><span class="stat-val" id="droPrecision">±1.0 mm</span></div>
+        <div class="stat-row"><span class="stat-label">Base Switches</span><span class="stat-val" id="droSwitches">0</span></div>
+        <div class="stat-row"><span class="stat-label">Avg Base</span><span class="stat-val" id="droAvg">32.0</span></div>
+        <div class="stat-row"><span class="stat-label">Savings vs B64</span><span class="stat-val" id="droSavings" style="color:var(--green)">75%</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">DRO TRIGGERS</div>
+
+        <div class="stat-row"><span class="stat-label">Shield Impact</span><span class="stat-val" id="trigShield">—</span></div>
+        <div class="stat-row"><span class="stat-label">Weapon Lock</span><span class="stat-val" id="trigLock">NO</span></div>
+        <div class="stat-row"><span class="stat-label">Proximity</span><span class="stat-val" id="trigProx">FAR</span></div>
+        <div class="stat-row"><span class="stat-label">Evasion</span><span class="stat-val" id="trigEvasion">OFF</span></div>
+        <div class="stat-row"><span class="stat-label">Critical Hit</span><span class="stat-val" id="trigCrit">NO</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">COMBAT LOG</div>
+        <div class="log-wrap" id="logWrap"></div>
+    </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls-bar">
+    <button class="ctrl-btn active" id="btnPlay" onclick="toggleSim()">⏸ PAUSE</button>
+    <button class="ctrl-btn" onclick="resetSim()">↺ RESET</button>
+    <div class="ctrl-sep"></div>
+    <button class="ctrl-btn" onclick="fireWeapon()">🔥 FIRE</button>
+    <button class="ctrl-btn" onclick="toggleAutoFire()">⚡ AUTO-FIRE</button>
+    <div class="ctrl-sep"></div>
+    <button class="ctrl-btn" onclick="shieldBoost()">🛡 BOOST SHIELDS</button>
+    <button class="ctrl-btn" onclick="evasiveManeuvers()">↗ EVASIVE</button>
+    <div class="ctrl-sep"></div>
+    <button class="ctrl-btn" onclick="spawnWave()">+ WAVE</button>
+    <button class="ctrl-btn danger" onclick="selfDestruct()">☢ DESTRUCT</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// SPC-006: SHIP COMBAT — BASE-X ENGINE DEMO
+// (c) 2025-2026 Keenan Wallace Dunham
+// Troll Hunter Gaming LLC — Patent Pending
+// ═══════════════════════════════════════════
+
+const canvas = document.getElementById('combatCanvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+    const wrap = canvas.parentElement;
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ═══ WEAPON DEFINITIONS ═══
+const WEAPONS = {
+    laser:   { name: 'LASER',   dmg: 12, rate: 4.0, range: 2.5, color: '#ff2244', speed: 18, size: 2, energy: 3,  base: 32 },
+    torpedo: { name: 'TORPEDO', dmg: 45, rate: 0.5, range: 6.0, color: '#00eeff', speed: 6,  size: 5, energy: 15, base: 48 },
+    railgun: { name: 'RAILGUN', dmg: 80, rate: 0.2, range: 8.0, color: '#ffee00', speed: 30, size: 3, energy: 25, base: 64 }
+};
+
+// ═══ ENEMY TEMPLATES ═══
+const ENEMY_TYPES = {
+    fighter:  { name: 'VIPER',      hp: 60,  shield: 40,  speed: 2.8, agility: 0.04, fireRate: 1.5, dmg: 6,  size: 10, color: '#ff4455', pts: 100 },
+    corvette: { name: 'RAIDER',     hp: 120, shield: 80,  speed: 1.8, agility: 0.025, fireRate: 1.0, dmg: 10, size: 16, color: '#ff6644', pts: 250 },
+    battleship:{ name:'DREADNOUGHT',hp: 400, shield: 250, speed: 0.6, agility: 0.008, fireRate: 0.4, dmg: 30, size: 28, color: '#cc3322', pts: 1000 }
+};
+
+// ═══ STATE ═══
+const S = {
+    running: true,
+    time: 0,
+    combatTime: 0,
+
+    // Player ship
+    ship: {
+        x: 0, y: 0, vx: 0, vy: 0,
+        heading: 0, throttle: 0, speed: 0,
+        shield: 100, hull: 100,
+        reactor: 100,
+        sections: { fwd: 100, aft: 100, port: 100, star: 100, bridge: 100, engine: 100 },
+    },
+
+    weapon: 'laser',
+    wpnCharge: 100,
+    torpedoes: 12,
+    fireCooldown: 0,
+    autoFire: false,
+    evasive: false,
+    evasiveTimer: 0,
+
+    // Enemies
+    enemies: [],
+    targetIdx: 0,
+
+    // Projectiles & effects
+    projectiles: [],
+    explosions: [],
+    shieldHits: [],
+    debris: [],
+
+    // Combat stats
+    kills: 0,
+    totalDmgDealt: 0,
+    totalDmgTaken: 0,
+    wave: 1,
+
+    // DRO
+    dro: {
+        currentBase: 32,
+        targetBase: 32,
+        switches: 0,
+        history: [],
+        avgBase: 32,
+        pillars: { dist: 0.30, vel: 0.20, int: 0.50, phs: 0.40, per: 0.60 }
+    },
+
+    // Stars
+    stars: [],
+    shakeAmount: 0,
+    alertLevel: 'GREEN'
+};
+
+// ═══ INIT ═══
+function initScene() {
+    // Stars
+    S.stars = [];
+    for (let i = 0; i < 300; i++) {
+        S.stars.push({
+            x: Math.random() * 2000 - 1000,
+            y: Math.random() * 2000 - 1000,
+            z: Math.random() * 3 + 0.3,
+            brightness: Math.random() * 0.6 + 0.2
+        });
+    }
+
+    // Place player at center
+    S.ship.x = 0;
+    S.ship.y = 0;
+
+    // Spawn initial enemies
+    S.enemies = [];
+    spawnEnemy('corvette', 180, -120, 'RAIDER-01');
+    spawnEnemy('corvette', -200, 160, 'RAIDER-02');
+    spawnEnemy('fighter', 100, 90, 'VIPER-01');
+    spawnEnemy('fighter', -150, -250, 'VIPER-02');
+    spawnEnemy('battleship', 350, -50, 'DREADNOUGHT');
+}
+
+function spawnEnemy(type, x, y, name) {
+    const t = ENEMY_TYPES[type];
+    S.enemies.push({
+        type, name: name || `${t.name}-${String(S.enemies.length+1).padStart(2,'0')}`,
+        x, y, vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5,
+        heading: Math.random() * Math.PI * 2,
+        hp: t.hp, maxHp: t.hp,
+        shield: t.shield, maxShield: t.shield,
+        speed: t.speed, agility: t.agility,
+        fireRate: t.fireRate, fireCooldown: Math.random() * 2,
+        dmg: t.dmg, size: t.size, color: t.color, pts: t.pts,
+        destroyed: false,
+        shieldFlash: 0,
+        exploding: 0
+    });
+}
+
+// ═══ PHYSICS ═══
+function updatePhysics(dt) {
+    const ship = S.ship;
+
+    // Ship movement
+    if (S.evasive && S.evasiveTimer > 0) {
+        S.evasiveTimer -= dt;
+        ship.heading += (Math.sin(S.time * 8) * 0.06);
+        ship.throttle = Math.min(100, ship.throttle + 200 * dt);
+        if (S.evasiveTimer <= 0) { S.evasive = false; log('Evasive maneuvers complete', 'info'); }
+    }
+
+    const thrustForce = ship.throttle / 100 * 3.0;
+    ship.vx += Math.cos(ship.heading) * thrustForce * dt;
+    ship.vy += Math.sin(ship.heading) * thrustForce * dt;
+    ship.vx *= 0.995;
+    ship.vy *= 0.995;
+    ship.x += ship.vx * dt * 60;
+    ship.y += ship.vy * dt * 60;
+    ship.speed = Math.sqrt(ship.vx*ship.vx + ship.vy*ship.vy) * 60;
+
+    // Shield regeneration
+    if (ship.shield < 100) ship.shield = Math.min(100, ship.shield + 2 * dt);
+    // Reactor regen
+    if (ship.reactor < 100) ship.reactor = Math.min(100, ship.reactor + 5 * dt);
+
+    // Weapon cooldown
+    if (S.fireCooldown > 0) S.fireCooldown -= dt;
+    // Weapon charge regen
+    if (S.wpnCharge < 100) S.wpnCharge = Math.min(100, S.wpnCharge + 8 * dt);
+
+    // Auto fire
+    if (S.autoFire && S.fireCooldown <= 0 && S.enemies[S.targetIdx] && !S.enemies[S.targetIdx].destroyed) {
+        fireWeaponInternal();
+    }
+
+    // Enemy AI
+    S.enemies.forEach((e, idx) => {
+        if (e.destroyed) {
+            e.exploding -= dt;
+            return;
+        }
+
+        // Move toward player with some offset
+        const dx = ship.x - e.x;
+        const dy = ship.y - e.y;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        const targetAngle = Math.atan2(dy, dx);
+
+        // Steer toward player
+        let angleDiff = targetAngle - e.heading;
+        while (angleDiff > Math.PI) angleDiff -= Math.PI*2;
+        while (angleDiff < -Math.PI) angleDiff += Math.PI*2;
+        e.heading += Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), e.agility * 60 * dt);
+
+        // Keep distance (fighters close, capitals far)
+        const preferDist = e.type === 'fighter' ? 80 : e.type === 'corvette' ? 140 : 250;
+        const approach = dist > preferDist ? 1 : dist < preferDist * 0.6 ? -0.5 : 0.2;
+
+        e.vx += Math.cos(e.heading) * e.speed * approach * dt;
+        e.vy += Math.sin(e.heading) * e.speed * approach * dt;
+        e.vx *= 0.99;
+        e.vy *= 0.99;
+        e.x += e.vx * dt * 60;
+        e.y += e.vy * dt * 60;
+
+        // Shield regen
+        if (e.shield < e.maxShield) e.shield = Math.min(e.maxShield, e.shield + 3 * dt);
+        if (e.shieldFlash > 0) e.shieldFlash -= dt * 4;
+
+        // Fire at player
+        e.fireCooldown -= dt;
+        if (e.fireCooldown <= 0 && dist < 300) {
+            e.fireCooldown = 1.0 / e.fireRate + Math.random() * 0.5;
+            // Enemy projectile
+            const spread = (Math.random()-0.5) * 0.15;
+            const angle = Math.atan2(ship.y - e.y, ship.x - e.x) + spread;
+            S.projectiles.push({
+                x: e.x, y: e.y,
+                vx: Math.cos(angle) * 10,
+                vy: Math.sin(angle) * 10,
+                dmg: e.dmg,
+                friendly: false,
+                life: 3,
+                size: 2,
+                color: '#ff6644'
+            });
+        }
+    });
+
+    // Update projectiles
+    S.projectiles = S.projectiles.filter(p => {
+        p.x += p.vx * dt * 60;
+        p.y += p.vy * dt * 60;
+        p.life -= dt;
+        if (p.life <= 0) return false;
+
+        if (p.friendly) {
+            // Check hit enemies
+            for (let e of S.enemies) {
+                if (e.destroyed) continue;
+                const dx = p.x - e.x;
+                const dy = p.y - e.y;
+                if (Math.sqrt(dx*dx+dy*dy) < e.size + p.size) {
+                    hitEnemy(e, p.dmg);
+                    spawnExplosion(p.x, p.y, p.size * 2, p.color);
+                    return false;
+                }
+            }
+        } else {
+            // Check hit player
+            const dx = p.x - ship.x;
+            const dy = p.y - ship.y;
+            if (Math.sqrt(dx*dx+dy*dy) < 18) {
+                hitPlayer(p.dmg, p.x, p.y);
+                return false;
+            }
+        }
+        return true;
+    });
+
+    // Update explosions
+    S.explosions = S.explosions.filter(e => {
+        e.life -= dt;
+        e.radius += e.expandRate * dt * 60;
+        return e.life > 0;
+    });
+
+    // Shield hit fx
+    S.shieldHits = S.shieldHits.filter(h => {
+        h.life -= dt;
+        return h.life > 0;
+    });
+
+    // Debris
+    S.debris = S.debris.filter(d => {
+        d.x += d.vx * dt * 60;
+        d.y += d.vy * dt * 60;
+        d.rotation += d.rotSpeed * dt * 60;
+        d.life -= dt;
+        d.vx *= 0.998;
+        d.vy *= 0.998;
+        return d.life > 0;
+    });
+
+    // Screen shake decay
+    if (S.shakeAmount > 0) S.shakeAmount *= 0.92;
+
+    // Check wave clear
+    const alive = S.enemies.filter(e => !e.destroyed).length;
+    if (alive === 0 && S.enemies.length > 0) {
+        S.wave++;
+        log(`Wave ${S.wave} incoming!`, 'error');
+        setTimeout(() => spawnWave(), 1500);
+    }
+}
+
+function hitEnemy(e, dmg) {
+    if (e.shield > 0) {
+        const absorbed = Math.min(e.shield, dmg * 0.7);
+        e.shield -= absorbed;
+        dmg -= absorbed;
+        e.shieldFlash = 1;
+        spawnShieldHit(e.x, e.y, e.size);
+    }
+    if (dmg > 0) {
+        e.hp -= dmg;
+        S.totalDmgDealt += dmg;
+    }
+    if (e.hp <= 0) {
+        e.destroyed = true;
+        e.exploding = 1.5;
+        S.kills++;
+        spawnExplosion(e.x, e.y, e.size * 3, e.color);
+        spawnDebris(e.x, e.y, 15);
+        log(`${e.name} DESTROYED (+${e.pts} pts)`, 'success');
+    }
+}
+
+function hitPlayer(dmg, px, py) {
+    const ship = S.ship;
+    S.shakeAmount = Math.min(8, S.shakeAmount + dmg * 0.3);
+
+    if (ship.shield > 0) {
+        const absorbed = Math.min(ship.shield, dmg * 0.8);
+        ship.shield -= absorbed;
+        dmg -= absorbed;
+        spawnShieldHit(ship.x, ship.y, 20);
+    }
+    if (dmg > 0) {
+        ship.hull -= dmg;
+        S.totalDmgTaken += dmg;
+        // Random section damage
+        const sections = ['fwd','aft','port','star','bridge','engine'];
+        const sec = sections[Math.floor(Math.random()*sections.length)];
+        ship.sections[sec] = Math.max(0, ship.sections[sec] - dmg * 1.5);
+        if (ship.sections[sec] < 30) log(`WARNING: ${sec.toUpperCase()} section critical!`, 'error');
+    }
+    if (ship.hull <= 0) {
+        ship.hull = 0;
+        log('HULL BREACH — SHIP DESTROYED', 'error');
+        spawnExplosion(ship.x, ship.y, 40, '#ff8844');
+        spawnDebris(ship.x, ship.y, 30);
+        S.running = false;
+    }
+}
+
+function spawnExplosion(x, y, radius, color) {
+    S.explosions.push({ x, y, radius: radius*0.3, maxRadius: radius, expandRate: radius*2, life: 0.6, color });
+}
+
+function spawnShieldHit(x, y, radius) {
+    S.shieldHits.push({ x, y, radius, life: 0.4 });
+}
+
+function spawnDebris(x, y, count) {
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 3 + 0.5;
+        S.debris.push({
+            x, y,
+            vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
+            rotation: Math.random()*Math.PI*2,
+            rotSpeed: (Math.random()-0.5)*0.1,
+            size: Math.random()*4+1,
+            color: ['#888','#aa6633','#667788','#554433'][Math.floor(Math.random()*4)],
+            life: 3+Math.random()*3
+        });
+    }
+}
+
+// ═══ DRO ═══
+function computeDRO() {
+    const ship = S.ship;
+    const tgt = S.enemies[S.targetIdx];
+    const tgtDist = tgt && !tgt.destroyed ? Math.sqrt((tgt.x-ship.x)**2+(tgt.y-ship.y)**2) : 999;
+
+    // Five Pillars
+    const p = S.dro.pillars;
+    p.dist = tgt && !tgt.destroyed ? Math.max(0, 1 - tgtDist / 400) : 0.1;
+    p.vel = Math.min(1, ship.speed / 5);
+    p.int = S.projectiles.length > 0 ? Math.min(1, S.projectiles.length / 20) : 0.1;
+    p.phs = S.shieldHits.length > 0 ? 0.9 : (ship.shield < 50 ? 0.7 : 0.3);
+    p.per = S.evasive ? 0.9 : (S.autoFire ? 0.6 : 0.4);
+
+    const composite = p.dist * 0.25 + p.vel * 0.15 + p.int * 0.25 + p.phs * 0.20 + p.per * 0.15;
+
+    let newBase;
+    if (composite > 0.75 || S.shieldHits.length > 0) newBase = 64;
+    else if (composite > 0.55 || S.weapon === 'railgun') newBase = 48;
+    else if (composite > 0.35) newBase = 32;
+    else if (composite > 0.15) newBase = 16;
+    else newBase = 8;
+
+    if (newBase !== S.dro.currentBase) {
+        S.dro.switches++;
+        S.dro.currentBase = newBase;
+    }
+    S.dro.history.push(newBase);
+    if (S.dro.history.length > 120) S.dro.history.shift();
+    S.dro.avgBase = S.dro.history.reduce((a,b)=>a+b,0) / S.dro.history.length;
+
+    // Alert level
+    const alive = S.enemies.filter(e => !e.destroyed).length;
+    if (ship.hull < 30 || ship.shield < 20) S.alertLevel = 'RED';
+    else if (alive > 3 || ship.hull < 60) S.alertLevel = 'YELLOW';
+    else if (alive > 0) S.alertLevel = 'ORANGE';
+    else S.alertLevel = 'GREEN';
+}
+
+// ═══ RENDER ═══
+function render() {
+    const W = canvas.width, H = canvas.height;
+    const cx = W/2, cy = H/2;
+
+    // Shake
+    const sx = (Math.random()-0.5)*S.shakeAmount;
+    const sy = (Math.random()-0.5)*S.shakeAmount;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+
+    // Background
+    ctx.fillStyle = '#030208';
+    ctx.fillRect(-10,-10,W+20,H+20);
+
+    // Nebula glow
+    const nebGrad = ctx.createRadialGradient(W*0.3,H*0.4,0,W*0.3,H*0.4,W*0.6);
+    nebGrad.addColorStop(0, 'rgba(40,10,30,0.15)');
+    nebGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = nebGrad;
+    ctx.fillRect(0,0,W,H);
+
+    const nebGrad2 = ctx.createRadialGradient(W*0.8,H*0.7,0,W*0.8,H*0.7,W*0.4);
+    nebGrad2.addColorStop(0, 'rgba(10,15,40,0.12)');
+    nebGrad2.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = nebGrad2;
+    ctx.fillRect(0,0,W,H);
+
+    // Camera offset (follow player loosely)
+    const camX = -S.ship.x * 0.8;
+    const camY = -S.ship.y * 0.8;
+
+    // Stars (parallax)
+    S.stars.forEach(s => {
+        const px = ((s.x + camX * s.z * 0.1) % W + W) % W;
+        const py = ((s.y + camY * s.z * 0.1) % H + H) % H;
+        const twinkle = 0.7 + Math.sin(S.time * 2 + s.x) * 0.3;
+        ctx.fillStyle = `rgba(200,210,255,${s.brightness * twinkle})`;
+        ctx.fillRect(px, py, s.z, s.z);
+    });
+
+    ctx.save();
+    ctx.translate(cx + camX, cy + camY);
+
+    // Grid lines (faint)
+    ctx.strokeStyle = 'rgba(255,50,60,0.03)';
+    ctx.lineWidth = 0.5;
+    for (let gx = -500; gx <= 500; gx += 50) {
+        ctx.beginPath(); ctx.moveTo(gx, -500); ctx.lineTo(gx, 500); ctx.stroke();
+    }
+    for (let gy = -500; gy <= 500; gy += 50) {
+        ctx.beginPath(); ctx.moveTo(-500, gy); ctx.lineTo(500, gy); ctx.stroke();
+    }
+
+    // Debris
+    S.debris.forEach(d => {
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.rotate(d.rotation);
+        ctx.fillStyle = d.color;
+        ctx.globalAlpha = Math.min(1, d.life);
+        ctx.fillRect(-d.size/2, -d.size/2, d.size, d.size);
+        ctx.restore();
+    });
+
+    // Enemies
+    S.enemies.forEach((e, idx) => {
+        if (e.destroyed && e.exploding <= 0) return;
+
+        ctx.save();
+        ctx.translate(e.x, e.y);
+
+        if (e.destroyed) {
+            // Explosion animation
+            ctx.globalAlpha = e.exploding;
+            const er = (1.5 - e.exploding) * e.size * 2;
+            const grad = ctx.createRadialGradient(0,0,0,0,0,er);
+            grad.addColorStop(0, '#ffcc44');
+            grad.addColorStop(0.4, e.color);
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(0,0,er,0,Math.PI*2); ctx.fill();
+            ctx.restore();
+            return;
+        }
+
+        ctx.rotate(e.heading);
+
+        // Shield bubble
+        if (e.shield > 0) {
+            ctx.strokeStyle = `rgba(68,136,255,${0.15 + e.shieldFlash * 0.5})`;
+            ctx.lineWidth = 1 + e.shieldFlash * 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, e.size + 6, 0, Math.PI*2);
+            ctx.stroke();
+        }
+
+        // Ship body
+        ctx.fillStyle = e.color;
+        if (e.type === 'fighter') {
+            ctx.beginPath();
+            ctx.moveTo(e.size, 0);
+            ctx.lineTo(-e.size*0.7, -e.size*0.6);
+            ctx.lineTo(-e.size*0.4, 0);
+            ctx.lineTo(-e.size*0.7, e.size*0.6);
+            ctx.closePath();
+            ctx.fill();
+        } else if (e.type === 'corvette') {
+            ctx.beginPath();
+            ctx.moveTo(e.size, 0);
+            ctx.lineTo(e.size*0.3, -e.size*0.5);
+            ctx.lineTo(-e.size*0.8, -e.size*0.4);
+            ctx.lineTo(-e.size*0.6, 0);
+            ctx.lineTo(-e.size*0.8, e.size*0.4);
+            ctx.lineTo(e.size*0.3, e.size*0.5);
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            // Battleship — large angular
+            ctx.beginPath();
+            ctx.moveTo(e.size, 0);
+            ctx.lineTo(e.size*0.5, -e.size*0.35);
+            ctx.lineTo(-e.size*0.2, -e.size*0.5);
+            ctx.lineTo(-e.size*0.9, -e.size*0.3);
+            ctx.lineTo(-e.size, 0);
+            ctx.lineTo(-e.size*0.9, e.size*0.3);
+            ctx.lineTo(-e.size*0.2, e.size*0.5);
+            ctx.lineTo(e.size*0.5, e.size*0.35);
+            ctx.closePath();
+            ctx.fill();
+            // Engine glow
+            ctx.fillStyle = '#ff4422';
+            ctx.beginPath(); ctx.arc(-e.size*0.9, -e.size*0.15, 3, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(-e.size*0.9, e.size*0.15, 3, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Engine glow
+        ctx.fillStyle = `rgba(255,100,40,${0.4+Math.sin(S.time*10)*0.2})`;
+        ctx.beginPath();
+        ctx.arc(-e.size*0.5, 0, e.size*0.15, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.restore();
+
+        // Target indicator
+        if (idx === S.targetIdx) {
+            ctx.strokeStyle = `rgba(255,50,60,${0.5+Math.sin(S.time*4)*0.3})`;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4,4]);
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, e.size + 14, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // HP bar above
+            const barW = e.size * 2;
+            const barY = e.y - e.size - 14;
+            // Shield bar
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(e.x - barW/2, barY, barW, 3);
+            ctx.fillStyle = '#4488ff';
+            ctx.fillRect(e.x - barW/2, barY, barW * (e.shield/e.maxShield), 3);
+            // HP bar
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(e.x - barW/2, barY + 4, barW, 3);
+            const hpPct = e.hp / e.maxHp;
+            ctx.fillStyle = hpPct > 0.5 ? '#00ff88' : hpPct > 0.25 ? '#ffd000' : '#ff3344';
+            ctx.fillRect(e.x - barW/2, barY + 4, barW * hpPct, 3);
+        }
+    });
+
+    // Player ship
+    ctx.save();
+    ctx.translate(S.ship.x, S.ship.y);
+    ctx.rotate(S.ship.heading);
+
+    // Shield bubble
+    if (S.ship.shield > 0) {
+        ctx.strokeStyle = `rgba(68,136,255,${S.ship.shield/400})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 24, 0, Math.PI*2);
+        ctx.stroke();
+    }
+
+    // Ship body (player — white/blue)
+    ctx.fillStyle = '#aabbdd';
+    ctx.beginPath();
+    ctx.moveTo(16, 0);
+    ctx.lineTo(6, -8);
+    ctx.lineTo(-4, -10);
+    ctx.lineTo(-12, -6);
+    ctx.lineTo(-14, 0);
+    ctx.lineTo(-12, 6);
+    ctx.lineTo(-4, 10);
+    ctx.lineTo(6, 8);
+    ctx.closePath();
+    ctx.fill();
+
+    // Cockpit
+    ctx.fillStyle = '#44aaff';
+    ctx.beginPath();
+    ctx.moveTo(14, 0);
+    ctx.lineTo(6, -4);
+    ctx.lineTo(6, 4);
+    ctx.closePath();
+    ctx.fill();
+
+    // Engine glow
+    const engBright = 0.3 + S.ship.throttle / 200;
+    ctx.fillStyle = `rgba(0,180,255,${engBright})`;
+    ctx.beginPath(); ctx.arc(-13, -3, 3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-13, 3, 3, 0, Math.PI*2); ctx.fill();
+
+    // Thrust flame
+    if (S.ship.throttle > 10) {
+        const flameLen = 4 + S.ship.throttle / 10 + Math.random()*3;
+        ctx.fillStyle = `rgba(0,200,255,${0.4+Math.random()*0.2})`;
+        ctx.beginPath();
+        ctx.moveTo(-14, -3);
+        ctx.lineTo(-14-flameLen, 0);
+        ctx.lineTo(-14, 3);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    ctx.restore();
+
+    // Projectiles
+    S.projectiles.forEach(p => {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        const angle = Math.atan2(p.vy, p.vx);
+        ctx.rotate(angle);
+
+        // Glow
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size*2, -p.size/2, p.size*4, p.size);
+        ctx.shadowBlur = 0;
+
+        // Core
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(-p.size, -p.size/4, p.size*2, p.size/2);
+
+        ctx.restore();
+    });
+
+    // Explosions
+    S.explosions.forEach(e => {
+        const alpha = e.life / 0.6;
+        const grad = ctx.createRadialGradient(e.x,e.y,0,e.x,e.y,e.radius);
+        grad.addColorStop(0, `rgba(255,255,200,${alpha})`);
+        grad.addColorStop(0.3, e.color.replace(')', `,${alpha*0.7})`).replace('rgb','rgba'));
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.radius, 0, Math.PI*2);
+        ctx.fill();
+    });
+
+    // Shield hits
+    S.shieldHits.forEach(h => {
+        ctx.strokeStyle = `rgba(68,136,255,${h.life * 2})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.radius + (0.4-h.life)*20, 0, Math.PI*2);
+        ctx.stroke();
+    });
+
+    ctx.restore();
+    ctx.restore();
+
+    // Minimap
+    drawMinimap(W, H);
+}
+
+function drawMinimap(W, H) {
+    const mSize = 100;
+    const mx = W - mSize - 10;
+    const my = H - mSize - 40;
+    const scale = 0.12;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.strokeStyle = 'rgba(255,50,60,0.2)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(mx, my, mSize, mSize);
+    ctx.strokeRect(mx, my, mSize, mSize);
+
+    const mcx = mx + mSize/2;
+    const mcy = my + mSize/2;
+
+    // Player
+    ctx.fillStyle = '#44aaff';
+    ctx.beginPath();
+    ctx.arc(mcx + S.ship.x * scale, mcy + S.ship.y * scale, 2, 0, Math.PI*2);
+    ctx.fill();
+
+    // Enemies
+    S.enemies.forEach((e, idx) => {
+        if (e.destroyed) return;
+        ctx.fillStyle = idx === S.targetIdx ? '#ff3344' : '#ff6644';
+        ctx.beginPath();
+        ctx.arc(mcx + e.x*scale, mcy + e.y*scale, e.type==='battleship'?3:1.5, 0, Math.PI*2);
+        ctx.fill();
+    });
+
+    // Label
+    ctx.fillStyle = 'rgba(255,50,60,0.4)';
+    ctx.font = '8px "Share Tech Mono"';
+    ctx.fillText('TACTICAL', mx+2, my+9);
+}
+
+// ═══ UI UPDATE ═══
+function updateUI() {
+    const ship = S.ship;
+    const bc = baseColor(S.dro.currentBase);
+    const prec = basePrecision(S.dro.currentBase);
+    const tgt = S.enemies[S.targetIdx];
+    const tgtDist = tgt && !tgt.destroyed ? Math.sqrt((tgt.x-ship.x)**2+(tgt.y-ship.y)**2) : 0;
+
+    // Header
+    document.getElementById('alertLvl').textContent = S.alertLevel;
+    document.getElementById('alertLvl').style.color = S.alertLevel==='RED'?'#ff3344':S.alertLevel==='YELLOW'?'#ffd000':S.alertLevel==='ORANGE'?'#ff9500':'#00ff88';
+    if (S.alertLevel === 'RED') document.getElementById('alertLvl').classList.add('alert-flash');
+    else document.getElementById('alertLvl').classList.remove('alert-flash');
+    document.getElementById('shieldHdr').textContent = Math.round(ship.shield) + '%';
+    document.getElementById('shieldHdr').style.color = ship.shield > 50 ? '#4488ff' : '#ff3344';
+    document.getElementById('hullHdr').textContent = Math.round(ship.hull) + '%';
+    document.getElementById('hullHdr').style.color = ship.hull > 50 ? '#00ff88' : '#ff3344';
+
+    // Ship status
+    document.getElementById('shieldPct').textContent = ship.shield.toFixed(1) + '%';
+    document.getElementById('shieldPct').style.color = ship.shield > 50 ? '#4488ff' : '#ff3344';
+    document.getElementById('shieldBar').style.width = ship.shield + '%';
+    document.getElementById('shieldBar').style.background = ship.shield > 50 ? '#4488ff' : '#ff3344';
+    document.getElementById('hullPct').textContent = ship.hull.toFixed(1) + '%';
+    document.getElementById('hullPct').style.color = ship.hull > 50 ? '#00ff88' : '#ff3344';
+    document.getElementById('hullBar').style.width = ship.hull + '%';
+    document.getElementById('hullBar').style.background = ship.hull > 50 ? '#00ff88' : '#ff3344';
+    document.getElementById('reactorPwr').textContent = ship.reactor.toFixed(0) + '%';
+    document.getElementById('reactorBar').style.width = ship.reactor + '%';
+    document.getElementById('speed').textContent = (ship.speed * 1.2).toFixed(1) + ' km/s';
+    document.getElementById('heading').textContent = ((ship.heading * 180/Math.PI + 360) % 360).toFixed(0) + '°';
+    document.getElementById('throttle').textContent = ship.throttle.toFixed(0) + '%';
+
+    // Weapon
+    const wpn = WEAPONS[S.weapon];
+    document.getElementById('wpnName').textContent = wpn.name;
+    document.getElementById('wpnName').style.color = wpn.color;
+    document.getElementById('wpnCharge').textContent = S.wpnCharge.toFixed(0) + '%';
+    document.getElementById('wpnChargeBar').style.width = S.wpnCharge + '%';
+    document.getElementById('wpnChargeBar').style.background = wpn.color;
+    document.getElementById('wpnDmg').textContent = wpn.dmg + '/hit';
+    document.getElementById('wpnRate').textContent = wpn.rate.toFixed(1) + '/s';
+    document.getElementById('wpnRange').textContent = wpn.range.toFixed(1) + ' km';
+    document.getElementById('torpCount').textContent = S.torpedoes;
+
+    // Damage sections
+    ['fwd','aft','port','star','bridge','engine'].forEach(sec => {
+        const val = ship.sections[sec];
+        const el = document.getElementById('dmg' + sec.charAt(0).toUpperCase() + sec.slice(1));
+        el.textContent = Math.round(val);
+        el.style.color = val > 70 ? '#00ff88' : val > 30 ? '#ffd000' : '#ff3344';
+    });
+
+    // Targets
+    S.enemies.forEach((e, idx) => {
+        const el = document.getElementById('tgt' + idx);
+        if (!el) return;
+        const d = Math.sqrt((e.x-ship.x)**2+(e.y-ship.y)**2);
+        el.classList.toggle('targeted', idx===S.targetIdx);
+        el.classList.toggle('destroyed', e.destroyed);
+        if (!e.destroyed) {
+            el.querySelector('.tgt-detail').textContent =
+                `${ENEMY_TYPES[e.type].name} · ${(d/100).toFixed(1)}km · Shield ${Math.round(e.shield/e.maxShield*100)}% · HP ${Math.round(e.hp/e.maxHp*100)}%`;
+        }
+    });
+
+    // DRO
+    document.getElementById('hudBase').textContent = 'BASE-' + S.dro.currentBase;
+    document.getElementById('hudBase').style.color = bc;
+    document.getElementById('hudPrec').textContent = prec.str;
+    document.getElementById('hudOps').textContent = prec.ops.toLocaleString();
+    document.getElementById('droBase').textContent = S.dro.currentBase;
+    document.getElementById('droBase').style.color = bc;
+    document.getElementById('droPrecision').textContent = prec.str;
+    document.getElementById('droSwitches').textContent = S.dro.switches;
+    document.getElementById('droAvg').textContent = S.dro.avgBase.toFixed(1);
+    const savings = ((4096 - prec.ops) / 4096 * 100).toFixed(0);
+    document.getElementById('droSavings').textContent = savings + '%';
+
+    // DRO bar segments
+    [8,16,32,48,64].forEach(b => {
+        const el = document.getElementById('seg' + b);
+        if (b === S.dro.currentBase) {
+            el.style.opacity = 1;
+            el.classList.add('lit');
+        } else {
+            el.style.opacity = 0.15;
+            el.classList.remove('lit');
+        }
+    });
+
+    // Five Pillars
+    const p = S.dro.pillars;
+    document.getElementById('pillarDist').textContent = p.dist.toFixed(2);
+    document.getElementById('pillarVel').textContent = p.vel.toFixed(2);
+    document.getElementById('pillarInt').textContent = p.int.toFixed(2);
+    document.getElementById('pillarPhs').textContent = p.phs.toFixed(2);
+    document.getElementById('pillarPer').textContent = p.per.toFixed(2);
+
+    // HUD
+    const alive = S.enemies.filter(e => !e.destroyed).length;
+    document.getElementById('hudHostiles').textContent = alive;
+    document.getElementById('hudKills').textContent = S.kills;
+    document.getElementById('hudWpn').textContent = wpn.name;
+    document.getElementById('hudWpn').style.color = wpn.color;
+    document.getElementById('hudTgt').textContent = tgt && !tgt.destroyed ? tgt.name : 'NONE';
+    document.getElementById('hudTgt').style.color = tgt && !tgt.destroyed ? '#ff3344' : '#4a5060';
+    document.getElementById('hudDist').textContent = tgt && !tgt.destroyed ? (tgtDist/100).toFixed(2) + ' km' : '—';
+
+    // Triggers
+    document.getElementById('trigShield').textContent = S.shieldHits.length > 0 ? 'ACTIVE' : '—';
+    document.getElementById('trigShield').style.color = S.shieldHits.length > 0 ? '#4488ff' : '#4a5060';
+    document.getElementById('trigLock').textContent = tgt && !tgt.destroyed && tgtDist < wpn.range*100 ? 'LOCKED' : 'NO';
+    document.getElementById('trigLock').style.color = tgt && !tgt.destroyed && tgtDist < wpn.range*100 ? '#00ff88' : '#4a5060';
+    const proxLabel = tgtDist < 80 ? 'CLOSE' : tgtDist < 200 ? 'MID' : 'FAR';
+    document.getElementById('trigProx').textContent = proxLabel;
+    document.getElementById('trigProx').style.color = proxLabel==='CLOSE'?'#ff3344':proxLabel==='MID'?'#ffd000':'#4a5060';
+    document.getElementById('trigEvasion').textContent = S.evasive ? 'ON' : 'OFF';
+    document.getElementById('trigEvasion').style.color = S.evasive ? '#ff9500' : '#4a5060';
+    document.getElementById('trigCrit').textContent = S.ship.hull < 30 ? 'YES' : 'NO';
+    document.getElementById('trigCrit').style.color = S.ship.hull < 30 ? '#ff3344' : '#4a5060';
+}
+
+// ═══ HELPERS ═══
+function baseColor(b) {
+    return b >= 64 ? '#00ff88' : b >= 48 ? '#00ccff' : b >= 32 ? '#ffd000' : b >= 16 ? '#ff8800' : '#ff3344';
+}
+
+function basePrecision(b) {
+    const map = {
+        8:  { str: '±10.0 mm', ops: 256 },
+        16: { str: '±5.0 mm',  ops: 512 },
+        32: { str: '±1.0 mm',  ops: 1024 },
+        48: { str: '±0.01 mm', ops: 2847 },
+        64: { str: '±0.001 mm',ops: 4096 }
+    };
+    return map[b] || map[32];
+}
+
+// ═══ CONTROLS ═══
+function selectWeapon(wpn) {
+    S.weapon = wpn;
+    document.querySelectorAll('.wpn-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector(`[data-wpn="${wpn}"]`).classList.add('selected');
+    log(`Weapon: ${WEAPONS[wpn].name}`, 'info');
+}
+
+function selectTarget(idx) {
+    if (S.enemies[idx] && !S.enemies[idx].destroyed) {
+        S.targetIdx = idx;
+        log(`Target: ${S.enemies[idx].name}`, 'warn');
+    }
+}
+
+function fireWeapon() {
+    if (S.enemies[S.targetIdx]?.destroyed) {
+        // Auto-select next alive
+        const next = S.enemies.findIndex(e => !e.destroyed);
+        if (next >= 0) S.targetIdx = next;
+        else return;
+    }
+    fireWeaponInternal();
+}
+
+function fireWeaponInternal() {
+    const wpn = WEAPONS[S.weapon];
+    if (S.fireCooldown > 0) return;
+    if (S.wpnCharge < wpn.energy) { log('Insufficient weapon charge!', 'warn'); return; }
+    if (S.weapon === 'torpedo' && S.torpedoes <= 0) { log('No torpedoes remaining!', 'error'); return; }
+
+    const tgt = S.enemies[S.targetIdx];
+    if (!tgt || tgt.destroyed) return;
+
+    S.wpnCharge -= wpn.energy;
+    S.fireCooldown = 1.0 / wpn.rate;
+    if (S.weapon === 'torpedo') S.torpedoes--;
+
+    const angle = Math.atan2(tgt.y - S.ship.y, tgt.x - S.ship.x);
+    const spread = (Math.random()-0.5) * 0.08;
+
+    S.projectiles.push({
+        x: S.ship.x + Math.cos(S.ship.heading)*16,
+        y: S.ship.y + Math.sin(S.ship.heading)*16,
+        vx: Math.cos(angle+spread) * wpn.speed,
+        vy: Math.sin(angle+spread) * wpn.speed,
+        dmg: wpn.dmg,
+        friendly: true,
+        life: wpn.range / wpn.speed * 2,
+        size: wpn.size,
+        color: wpn.color
+    });
+
+    S.shakeAmount = Math.min(3, S.shakeAmount + (S.weapon==='railgun'?2:S.weapon==='torpedo'?1:0.3));
+}
+
+function toggleAutoFire() {
+    S.autoFire = !S.autoFire;
+    log(S.autoFire ? 'Auto-fire ENGAGED' : 'Auto-fire DISENGAGED', S.autoFire ? 'success' : 'warn');
+}
+
+function shieldBoost() {
+    if (S.ship.reactor < 20) { log('Insufficient reactor power for boost!', 'warn'); return; }
+    S.ship.reactor -= 20;
+    S.ship.shield = Math.min(100, S.ship.shield + 30);
+    log('Shield boost — +30% capacity', 'success');
+}
+
+function evasiveManeuvers() {
+    S.evasive = true;
+    S.evasiveTimer = 3;
+    log('Evasive maneuvers!', 'warn');
+}
+
+function toggleSim() {
+    S.running = !S.running;
+    document.getElementById('btnPlay').textContent = S.running ? '⏸ PAUSE' : '▶ RESUME';
+    document.getElementById('btnPlay').classList.toggle('active', S.running);
+}
+
+function resetSim() {
+    S.time = 0; S.combatTime = 0;
+    S.ship = {
+        x:0, y:0, vx:0, vy:0, heading:0, throttle:0, speed:0,
+        shield:100, hull:100, reactor:100,
+        sections:{fwd:100,aft:100,port:100,star:100,bridge:100,engine:100}
+    };
+    S.weapon = 'laser'; S.wpnCharge = 100; S.torpedoes = 12;
+    S.fireCooldown = 0; S.autoFire = false; S.evasive = false;
+    S.projectiles = []; S.explosions = []; S.shieldHits = []; S.debris = [];
+    S.kills = 0; S.totalDmgDealt = 0; S.totalDmgTaken = 0; S.wave = 1;
+    S.dro = { currentBase:32, targetBase:32, switches:0, history:[], avgBase:32,
+              pillars:{dist:0.3,vel:0.2,int:0.5,phs:0.4,per:0.6} };
+    S.shakeAmount = 0; S.alertLevel = 'GREEN'; S.running = true;
+    selectWeapon('laser');
+    initScene();
+    document.getElementById('logWrap').innerHTML = '';
+    log('Systems online — all stations ready', 'info');
+}
+
+function spawnWave() {
+    const wave = S.wave;
+    const fighters = Math.min(wave + 1, 6);
+    const corvettes = Math.floor(wave / 2);
+    const capitals = wave >= 3 ? 1 : 0;
+
+    for (let i = 0; i < fighters; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 250 + Math.random() * 150;
+        spawnEnemy('fighter', S.ship.x + Math.cos(angle)*dist, S.ship.y + Math.sin(angle)*dist);
+    }
+    for (let i = 0; i < corvettes; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 300 + Math.random() * 100;
+        spawnEnemy('corvette', S.ship.x + Math.cos(angle)*dist, S.ship.y + Math.sin(angle)*dist);
+    }
+    if (capitals) {
+        const angle = Math.random() * Math.PI * 2;
+        spawnEnemy('battleship', S.ship.x + Math.cos(angle)*400, S.ship.y + Math.sin(angle)*400);
+    }
+
+    // Rebuild target list
+    rebuildTargetList();
+    log(`Wave ${wave}: ${fighters}F ${corvettes}C ${capitals}B incoming`, 'error');
+}
+
+function rebuildTargetList() {
+    const container = document.querySelector('.right-panel');
+    const tgtSection = container.querySelector('.panel-title');
+    // Remove old targets
+    document.querySelectorAll('.tgt-item').forEach(el => el.remove());
+
+    // Add new targets after first panel-title
+    S.enemies.forEach((e, idx) => {
+        const div = document.createElement('div');
+        div.className = 'tgt-item' + (idx===S.targetIdx?' targeted':'') + (e.destroyed?' destroyed':'');
+        div.id = 'tgt' + idx;
+        div.onclick = () => selectTarget(idx);
+        const typeLabel = e.type==='battleship'?'CAPITAL':'HOSTILE';
+        div.innerHTML = `<div class="tgt-name">🔴 ${e.name} <span style="color:var(--red);font-size:10px">${typeLabel}</span></div>
+                         <div class="tgt-detail">${ENEMY_TYPES[e.type].name} · 0.0km · Shield 100%</div>`;
+        tgtSection.after(div);
+    });
+}
+
+function selfDestruct() {
+    if (!confirm('CONFIRM SELF-DESTRUCT SEQUENCE?')) return;
+    log('SELF-DESTRUCT INITIATED', 'error');
+    S.ship.hull = 0;
+    spawnExplosion(S.ship.x, S.ship.y, 60, '#ffaa22');
+    spawnDebris(S.ship.x, S.ship.y, 50);
+    S.shakeAmount = 12;
+    // Destroy nearby enemies too
+    S.enemies.forEach(e => {
+        if (!e.destroyed) {
+            const d = Math.sqrt((e.x-S.ship.x)**2+(e.y-S.ship.y)**2);
+            if (d < 200) {
+                e.hp = 0; e.destroyed = true; e.exploding = 1.5;
+                S.kills++;
+                spawnExplosion(e.x, e.y, e.size*3, e.color);
+            }
+        }
+    });
+    setTimeout(() => { S.running = false; }, 500);
+}
+
+// ═══ KEYBOARD ═══
+document.addEventListener('keydown', e => {
+    const turnRate = 0.05;
+    const accel = 8;
+    switch(e.key) {
+        case 'w': case 'ArrowUp':    S.ship.throttle = Math.min(100, S.ship.throttle + accel); break;
+        case 's': case 'ArrowDown':  S.ship.throttle = Math.max(0, S.ship.throttle - accel); break;
+        case 'a': case 'ArrowLeft':  S.ship.heading -= turnRate; break;
+        case 'd': case 'ArrowRight': S.ship.heading += turnRate; break;
+        case ' ': e.preventDefault(); fireWeapon(); break;
+        case 'f': toggleAutoFire(); break;
+        case 'e': evasiveManeuvers(); break;
+        case 'b': shieldBoost(); break;
+        case '1': selectWeapon('laser'); break;
+        case '2': selectWeapon('torpedo'); break;
+        case '3': selectWeapon('railgun'); break;
+        case 'Tab':
+            e.preventDefault();
+            let next = (S.targetIdx + 1) % S.enemies.length;
+            while (S.enemies[next]?.destroyed && next !== S.targetIdx) next = (next+1)%S.enemies.length;
+            selectTarget(next);
+            break;
+    }
+});
+
+// ═══ LOG ═══
+function log(msg, type='info') {
+    const wrap = document.getElementById('logWrap');
+    const mins = String(Math.floor(S.combatTime/60)).padStart(2,'0');
+    const secs = String(Math.floor(S.combatTime%60)).padStart(2,'0');
+    const el = document.createElement('div');
+    el.className = 'log-entry';
+    el.innerHTML = `<span class="log-time">${mins}:${secs}</span> <span class="log-msg ${type}">${msg}</span>`;
+    wrap.appendChild(el);
+    wrap.scrollTop = wrap.scrollHeight;
+    while (wrap.children.length > 60) wrap.removeChild(wrap.firstChild);
+}
+
+// ═══ GAME LOOP ═══
+let lastTime = 0;
+
+function gameLoop(ts) {
+    const dt = Math.min((ts - lastTime) / 1000, 0.05);
+    lastTime = ts;
+
+    if (S.running) {
+        S.time += dt;
+        S.combatTime += dt;
+        updatePhysics(dt);
+        computeDRO();
+    }
+
+    render();
+    updateUI();
+    requestAnimationFrame(gameLoop);
+}
+
+// ═══ INIT ═══
+initScene();
+log('Combat stations — all weapons online', 'info');
+log('5 hostile contacts detected', 'error');
+log('DRO: Base-32 cruise, auto-scaling enabled', 'info');
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>

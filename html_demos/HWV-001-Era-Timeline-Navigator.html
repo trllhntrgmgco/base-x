@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HWV-001: Era Timeline Navigator — Base-X Game Engine</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --parchment: #f5ead6;
+  --parchment-deep: #e8d5b5;
+  --ink: #1a1410;
+  --ink-soft: #3d3128;
+  --ink-faded: #7a6e5e;
+  --gold: #c9a84c;
+  --gold-bright: #e8c84c;
+  --gold-dim: #8a7a3c;
+  --copper: #b87333;
+  --verdigris: #43b3ae;
+  --blood: #8b2500;
+  --royal: #2c1654;
+  --timeline-track: rgba(201,168,76,0.3);
+  --card-bg: rgba(245,234,214,0.92);
+  --overlay: rgba(26,20,16,0.85);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  color: var(--parchment);
+  font-family: 'Crimson Pro', Georgia, serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  cursor: default;
+}
+
+/* AGED PAPER TEXTURE */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(201,168,76,0.04), transparent 60%),
+    radial-gradient(ellipse at 70% 80%, rgba(184,115,51,0.03), transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* HEADER BAR */
+.header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 52px;
+  background: linear-gradient(180deg, rgba(26,20,16,0.97), rgba(26,20,16,0.88));
+  border-bottom: 1px solid var(--gold-dim);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 100;
+}
+
+.header-left { display: flex; align-items: center; gap: 14px; }
+
+.demo-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--gold);
+  padding: 2px 8px;
+  letter-spacing: 2px;
+}
+
+.demo-title {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 3px;
+}
+
+.header-right { display: flex; align-items: center; gap: 18px; }
+
+.engine-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--ink-faded);
+  letter-spacing: 1px;
+}
+
+.copyright {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--gold-dim);
+}
+
+/* DRO INDICATOR */
+.dro-strip {
+  position: fixed;
+  top: 52px; left: 0; right: 0;
+  height: 28px;
+  background: rgba(26,20,16,0.7);
+  border-bottom: 1px solid rgba(201,168,76,0.12);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 20px;
+  z-index: 99;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+}
+
+.dro-item { display: flex; align-items: center; gap: 6px; }
+.dro-label { color: var(--ink-faded); letter-spacing: 1px; }
+.dro-val { color: var(--gold-bright); font-weight: 500; }
+
+/* MAIN AREA */
+.main {
+  position: fixed;
+  top: 80px; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 1;
+}
+
+/* ERA NAV BAR */
+.era-nav {
+  height: 48px;
+  display: flex;
+  align-items: stretch;
+  border-bottom: 2px solid var(--gold-dim);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.era-nav::-webkit-scrollbar { height: 0; }
+
+.era-tab {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(201,168,76,0.12);
+  color: var(--ink-faded);
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+}
+
+.era-tab:hover { color: var(--gold); background: rgba(201,168,76,0.05); }
+
+.era-tab.active {
+  color: var(--gold-bright);
+  background: rgba(201,168,76,0.08);
+}
+
+.era-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: var(--gold-bright);
+}
+
+.era-tab-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--gold-dim);
+  background: rgba(201,168,76,0.08);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+/* TIMELINE TRACK */
+.timeline-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.timeline-strip {
+  height: 80px;
+  flex-shrink: 0;
+  position: relative;
+  background: rgba(26,20,16,0.4);
+  border-bottom: 1px solid rgba(201,168,76,0.1);
+  overflow: hidden;
+}
+
+.timeline-track {
+  position: absolute;
+  top: 38px;
+  left: 40px;
+  right: 40px;
+  height: 3px;
+  background: var(--timeline-track);
+}
+
+.timeline-marker {
+  position: absolute;
+  top: -12px;
+  width: 2px;
+  height: 28px;
+  background: var(--gold-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timeline-marker:hover { background: var(--gold-bright); transform: scaleY(1.2); }
+.timeline-marker.active { background: var(--gold-bright); width: 3px; }
+
+.timeline-marker-label {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--ink-faded);
+  white-space: nowrap;
+}
+
+.timeline-marker.active .timeline-marker-label { color: var(--gold-bright); }
+
+.timeline-era-bar {
+  position: absolute;
+  top: 42px;
+  height: 10px;
+  border-radius: 2px;
+  opacity: 0.4;
+  transition: opacity 0.3s;
+}
+
+.timeline-era-bar.active { opacity: 0.8; }
+
+.timeline-year-display {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+
+/* CONTENT SCROLL AREA */
+.content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.content-area::-webkit-scrollbar { width: 6px; }
+.content-area::-webkit-scrollbar-track { background: transparent; }
+.content-area::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 3px; }
+
+/* ERA HEADER */
+.era-header {
+  margin-bottom: 24px;
+  animation: fadeUp 0.5s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.era-name {
+  font-family: 'Cinzel', serif;
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--gold-bright);
+  letter-spacing: 4px;
+  margin-bottom: 4px;
+}
+
+.era-period {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--gold-dim);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+.era-theme {
+  font-family: 'Crimson Pro', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink-faded);
+  padding-left: 16px;
+  border-left: 2px solid var(--gold-dim);
+}
+
+/* DRO ERA INFO */
+.era-dro-info {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.dro-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 3px 10px;
+  border: 1px solid rgba(201,168,76,0.2);
+  color: var(--gold);
+  letter-spacing: 1px;
+}
+
+/* FACTION GRID */
+.faction-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  animation: fadeUp 0.6s ease;
+}
+
+/* FACTION CARD */
+.faction-card {
+  background: rgba(245,234,214,0.04);
+  border: 1px solid rgba(201,168,76,0.15);
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s;
+  overflow: hidden;
+}
+
+.faction-card:hover {
+  border-color: var(--gold);
+  background: rgba(245,234,214,0.07);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+.faction-card.expanded {
+  border-color: var(--gold-bright);
+  background: rgba(245,234,214,0.08);
+}
+
+.faction-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.faction-icon {
+  font-size: 28px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(201,168,76,0.08);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.faction-info { flex: 1; }
+
+.faction-name {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--parchment);
+  letter-spacing: 1px;
+}
+
+.faction-territory {
+  font-family: 'Crimson Pro', serif;
+  font-size: 12px;
+  color: var(--ink-faded);
+  font-style: italic;
+}
+
+.faction-bonus-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--gold);
+  background: rgba(201,168,76,0.1);
+  padding: 2px 6px;
+  letter-spacing: 1px;
+  margin-top: 3px;
+  display: inline-block;
+}
+
+.faction-typography {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--copper);
+  margin-left: auto;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.faction-typo-label {
+  font-size: 7px;
+  color: var(--ink-faded);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* EXPANDED CARD BODY */
+.faction-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.4s ease;
+  padding: 0 16px;
+  border-top: 0px solid transparent;
+}
+
+.faction-card.expanded .faction-body {
+  max-height: 400px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid rgba(201,168,76,0.1);
+}
+
+.archetype-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.archetype-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(201,168,76,0.04);
+  border-left: 2px solid var(--gold-dim);
+  transition: all 0.2s;
+}
+
+.archetype-item:hover {
+  background: rgba(201,168,76,0.08);
+  border-left-color: var(--gold-bright);
+}
+
+.archetype-role {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+
+.archetype-class {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--verdigris);
+  letter-spacing: 0.5px;
+}
+
+.archetype-desc {
+  font-family: 'Crimson Pro', serif;
+  font-size: 11px;
+  color: var(--ink-faded);
+}
+
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--gold-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  margin-top: 10px;
+}
+
+/* ERA STATS BAR */
+.era-stats {
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(201,168,76,0.1);
+  flex-wrap: wrap;
+}
+
+.stat-block { text-align: center; }
+
+.stat-num {
+  font-family: 'Cinzel', serif;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--gold-bright);
+}
+
+.stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--ink-faded);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* MINIMAP */
+.minimap {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: var(--overlay);
+  border: 1px solid var(--gold-dim);
+  padding: 10px;
+  z-index: 50;
+  width: 180px;
+}
+
+.minimap-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--gold-dim);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+.minimap-bar {
+  display: flex;
+  height: 6px;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.minimap-seg {
+  flex: 1;
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 0.15s;
+  opacity: 0.4;
+}
+
+.minimap-seg:hover { opacity: 0.7; transform: scaleY(1.5); }
+.minimap-seg.active { opacity: 1; }
+
+.minimap-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  color: var(--ink-faded);
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* KEYBOARD HINT */
+.key-hint {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--ink-faded);
+  z-index: 50;
+}
+
+.key-hint kbd {
+  display: inline-block;
+  background: rgba(201,168,76,0.1);
+  border: 1px solid var(--gold-dim);
+  padding: 1px 6px;
+  margin: 0 2px;
+  font-size: 9px;
+  color: var(--gold);
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="demo-badge">HWV-001</div>
+    <div class="demo-title">ERA TIMELINE NAVIGATOR</div>
+  </div>
+  <div class="header-right">
+    <div class="engine-tag">HISTORIES OF THE WORLD VR · BASE-X ENGINE</div>
+    <div class="copyright">© Keenan Dunham & Troll Hunter Gaming LLC</div>
+  </div>
+</div>
+
+<div class="dro-strip">
+  <div class="dro-item"><span class="dro-label">DRO</span><span class="dro-val" id="droMode">ACTIVE</span></div>
+  <div class="dro-item"><span class="dro-label">TIME SCALE</span><span class="dro-val" id="droTimeScale">MILLENNIA</span></div>
+  <div class="dro-item"><span class="dro-label">PRECISION</span><span class="dro-val" id="droPrecision">BASE-8</span></div>
+  <div class="dro-item"><span class="dro-label">FACTIONS</span><span class="dro-val" id="droFactions">7</span></div>
+  <div class="dro-item"><span class="dro-label">ARCHETYPES</span><span class="dro-val" id="droArchetypes">12</span></div>
+  <div class="dro-item"><span class="dro-label">CIVILIZATIONS</span><span class="dro-val" id="droCivCount">52</span></div>
+</div>
+
+<div class="main">
+  <div class="era-nav" id="eraNav"></div>
+
+  <div class="timeline-area">
+    <div class="timeline-strip">
+      <div class="timeline-track" id="timelineTrack"></div>
+      <div class="timeline-year-display" id="yearDisplay">3500 BCE</div>
+    </div>
+    <div class="content-area" id="contentArea"></div>
+  </div>
+</div>
+
+<div class="minimap">
+  <div class="minimap-title">WORLD ERAS</div>
+  <div class="minimap-bar" id="minimapBar"></div>
+  <div class="minimap-label" id="minimapLabel">ERA 1 · ANCIENT</div>
+</div>
+
+<div class="key-hint">
+  <kbd>←</kbd><kbd>→</kbd> Navigate Eras &nbsp; <kbd>1</kbd>-<kbd>7</kbd> Jump to Era
+</div>
+
+<script>
+// ========================================
+// HWV-001: ERA TIMELINE NAVIGATOR
+// Histories of the World VR
+// Base-X Game Engine © Keenan Dunham & Troll Hunter Gaming LLC
+// ========================================
+
+const ERAS = [
+  {
+    num: 1, name: "ANCIENT FOUNDATIONS", period: "3500 BCE – 500 CE",
+    theme: "Birth of Civilization — where writing, law, and empire first shaped the human story",
+    yearStart: -3500, yearEnd: 500,
+    color: "#c9a84c",
+    dro: { timeScale: "CENTURIES", precision: "BASE-8", terrainRes: "1km" },
+    factions: [
+      { name: "Egyptian Dynasties", icon: "🏛️", territory: "Nile River Valley, Eastern Sahara",
+        typography: "Hieroglyphics", bonus: "Monument Building, Afterlife Preparation",
+        archetypes: [
+          { role: "Pharaoh", cls: "Ruler", desc: "Divine authority buffs" },
+          { role: "High Priest", cls: "Magician", desc: "Death/resurrection magic" },
+          { role: "Master Scribe", cls: "Sage", desc: "Hieroglyphic power words" },
+          { role: "Tomb Guardian", cls: "Hero", desc: "Mummy curse abilities" },
+          { role: "River Merchant", cls: "Explorer", desc: "Nile navigation mastery" }
+        ]},
+      { name: "Mesopotamian City-States", icon: "🗿", territory: "Tigris-Euphrates Basin",
+        typography: "Cuneiform", bonus: "First Laws, Mathematics",
+        archetypes: [
+          { role: "Lugal King", cls: "Ruler", desc: "City-state management" },
+          { role: "Astronomer-Priest", cls: "Magician", desc: "Celestial predictions" },
+          { role: "Merchant Prince", cls: "Creator", desc: "Trade route establishment" },
+          { role: "Ziggurat Builder", cls: "Creator", desc: "Divine architecture" },
+          { role: "Akkadian Warrior", cls: "Hero", desc: "Chariot combat" }
+        ]},
+      { name: "Classical Greece", icon: "🏺", territory: "Greek Peninsula, Aegean Islands",
+        typography: "Greek Alphabet", bonus: "Democracy, Philosophy",
+        archetypes: [
+          { role: "Philosopher King", cls: "Sage", desc: "Logic-based abilities" },
+          { role: "Hoplite Champion", cls: "Hero", desc: "Phalanx formation master" },
+          { role: "Oracle", cls: "Magician", desc: "Prophecy and foresight" },
+          { role: "Olympian Athlete", cls: "Everyman", desc: "Physical perfection" },
+          { role: "Merchant Navigator", cls: "Explorer", desc: "Mediterranean trading" }
+        ]},
+      { name: "Roman Empire", icon: "🦅", territory: "Mediterranean Basin",
+        typography: "Latin Script", bonus: "Engineering, Military Discipline",
+        archetypes: [
+          { role: "Consul / Emperor", cls: "Ruler", desc: "Imperial command" },
+          { role: "Centurion", cls: "Hero", desc: "Legion tactics" },
+          { role: "Pontifex Maximus", cls: "Magician", desc: "State religion powers" },
+          { role: "Architect-Engineer", cls: "Creator", desc: "Infrastructure mastery" },
+          { role: "Gladiator", cls: "Rebel", desc: "Arena combat specialist" }
+        ]},
+      { name: "Han Dynasty China", icon: "🐉", territory: "Yellow & Yangtze Rivers",
+        typography: "Seal Script", bonus: "Bureaucracy, Inventions",
+        archetypes: [
+          { role: "Mandate Emperor", cls: "Ruler", desc: "Heavenly authority" },
+          { role: "Scholar-Official", cls: "Sage", desc: "Confucian administration" },
+          { role: "Daoist Alchemist", cls: "Magician", desc: "Immortality seeking" },
+          { role: "Silk Road Trader", cls: "Explorer", desc: "Caravan management" },
+          { role: "Terracotta General", cls: "Hero", desc: "Mass army tactics" }
+        ]},
+      { name: "Mauryan India", icon: "🕉️", territory: "Indian Subcontinent",
+        typography: "Brahmi Script", bonus: "Spirituality, Mathematics",
+        archetypes: [
+          { role: "Chakravartin", cls: "Ruler", desc: "Universal emperor" },
+          { role: "Buddhist Monk", cls: "Innocent", desc: "Enlightenment path" },
+          { role: "Kshatriya Warrior", cls: "Hero", desc: "Dharmic combat" },
+          { role: "Vaishya Merchant", cls: "Everyman", desc: "Spice trade mastery" },
+          { role: "Brahmin Sage", cls: "Sage", desc: "Vedic knowledge" }
+        ]},
+      { name: "Persian Empire", icon: "🦁", territory: "Iranian Plateau to Egypt",
+        typography: "Old Persian Cuneiform", bonus: "Tolerance, Royal Road",
+        archetypes: [
+          { role: "Shahanshah", cls: "Ruler", desc: "King of Kings" },
+          { role: "Immortal Guard", cls: "Hero", desc: "Elite 10,000" },
+          { role: "Zoroastrian Magi", cls: "Magician", desc: "Fire temple powers" },
+          { role: "Satrap Governor", cls: "Sage", desc: "Provincial control" },
+          { role: "Royal Messenger", cls: "Explorer", desc: "Royal Road speed" }
+        ]}
+    ]
+  },
+  {
+    num: 2, name: "MEDIEVAL WORLD", period: "500 – 1400 CE",
+    theme: "Faith and Feudalism — empires of belief, trade routes of silk and blood",
+    yearStart: 500, yearEnd: 1400,
+    color: "#8b2500",
+    dro: { timeScale: "DECADES", precision: "BASE-12", terrainRes: "500m" },
+    factions: [
+      { name: "Byzantine Empire", icon: "☦️", territory: "Eastern Mediterranean, Anatolia",
+        typography: "Greek Minuscule", bonus: "Roman Legacy, Diplomacy",
+        archetypes: [
+          { role: "Basileus", cls: "Ruler", desc: "Emperor-Priest" },
+          { role: "Cataphract", cls: "Hero", desc: "Armored cavalry" },
+          { role: "Icon Painter", cls: "Creator", desc: "Sacred art powers" },
+          { role: "Scholar-Monk", cls: "Sage", desc: "Ancient knowledge" },
+          { role: "Varangian Guard", cls: "Hero", desc: "Viking elite" }
+        ]},
+      { name: "Islamic Golden Age", icon: "☪️", territory: "Arabia to Iberia",
+        typography: "Arabic Naskh", bonus: "Science, Mathematics",
+        archetypes: [
+          { role: "Caliph", cls: "Ruler", desc: "Religious-political leader" },
+          { role: "Scholar", cls: "Sage", desc: "House of Wisdom" },
+          { role: "Ghazi Warrior", cls: "Hero", desc: "Faith-driven fighter" },
+          { role: "Sufi Mystic", cls: "Magician", desc: "Spiritual transcendence" },
+          { role: "Caravan Master", cls: "Explorer", desc: "Trade networks" }
+        ]},
+      { name: "Viking Norse", icon: "⚔️", territory: "Scandinavia, North Atlantic",
+        typography: "Elder Futhark", bonus: "Raiding, Exploration",
+        archetypes: [
+          { role: "Jarl", cls: "Ruler", desc: "War chief authority" },
+          { role: "Berserker", cls: "Hero", desc: "Battle rage powers" },
+          { role: "Skald", cls: "Jester", desc: "Saga storytelling" },
+          { role: "Longship Navigator", cls: "Explorer", desc: "Ocean mastery" },
+          { role: "Völva Seeress", cls: "Magician", desc: "Norse prophecy" }
+        ]},
+      { name: "Mongol Empire", icon: "🏇", territory: "Central Asia to Europe",
+        typography: "Mongol Script", bonus: "Cavalry, Siege Warfare",
+        archetypes: [
+          { role: "Great Khan", cls: "Ruler", desc: "Supreme command" },
+          { role: "Horse Archer", cls: "Hero", desc: "Mobile warfare" },
+          { role: "Shaman", cls: "Magician", desc: "Sky father powers" },
+          { role: "Silk Road Guard", cls: "Explorer", desc: "Trade protection" },
+          { role: "Siege Engineer", cls: "Creator", desc: "Chinese tech adoption" }
+        ]},
+      { name: "Feudal Japan", icon: "⛩️", territory: "Japanese Islands",
+        typography: "Hiragana / Kanji", bonus: "Honor Code, Martial Arts",
+        archetypes: [
+          { role: "Shogun", cls: "Ruler", desc: "Military government" },
+          { role: "Samurai", cls: "Hero", desc: "Bushido warrior" },
+          { role: "Ninja", cls: "Rebel", desc: "Stealth assassination" },
+          { role: "Zen Monk", cls: "Innocent", desc: "Enlightenment combat" },
+          { role: "Sword Smith", cls: "Creator", desc: "Legendary weapons" }
+        ]},
+      { name: "Delhi Sultanate", icon: "🕌", territory: "Northern India",
+        typography: "Persian-Arabic Script", bonus: "Indo-Islamic Fusion",
+        archetypes: [
+          { role: "Sultan", cls: "Ruler", desc: "Delhi throne powers" },
+          { role: "Rajput Warrior", cls: "Hero", desc: "Honor-bound combat" },
+          { role: "Sufi Saint", cls: "Magician", desc: "Mystical influence" },
+          { role: "Bazaar Merchant", cls: "Everyman", desc: "Spice trade" },
+          { role: "Court Architect", cls: "Creator", desc: "Indo-Islamic design" }
+        ]},
+      { name: "Maya City-States", icon: "🌿", territory: "Mesoamerica",
+        typography: "Maya Glyphs", bonus: "Calendar, Astronomy",
+        archetypes: [
+          { role: "Ajaw Divine King", cls: "Ruler", desc: "Ball game champion" },
+          { role: "Jaguar Warrior", cls: "Hero", desc: "Jungle combat" },
+          { role: "Priest-Astronomer", cls: "Sage", desc: "Calendar prophecy" },
+          { role: "Obsidian Trader", cls: "Explorer", desc: "Resource monopoly" },
+          { role: "Pyramid Builder", cls: "Creator", desc: "Sacred geometry" }
+        ]},
+      { name: "African Kingdoms", icon: "👑", territory: "Mali, Ethiopia, Zimbabwe",
+        typography: "Ge'ez / Arabic", bonus: "Gold Trade, Oral Traditions",
+        archetypes: [
+          { role: "Mansa", cls: "Ruler", desc: "Wealth distribution" },
+          { role: "Oromo Warrior", cls: "Hero", desc: "Cavalry expertise" },
+          { role: "Griot Storyteller", cls: "Jester", desc: "History preservation" },
+          { role: "Gold Merchant", cls: "Creator", desc: "Trans-Saharan trade" },
+          { role: "Lion Hunter", cls: "Hero", desc: "Beast mastery" }
+        ]}
+    ]
+  },
+  {
+    num: 3, name: "RENAISSANCE & EXPLORATION", period: "1400 – 1700",
+    theme: "Discovery and Innovation — new worlds, new ideas, empires of sail and gunpowder",
+    yearStart: 1400, yearEnd: 1700,
+    color: "#b87333",
+    dro: { timeScale: "YEARS", precision: "BASE-16", terrainRes: "200m" },
+    factions: [
+      { name: "Spanish Empire", icon: "⚓", territory: "Iberia, Americas",
+        typography: "Spanish Gothic", bonus: "Conquistador Spirit, Gold Fleets",
+        archetypes: [
+          { role: "Viceroy", cls: "Ruler", desc: "Colonial administration" },
+          { role: "Conquistador", cls: "Explorer", desc: "New World conquest" },
+          { role: "Jesuit Missionary", cls: "Innocent", desc: "Conversion powers" },
+          { role: "Galleon Captain", cls: "Hero", desc: "Naval treasure fleets" },
+          { role: "Inquisitor", cls: "Magician", desc: "Heresy detection" }
+        ]},
+      { name: "Ottoman Empire", icon: "🌙", territory: "Anatolia, Balkans, Middle East",
+        typography: "Ottoman Turkish", bonus: "Gunpowder, Multi-ethnic Rule",
+        archetypes: [
+          { role: "Sultan", cls: "Ruler", desc: "Sublime Porte authority" },
+          { role: "Janissary", cls: "Hero", desc: "Elite firearm infantry" },
+          { role: "Grand Vizier", cls: "Sage", desc: "Administrative genius" },
+          { role: "Corsair Captain", cls: "Rebel", desc: "Mediterranean piracy" },
+          { role: "Master Architect", cls: "Creator", desc: "Mosque complexes" }
+        ]},
+      { name: "Ming China", icon: "🐲", territory: "China Proper",
+        typography: "Regular Script", bonus: "Great Wall, Treasure Fleets",
+        archetypes: [
+          { role: "Celestial Emperor", cls: "Ruler", desc: "Mandate of Heaven" },
+          { role: "Mandarin Scholar", cls: "Sage", desc: "Examination system" },
+          { role: "Zheng He Navigator", cls: "Explorer", desc: "Treasure fleet command" },
+          { role: "Shaolin Monk", cls: "Hero", desc: "Martial arts master" },
+          { role: "Porcelain Artisan", cls: "Creator", desc: "Luxury goods" }
+        ]},
+      { name: "Renaissance Italy", icon: "🎨", territory: "Italian Peninsula",
+        typography: "Humanist Minuscule", bonus: "Banking, Art Patronage",
+        archetypes: [
+          { role: "Merchant Prince", cls: "Ruler", desc: "Medici-style power" },
+          { role: "Condottiere", cls: "Hero", desc: "Mercenary captain" },
+          { role: "Renaissance Artist", cls: "Creator", desc: "Masterpiece creation" },
+          { role: "Vatican Diplomat", cls: "Sage", desc: "Papal influence" },
+          { role: "Inventor-Engineer", cls: "Magician", desc: "Da Vinci gadgets" }
+        ]},
+      { name: "Mughal Empire", icon: "🏰", territory: "Indian Subcontinent",
+        typography: "Nastaliq Script", bonus: "Cultural Synthesis, Architecture",
+        archetypes: [
+          { role: "Padshah", cls: "Ruler", desc: "Grand Mughal authority" },
+          { role: "Mansabdar Noble", cls: "Hero", desc: "Cavalry commander" },
+          { role: "Sufi Pir", cls: "Magician", desc: "Spiritual guide" },
+          { role: "Bazaar Merchant", cls: "Everyman", desc: "Trade networks" },
+          { role: "Court Painter", cls: "Creator", desc: "Miniature art master" }
+        ]},
+      { name: "Dutch Republic", icon: "⚜️", territory: "Low Countries, Trade Posts",
+        typography: "Dutch Antiqua", bonus: "Trade Companies, Banking",
+        archetypes: [
+          { role: "Stadtholder", cls: "Ruler", desc: "Republican leadership" },
+          { role: "VOC Merchant", cls: "Explorer", desc: "East Indies monopoly" },
+          { role: "Sea Beggar", cls: "Rebel", desc: "Naval guerrilla" },
+          { role: "Master Painter", cls: "Creator", desc: "Golden Age art" },
+          { role: "Bank Director", cls: "Sage", desc: "Financial innovation" }
+        ]},
+      { name: "Safavid Persia", icon: "🌹", territory: "Iranian Plateau",
+        typography: "Nastaliq Persian", bonus: "Silk Trade, Shia Islam",
+        archetypes: [
+          { role: "Shah", cls: "Ruler", desc: "Persian restoration" },
+          { role: "Qizilbash Warrior", cls: "Hero", desc: "Red-headed zealot" },
+          { role: "Carpet Weaver", cls: "Creator", desc: "Luxury crafts" },
+          { role: "Silk Road Merchant", cls: "Explorer", desc: "Caravan master" },
+          { role: "Court Poet", cls: "Jester", desc: "Persian verse power" }
+        ]},
+      { name: "English Tudors", icon: "🌹", territory: "British Isles",
+        typography: "English Blackletter", bonus: "Naval Power, Reformation",
+        archetypes: [
+          { role: "Monarch", cls: "Ruler", desc: "Divine right ruler" },
+          { role: "Privateer", cls: "Rebel", desc: "Licensed piracy" },
+          { role: "Playwright", cls: "Jester", desc: "Shakespearean influence" },
+          { role: "Explorer", cls: "Explorer", desc: "New World colonization" },
+          { role: "Spymaster", cls: "Magician", desc: "Walsingham network" }
+        ]}
+    ]
+  },
+  {
+    num: 4, name: "INDUSTRIAL REVOLUTION", period: "1750 – 1900",
+    theme: "Steam and Empire — machines reshape the world, empires stretch across oceans",
+    yearStart: 1750, yearEnd: 1900,
+    color: "#555566",
+    dro: { timeScale: "YEARS", precision: "BASE-24", terrainRes: "100m" },
+    factions: [
+      { name: "British Empire", icon: "🇬🇧", territory: "Global Colonial Network",
+        typography: "Victorian Serif", bonus: "Industrial First, Naval Supremacy",
+        archetypes: [
+          { role: "Colonial Governor", cls: "Ruler", desc: "Empire administration" },
+          { role: "Factory Owner", cls: "Creator", desc: "Mass production" },
+          { role: "Explorer-Scientist", cls: "Explorer", desc: "Darwin expeditions" },
+          { role: "Redcoat Officer", cls: "Hero", desc: "Disciplined warfare" },
+          { role: "Railway Engineer", cls: "Sage", desc: "Infrastructure builder" }
+        ]},
+      { name: "American Expansion", icon: "🤠", territory: "North America",
+        typography: "American Wood Type", bonus: "Manifest Destiny, Innovation",
+        archetypes: [
+          { role: "Railroad Baron", cls: "Creator", desc: "Transcontinental builder" },
+          { role: "Cowboy / Gunslinger", cls: "Rebel", desc: "Frontier justice" },
+          { role: "Inventor", cls: "Magician", desc: "Edison-style innovation" },
+          { role: "Cavalry Officer", cls: "Hero", desc: "Frontier veteran" },
+          { role: "Immigrant Worker", cls: "Everyman", desc: "American Dream" }
+        ]},
+      { name: "Qing China", icon: "🐉", territory: "China, Central Asia",
+        typography: "Qing Regular Script", bonus: "Population, Tradition",
+        archetypes: [
+          { role: "Qing Emperor", cls: "Ruler", desc: "Declining mandate" },
+          { role: "Boxer Rebel", cls: "Rebel", desc: "Anti-foreign fighter" },
+          { role: "Mandarin Official", cls: "Sage", desc: "Conservative scholar" },
+          { role: "Opium Merchant", cls: "Explorer", desc: "Black market trader" },
+          { role: "Reform Scholar", cls: "Innocent", desc: "Modernization advocate" }
+        ]},
+      { name: "Meiji Japan", icon: "🗾", territory: "Japanese Islands",
+        typography: "Modern Japanese", bonus: "Rapid Modernization",
+        archetypes: [
+          { role: "Meiji Emperor", cls: "Ruler", desc: "Restoration leader" },
+          { role: "Samurai-Officer", cls: "Hero", desc: "Traditional-modern warrior" },
+          { role: "Zaibatsu Founder", cls: "Creator", desc: "Industrial conglomerate" },
+          { role: "Railway Engineer", cls: "Sage", desc: "Western tech adopter" },
+          { role: "Geisha Spy", cls: "Magician", desc: "Information network" }
+        ]},
+      { name: "German Empire", icon: "🦅", territory: "Central Europe",
+        typography: "Fraktur / Antiqua", bonus: "Military Discipline, Science",
+        archetypes: [
+          { role: "Kaiser", cls: "Ruler", desc: "Imperial authority" },
+          { role: "Prussian Officer", cls: "Hero", desc: "Military excellence" },
+          { role: "Industrial Chemist", cls: "Sage", desc: "Scientific advancement" },
+          { role: "Steel Magnate", cls: "Creator", desc: "Krupp-style industry" },
+          { role: "Socialist Agitator", cls: "Rebel", desc: "Worker's movement" }
+        ]},
+      { name: "Russian Empire", icon: "🐻", territory: "Eastern Europe, Siberia",
+        typography: "Cyrillic Script", bonus: "Vast Territory, Revolution",
+        archetypes: [
+          { role: "Tsar", cls: "Ruler", desc: "Autocratic power" },
+          { role: "Cossack", cls: "Hero", desc: "Frontier warrior" },
+          { role: "Orthodox Priest", cls: "Innocent", desc: "Religious influence" },
+          { role: "Nihilist Revolutionary", cls: "Rebel", desc: "Anarchist bomber" },
+          { role: "Siberian Explorer", cls: "Explorer", desc: "Eastern expansion" }
+        ]},
+      { name: "Ottoman Decline", icon: "🌙", territory: "Shrinking Middle East",
+        typography: "Ottoman Arabic", bonus: "Modernization Attempts",
+        archetypes: [
+          { role: "Sultan-Caliph", cls: "Ruler", desc: "Sick man of Europe" },
+          { role: "Young Turk", cls: "Rebel", desc: "Reform officer" },
+          { role: "Pasha Governor", cls: "Sage", desc: "Provincial autonomy" },
+          { role: "Armenian Merchant", cls: "Everyman", desc: "Trade survival" },
+          { role: "Janissary Traditionalist", cls: "Hero", desc: "Old guard" }
+        ]}
+    ]
+  },
+  {
+    num: 5, name: "MODERN WARFARE", period: "1900 – 2000",
+    theme: "Ideology and Technology — world wars, cold wars, the nuclear age reshapes humanity",
+    yearStart: 1900, yearEnd: 2000,
+    color: "#4a5568",
+    dro: { timeScale: "MONTHS", precision: "BASE-32", terrainRes: "50m" },
+    factions: [
+      { name: "United States", icon: "🗽", territory: "North America, Global Bases",
+        typography: "International Style", bonus: "Economic Power, Technology",
+        archetypes: [
+          { role: "President", cls: "Ruler", desc: "Democratic leader" },
+          { role: "Marine", cls: "Hero", desc: "Global intervention" },
+          { role: "Tech Entrepreneur", cls: "Creator", desc: "Silicon Valley" },
+          { role: "CIA Operative", cls: "Magician", desc: "Covert operations" },
+          { role: "Wall Street Banker", cls: "Sage", desc: "Financial control" }
+        ]},
+      { name: "Soviet Union", icon: "⭐", territory: "Eastern Europe, Central Asia",
+        typography: "Constructivist", bonus: "Planned Economy, Space Program",
+        archetypes: [
+          { role: "General Secretary", cls: "Ruler", desc: "Party control" },
+          { role: "Red Army Soldier", cls: "Hero", desc: "Mass mobilization" },
+          { role: "Cosmonaut", cls: "Explorer", desc: "Space pioneer" },
+          { role: "KGB Agent", cls: "Magician", desc: "Surveillance state" },
+          { role: "Factory Worker", cls: "Everyman", desc: "Proletariat hero" }
+        ]},
+      { name: "Nazi Germany", icon: "🔥", territory: "Central Europe (1933-1945)",
+        typography: "Futura / DIN", bonus: "Blitzkrieg, Technology",
+        archetypes: [
+          { role: "Führer", cls: "Ruler", desc: "Totalitarian control" },
+          { role: "Wehrmacht Officer", cls: "Hero", desc: "Military expertise" },
+          { role: "Rocket Scientist", cls: "Sage", desc: "V-2 development" },
+          { role: "Resistance Fighter", cls: "Rebel", desc: "Underground hero" },
+          { role: "Propagandist", cls: "Jester", desc: "Media manipulation" }
+        ]},
+      { name: "Communist China", icon: "🇨🇳", territory: "East Asia",
+        typography: "Simplified Chinese", bonus: "Population Mobilization",
+        archetypes: [
+          { role: "Chairman", cls: "Ruler", desc: "Party leadership" },
+          { role: "Red Guard", cls: "Rebel", desc: "Revolutionary youth" },
+          { role: "Factory Manager", cls: "Creator", desc: "Industrial growth" },
+          { role: "PLA Soldier", cls: "Hero", desc: "People's army" },
+          { role: "Rural Farmer", cls: "Everyman", desc: "Agricultural base" }
+        ]},
+      { name: "Imperial Japan", icon: "🎌", territory: "Pacific (1900-1945)",
+        typography: "Military Katakana", bonus: "Bushido Spirit, Naval Aviation",
+        archetypes: [
+          { role: "Emperor", cls: "Ruler", desc: "Divine status" },
+          { role: "Kamikaze Pilot", cls: "Hero", desc: "Sacrifice attack" },
+          { role: "Zaibatsu Executive", cls: "Creator", desc: "War economy" },
+          { role: "Naval Admiral", cls: "Sage", desc: "Strategic planning" },
+          { role: "Comfort Survivor", cls: "Caregiver", desc: "Survival story" }
+        ]},
+      { name: "British Commonwealth", icon: "🇬🇧", territory: "UK, Dominions",
+        typography: "Gill Sans", bonus: "Intelligence, Special Forces",
+        archetypes: [
+          { role: "Prime Minister", cls: "Ruler", desc: "Parliamentary leader" },
+          { role: "SAS Commando", cls: "Hero", desc: "Elite operations" },
+          { role: "Codebreaker", cls: "Sage", desc: "Bletchley Park" },
+          { role: "Colonial Admin", cls: "Explorer", desc: "Empire sunset" },
+          { role: "Trade Unionist", cls: "Rebel", desc: "Worker's rights" }
+        ]},
+      { name: "Third World Nations", icon: "✊", territory: "Africa, Asia, Latin America",
+        typography: "Local Scripts", bonus: "Decolonization, Resources",
+        archetypes: [
+          { role: "Liberation Leader", cls: "Rebel", desc: "Independence fighter" },
+          { role: "Guerrilla Fighter", cls: "Hero", desc: "Asymmetric warfare" },
+          { role: "Resource Minister", cls: "Creator", desc: "National development" },
+          { role: "UN Diplomat", cls: "Sage", desc: "International voice" },
+          { role: "Village Elder", cls: "Everyman", desc: "Traditional authority" }
+        ]}
+    ]
+  },
+  {
+    num: 6, name: "DIGITAL AGE", period: "2000 – 2050",
+    theme: "Information and Climate — data is the new oil, the planet pushes back",
+    yearStart: 2000, yearEnd: 2050,
+    color: "#2c7a7b",
+    dro: { timeScale: "DAYS", precision: "BASE-48", terrainRes: "10m" },
+    factions: [
+      { name: "American Tech Empire", icon: "💻", territory: "Silicon Valley, Cloud",
+        typography: "San Francisco / System", bonus: "Digital Monopolies, AI",
+        archetypes: [
+          { role: "CEO Founder", cls: "Creator", desc: "Startup unicorn" },
+          { role: "Data Scientist", cls: "Sage", desc: "Algorithm master" },
+          { role: "Hacker", cls: "Rebel", desc: "System infiltrator" },
+          { role: "Content Creator", cls: "Jester", desc: "Influencer economy" },
+          { role: "Gig Worker", cls: "Everyman", desc: "Platform laborer" }
+        ]},
+      { name: "Chinese Technocracy", icon: "🏗️", territory: "East Asia, Belt & Road",
+        typography: "Digital Chinese", bonus: "State Capitalism, Surveillance",
+        archetypes: [
+          { role: "Party Secretary", cls: "Ruler", desc: "Digital authoritarianism" },
+          { role: "Tech Entrepreneur", cls: "Creator", desc: "State-backed innovation" },
+          { role: "Social Credit Monitor", cls: "Magician", desc: "Behavior control" },
+          { role: "Factory Automator", cls: "Sage", desc: "AI manufacturing" },
+          { role: "Delivery Driver", cls: "Everyman", desc: "996 work culture" }
+        ]},
+      { name: "European Union", icon: "🇪🇺", territory: "Europe",
+        typography: "EU Regulation Fonts", bonus: "Regulation, Green Tech",
+        archetypes: [
+          { role: "EU Commissioner", cls: "Ruler", desc: "Bureaucratic power" },
+          { role: "Climate Scientist", cls: "Sage", desc: "Environmental policy" },
+          { role: "Privacy Advocate", cls: "Innocent", desc: "GDPR enforcer" },
+          { role: "Renewable Engineer", cls: "Creator", desc: "Green energy" },
+          { role: "Yellow Vest Protester", cls: "Rebel", desc: "Populist resistance" }
+        ]},
+      { name: "India Rising", icon: "🇮🇳", territory: "South Asia",
+        typography: "Devanagari Digital", bonus: "Service Economy, Space",
+        archetypes: [
+          { role: "Tech Mogul", cls: "Creator", desc: "IT services empire" },
+          { role: "Call Center Manager", cls: "Everyman", desc: "Global support" },
+          { role: "Bollywood Star", cls: "Jester", desc: "Soft power projection" },
+          { role: "ISRO Scientist", cls: "Explorer", desc: "Mars mission" },
+          { role: "Farmer Activist", cls: "Rebel", desc: "Agricultural reform" }
+        ]},
+      { name: "African Union", icon: "🌍", territory: "Africa",
+        typography: "Pan-African Fonts", bonus: "Mobile Banking, Resources",
+        archetypes: [
+          { role: "President", cls: "Ruler", desc: "Post-colonial leader" },
+          { role: "M-Pesa Innovator", cls: "Creator", desc: "Fintech pioneer" },
+          { role: "Chinese Contractor", cls: "Explorer", desc: "Infrastructure builder" },
+          { role: "Urban Farmer", cls: "Caregiver", desc: "Food security" },
+          { role: "Community Organizer", cls: "Everyman", desc: "Grassroots leader" }
+        ]}
+    ]
+  },
+  {
+    num: 7, name: "NEAR FUTURE", period: "2050 – 2150",
+    theme: "Survival and Transformation — climate, AI, and space forge a new humanity",
+    yearStart: 2050, yearEnd: 2150,
+    color: "#553c9a",
+    dro: { timeScale: "HOURS", precision: "BASE-64", terrainRes: "1m" },
+    factions: [
+      { name: "North American Federation", icon: "🤖", territory: "USA, Canada, Mexico",
+        typography: "Neural Interface Fonts", bonus: "AI Integration, Military Tech",
+        archetypes: [
+          { role: "AI-Augmented President", cls: "Ruler", desc: "Neural governance" },
+          { role: "Cyber Soldier", cls: "Hero", desc: "Augmented combat" },
+          { role: "Climate Engineer", cls: "Creator", desc: "Geo-engineering" },
+          { role: "Memory Trader", cls: "Magician", desc: "Experience commerce" },
+          { role: "Water Guardian", cls: "Caregiver", desc: "Resource protector" }
+        ]},
+      { name: "Neo-China Sphere", icon: "🌏", territory: "East Asia, Space Colonies",
+        typography: "Holographic Chinese", bonus: "Population Control, Mars",
+        archetypes: [
+          { role: "Harmony Administrator", cls: "Ruler", desc: "Algorithmic governance" },
+          { role: "Social Algorithm Designer", cls: "Sage", desc: "Behavior optimization" },
+          { role: "Mars Colonist", cls: "Explorer", desc: "Red planet pioneer" },
+          { role: "Gene Editor", cls: "Creator", desc: "CRISPR mastery" },
+          { role: "Longevity Seeker", cls: "Innocent", desc: "Immortality research" }
+        ]},
+      { name: "European Resilience", icon: "🌱", territory: "Fortress Europe",
+        typography: "Sustainable Fonts", bonus: "Climate Adaptation, Culture",
+        archetypes: [
+          { role: "Green Chancellor", cls: "Ruler", desc: "Ecological governance" },
+          { role: "Vertical Farmer", cls: "Creator", desc: "Food towers" },
+          { role: "Culture Preserver", cls: "Sage", desc: "Heritage guardian" },
+          { role: "Flood Defense Engineer", cls: "Hero", desc: "Sea wall builder" },
+          { role: "Degrowth Philosopher", cls: "Innocent", desc: "Post-growth wisdom" }
+        ]},
+      { name: "Pacific Alliance", icon: "🌊", territory: "Oceania, Island Nations",
+        typography: "Ocean Adapted Scripts", bonus: "Sea Rise Adaptation",
+        archetypes: [
+          { role: "Island President", cls: "Ruler", desc: "Climate leadership" },
+          { role: "Floating City Architect", cls: "Creator", desc: "Ocean habitats" },
+          { role: "Deep Sea Miner", cls: "Explorer", desc: "Abyssal resources" },
+          { role: "Coral Restorer", cls: "Caregiver", desc: "Reef guardian" },
+          { role: "Climate Refugee Coord", cls: "Everyman", desc: "Migration manager" }
+        ]},
+      { name: "Arctic Powers", icon: "❄️", territory: "Thawed Arctic Regions",
+        typography: "Ice-Crystal Fonts", bonus: "New Resources, Cold Adaptation",
+        archetypes: [
+          { role: "Ice Council Leader", cls: "Ruler", desc: "Polar governance" },
+          { role: "Permafrost Miner", cls: "Explorer", desc: "Ancient resource extraction" },
+          { role: "Methane Capture Engineer", cls: "Hero", desc: "Climate defense" },
+          { role: "Indigenous Knowledge Keeper", cls: "Sage", desc: "Traditional wisdom" },
+          { role: "Arctic Ranger", cls: "Hero", desc: "Polar survival" }
+        ]},
+      { name: "Space Mining Consortium", icon: "🚀", territory: "Asteroid Belt, Moon",
+        typography: "Zero-G Optimized", bonus: "Resource Monopoly, Low Gravity",
+        archetypes: [
+          { role: "Station Commander", cls: "Ruler", desc: "Orbital authority" },
+          { role: "Zero-G Warrior", cls: "Hero", desc: "Space combat" },
+          { role: "Asteroid Prospector", cls: "Explorer", desc: "Belt mining" },
+          { role: "Life Support Tech", cls: "Caregiver", desc: "Survival systems" },
+          { role: "Space-Born Native", cls: "Innocent", desc: "First generation" }
+        ]}
+    ]
+  }
+];
+
+// ARCHETYPE COLORS
+const ARCHETYPE_COLORS = {
+  Ruler: "#c9a84c", Hero: "#8b2500", Sage: "#2c7a7b", Magician: "#553c9a",
+  Creator: "#b87333", Explorer: "#2b6cb0", Rebel: "#c53030", Innocent: "#68d391",
+  Jester: "#d69e2e", Everyman: "#718096", Caregiver: "#ed64a6", Lover: "#e53e3e"
+};
+
+// STATE
+let activeEra = 0;
+let expandedCard = null;
+
+// INIT
+function init() {
+  buildEraNav();
+  buildMinimap();
+  selectEra(0);
+  setupKeys();
+}
+
+function buildEraNav() {
+  const nav = document.getElementById('eraNav');
+  nav.innerHTML = ERAS.map((era, i) =>
+    `<button class="era-tab${i===0?' active':''}" id="etab-${i}" onclick="selectEra(${i})">
+      <span class="era-tab-num">${era.num}</span>
+      <span>${era.name}</span>
+    </button>`
+  ).join('');
+}
+
+function buildMinimap() {
+  const bar = document.getElementById('minimapBar');
+  bar.innerHTML = ERAS.map((era, i) =>
+    `<div class="minimap-seg${i===0?' active':''}" id="mseg-${i}" style="background:${era.color}" onclick="selectEra(${i})"></div>`
+  ).join('');
+}
+
+function selectEra(idx) {
+  activeEra = idx;
+  expandedCard = null;
+  const era = ERAS[idx];
+
+  // Nav tabs
+  document.querySelectorAll('.era-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+  document.querySelectorAll('.minimap-seg').forEach((s, i) => s.classList.toggle('active', i === idx));
+  document.getElementById('minimapLabel').textContent = `ERA ${era.num} · ${era.name}`;
+
+  // DRO strip
+  document.getElementById('droTimeScale').textContent = era.dro.timeScale;
+  document.getElementById('droPrecision').textContent = era.dro.precision;
+  document.getElementById('droFactions').textContent = era.factions.length;
+  document.getElementById('droArchetypes').textContent = era.factions.reduce((s, f) => s + f.archetypes.length, 0);
+
+  // Timeline
+  updateTimeline(idx);
+
+  // Year display
+  document.getElementById('yearDisplay').textContent =
+    era.yearStart < 0 ? `${Math.abs(era.yearStart)} BCE` : `${era.yearStart} CE`;
+
+  // Content
+  renderEraContent(era);
+}
+
+function updateTimeline(idx) {
+  const track = document.getElementById('timelineTrack');
+  // Clear old markers
+  const old = track.parentElement.querySelectorAll('.timeline-marker, .timeline-era-bar');
+  old.forEach(el => el.remove());
+
+  const strip = track.parentElement;
+  const trackLeft = 40;
+  const trackRight = strip.clientWidth - 40;
+  const totalW = trackRight - trackLeft;
+
+  // Full timeline span: 3500 BCE to 2150 CE = 5650 years
+  const absStart = -3500;
+  const absEnd = 2150;
+  const absSpan = absEnd - absStart;
+
+  // Era bars
+  ERAS.forEach((era, i) => {
+    const bar = document.createElement('div');
+    bar.className = `timeline-era-bar${i === idx ? ' active' : ''}`;
+    const left = trackLeft + ((era.yearStart - absStart) / absSpan) * totalW;
+    const right = trackLeft + ((era.yearEnd - absStart) / absSpan) * totalW;
+    bar.style.left = left + 'px';
+    bar.style.width = (right - left) + 'px';
+    bar.style.background = era.color;
+    strip.appendChild(bar);
+  });
+
+  // Key date markers
+  const keyDates = [
+    { year: -3500, label: "3500 BCE" }, { year: -3000, label: "3000 BCE" },
+    { year: -2000, label: "2000 BCE" }, { year: -1000, label: "1000 BCE" },
+    { year: 0, label: "1 CE" }, { year: 500, label: "500" },
+    { year: 1000, label: "1000" }, { year: 1500, label: "1500" },
+    { year: 1750, label: "1750" }, { year: 1900, label: "1900" },
+    { year: 2000, label: "2000" }, { year: 2100, label: "2100" }
+  ];
+
+  keyDates.forEach(d => {
+    const mk = document.createElement('div');
+    mk.className = 'timeline-marker';
+    const era = ERAS[idx];
+    if (d.year >= era.yearStart && d.year <= era.yearEnd) mk.classList.add('active');
+    mk.style.left = (trackLeft + ((d.year - absStart) / absSpan) * totalW) + 'px';
+    mk.innerHTML = `<div class="timeline-marker-label">${d.label}</div>`;
+    mk.onclick = () => {
+      // Find matching era
+      const match = ERAS.findIndex(e => d.year >= e.yearStart && d.year <= e.yearEnd);
+      if (match >= 0) selectEra(match);
+    };
+    strip.appendChild(mk);
+  });
+}
+
+function renderEraContent(era) {
+  const area = document.getElementById('contentArea');
+  const totalArchetypes = era.factions.reduce((s, f) => s + f.archetypes.length, 0);
+  const uniqueClasses = [...new Set(era.factions.flatMap(f => f.archetypes.map(a => a.cls)))];
+
+  area.innerHTML = `
+    <div class="era-header">
+      <div class="era-name" style="color: ${era.color}">${era.name}</div>
+      <div class="era-period">${era.period}</div>
+      <div class="era-theme">${era.theme}</div>
+      <div class="era-dro-info">
+        <div class="dro-chip">DRO: ${era.dro.precision}</div>
+        <div class="dro-chip">TIME: ${era.dro.timeScale}</div>
+        <div class="dro-chip">TERRAIN: ${era.dro.terrainRes}</div>
+        <div class="dro-chip">FACTIONS: ${era.factions.length}</div>
+        <div class="dro-chip">ROLES: ${totalArchetypes}</div>
+      </div>
+    </div>
+    <div class="faction-grid">
+      ${era.factions.map((f, i) => renderFactionCard(f, i)).join('')}
+    </div>
+    <div class="era-stats">
+      <div class="stat-block"><div class="stat-num">${era.factions.length}</div><div class="stat-label">Factions</div></div>
+      <div class="stat-block"><div class="stat-num">${totalArchetypes}</div><div class="stat-label">Roles</div></div>
+      <div class="stat-block"><div class="stat-num">${uniqueClasses.length}</div><div class="stat-label">Classes</div></div>
+      <div class="stat-block"><div class="stat-num">${era.dro.precision.replace('BASE-','')}</div><div class="stat-label">DRO Base</div></div>
+    </div>
+  `;
+}
+
+function renderFactionCard(f, idx) {
+  return `
+    <div class="faction-card" id="fcard-${idx}" onclick="toggleFaction(${idx})">
+      <div class="faction-card-head">
+        <div class="faction-icon">${f.icon}</div>
+        <div class="faction-info">
+          <div class="faction-name">${f.name}</div>
+          <div class="faction-territory">${f.territory}</div>
+          <div class="faction-bonus-tag">${f.bonus}</div>
+        </div>
+        <div class="faction-typography">
+          <div class="faction-typo-label">TYPOGRAPHY</div>
+          ${f.typography}
+        </div>
+      </div>
+      <div class="faction-body">
+        <div class="section-label">PLAYABLE ARCHETYPES</div>
+        <div class="archetype-grid">
+          ${f.archetypes.map(a => `
+            <div class="archetype-item" style="border-left-color: ${ARCHETYPE_COLORS[a.cls] || '#888'}">
+              <div>
+                <div class="archetype-role">${a.role}</div>
+                <div class="archetype-class" style="color: ${ARCHETYPE_COLORS[a.cls] || '#888'}">${a.cls.toUpperCase()}</div>
+                <div class="archetype-desc">${a.desc}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleFaction(idx) {
+  const card = document.getElementById(`fcard-${idx}`);
+  if (expandedCard === idx) {
+    card.classList.remove('expanded');
+    expandedCard = null;
+  } else {
+    // Close previous
+    if (expandedCard !== null) {
+      const prev = document.getElementById(`fcard-${expandedCard}`);
+      if (prev) prev.classList.remove('expanded');
+    }
+    card.classList.add('expanded');
+    expandedCard = idx;
+  }
+}
+
+function setupKeys() {
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectEra(Math.min(ERAS.length - 1, activeEra + 1));
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectEra(Math.max(0, activeEra - 1));
+    } else if (e.key >= '1' && e.key <= '7') {
+      selectEra(parseInt(e.key) - 1);
+    }
+  });
+}
+
+// Resize handler for timeline
+window.addEventListener('resize', () => updateTimeline(activeEra));
+
+// TOTAL CIV COUNT
+const totalCivs = ERAS.reduce((s, e) => s + e.factions.length, 0);
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('droCivCount').textContent = totalCivs;
+});
+
+init();
+</script>
+</body>
+</html>

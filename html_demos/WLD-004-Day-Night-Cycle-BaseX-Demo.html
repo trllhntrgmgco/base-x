@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WLD-004: Day/Night Cycle | Base-X Engine Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #020204;
+            --panel-bg: rgba(8, 12, 20, 0.95);
+            --sun-color: #ffdd44;
+            --moon-color: #e8e8f0;
+            --accent-orange: #ff8844;
+            --accent-cyan: #00d4ff;
+            --accent-purple: #9966ff;
+            --accent-yellow: #ffdd00;
+            --base-24: #ff8844;
+            --base-16: #ffdd00;
+            --base-8: #88aa44;
+            --text-primary: #d0e0f0;
+            --text-dim: #556677;
+            --border-glow: rgba(255, 136, 68, 0.3);
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            padding: 15px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: linear-gradient(90deg, rgba(255, 136, 68, 0.1), transparent, rgba(255, 221, 68, 0.1));
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .demo-badge {
+            background: linear-gradient(135deg, #ff8844, #ffaa00);
+            color: #000;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.75em;
+            letter-spacing: 2px;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #ff8844;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(255, 136, 68, 0.4);
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .stat-group {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .stat-value.time { color: var(--sun-color); }
+        .stat-value.base { color: var(--base-16); }
+        .stat-value.phase { color: var(--accent-cyan); }
+        
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 260px;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            background: linear-gradient(90deg, rgba(255, 136, 68, 0.15), transparent);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-glow);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: #ff8844;
+            flex-shrink: 0;
+        }
+        
+        .panel-content {
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        /* Time Presets */
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .time-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .time-btn:hover {
+            border-color: rgba(255, 136, 68, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .time-btn.active {
+            border-color: #ff8844;
+            box-shadow: 0 0 20px rgba(255, 136, 68, 0.3);
+            background: rgba(255, 136, 68, 0.1);
+        }
+        
+        .time-icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .time-name {
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .time-hours {
+            font-size: 0.65em;
+            color: var(--text-dim);
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        /* Tool Section */
+        .tool-section {
+            margin-bottom: 20px;
+        }
+        
+        .tool-section-title {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Sliders */
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .slider-name {
+            font-size: 0.8em;
+            color: var(--text-dim);
+        }
+        
+        .slider-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85em;
+            color: #ff8844;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 136, 68, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #ff8844;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 136, 68, 0.5);
+        }
+        
+        /* Toggle */
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .toggle-label {
+            font-size: 0.85em;
+        }
+        
+        .toggle {
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .toggle.on {
+            background: rgba(255, 136, 68, 0.5);
+        }
+        
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        
+        .toggle.on::after {
+            transform: translateX(20px);
+        }
+        
+        /* Canvas */
+        .canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #skyCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Clock Overlay */
+        .clock-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-glow);
+            text-align: center;
+        }
+        
+        .clock-time {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 2.5em;
+            color: var(--sun-color);
+            text-shadow: 0 0 20px rgba(255, 221, 68, 0.5);
+        }
+        
+        .clock-date {
+            font-size: 0.85em;
+            color: var(--text-dim);
+            margin-top: 5px;
+        }
+        
+        /* Sun/Moon Position */
+        .celestial-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-glow);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8em;
+        }
+        
+        .celestial-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 4px;
+        }
+        
+        .celestial-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .celestial-label {
+            color: var(--text-dim);
+        }
+        
+        /* Sun Path Arc */
+        .sun-path {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 100px 100px 0 0;
+            border: 1px solid var(--border-glow);
+            border-bottom: none;
+            overflow: hidden;
+        }
+        
+        .sun-arc {
+            position: absolute;
+            bottom: 0;
+            left: 10px;
+            right: 10px;
+            height: 80px;
+            border: 2px dashed rgba(255, 221, 68, 0.3);
+            border-radius: 100px 100px 0 0;
+            border-bottom: none;
+        }
+        
+        .sun-marker {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: var(--sun-color);
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--sun-color);
+            transform: translate(-50%, -50%);
+        }
+        
+        .moon-marker {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--moon-color);
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(200, 200, 220, 0.5);
+            transform: translate(-50%, -50%);
+        }
+        
+        .horizon-line {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 2px;
+            background: rgba(255, 136, 68, 0.5);
+        }
+        
+        .time-labels {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 5px;
+            font-size: 0.6em;
+            color: var(--text-dim);
+        }
+        
+        /* Right Panel */
+        .light-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .light-stat {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .light-stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1em;
+            color: #ff8844;
+        }
+        
+        .light-stat-label {
+            font-size: 0.65em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* DRO Display */
+        .dro-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .dro-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7em;
+            color: var(--accent-cyan);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .dro-meter {
+            height: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .dro-fill {
+            height: 100%;
+            transition: width 0.3s, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        
+        .dro-scale {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65em;
+            color: var(--text-dim);
+        }
+        
+        /* Color Preview */
+        .color-preview {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .color-swatch {
+            flex: 1;
+            height: 40px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            color: rgba(255,255,255,0.8);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Shadow Preview */
+        .shadow-preview {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+            height: 100px;
+        }
+        
+        .shadow-object {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 50px;
+            background: linear-gradient(135deg, #666, #333);
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .shadow-cast {
+            position: absolute;
+            bottom: 15px;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            transform-origin: left center;
+        }
+        
+        /* Atmosphere gradient preview */
+        .atmo-preview {
+            height: 60px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="demo-badge">WLD-004</div>
+                <h1>DAY/NIGHT CYCLE</h1>
+            </div>
+            <div class="header-right">
+                <div class="stat-group">
+                    <div class="stat-label">Time</div>
+                    <div class="stat-value time" id="headerTime">12:00</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Active Base</div>
+                    <div class="stat-value base" id="activeBase">BASE-8</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Phase</div>
+                    <div class="stat-value phase" id="dayPhase">NOON</div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Panel -->
+            <div class="panel">
+                <div class="panel-header">🌅 TIME CONTROL</div>
+                <div class="panel-content">
+                    <!-- Time Presets -->
+                    <div class="time-grid">
+                        <div class="time-btn" data-time="6" onclick="setTime(6)">
+                            <div class="time-icon">🌅</div>
+                            <div class="time-name">Sunrise</div>
+                            <div class="time-hours">06:00</div>
+                        </div>
+                        <div class="time-btn active" data-time="12" onclick="setTime(12)">
+                            <div class="time-icon">☀️</div>
+                            <div class="time-name">Noon</div>
+                            <div class="time-hours">12:00</div>
+                        </div>
+                        <div class="time-btn" data-time="18" onclick="setTime(18)">
+                            <div class="time-icon">🌇</div>
+                            <div class="time-name">Sunset</div>
+                            <div class="time-hours">18:00</div>
+                        </div>
+                        <div class="time-btn" data-time="0" onclick="setTime(0)">
+                            <div class="time-icon">🌙</div>
+                            <div class="time-name">Midnight</div>
+                            <div class="time-hours">00:00</div>
+                        </div>
+                        <div class="time-btn" data-time="4" onclick="setTime(4)">
+                            <div class="time-icon">🌌</div>
+                            <div class="time-name">Pre-Dawn</div>
+                            <div class="time-hours">04:00</div>
+                        </div>
+                        <div class="time-btn" data-time="20" onclick="setTime(20)">
+                            <div class="time-icon">🌃</div>
+                            <div class="time-name">Dusk</div>
+                            <div class="time-hours">20:00</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Time Controls -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Time Settings</div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Time of Day</span>
+                                <span class="slider-value" id="timeValue">12:00</span>
+                            </div>
+                            <input type="range" id="timeSlider" min="0" max="1440" value="720" oninput="updateTimeSlider()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Time Speed</span>
+                                <span class="slider-value" id="speedValue">1x</span>
+                            </div>
+                            <input type="range" id="speedSlider" min="0" max="100" value="10" oninput="updateSpeed()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Latitude</span>
+                                <span class="slider-value" id="latValue">45°N</span>
+                            </div>
+                            <input type="range" id="latSlider" min="-90" max="90" value="45" oninput="updateLatitude()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Day of Year</span>
+                                <span class="slider-value" id="dayValue">Jun 21</span>
+                            </div>
+                            <input type="range" id="daySlider" min="1" max="365" value="172" oninput="updateDayOfYear()">
+                        </div>
+                    </div>
+                    
+                    <!-- Toggles -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Display Options</div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Show Stars</span>
+                            <div class="toggle on" id="starsToggle" onclick="toggleStars()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Show Moon</span>
+                            <div class="toggle on" id="moonToggle" onclick="toggleMoon()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Atmospheric Scatter</span>
+                            <div class="toggle on" id="scatterToggle" onclick="toggleScatter()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Dynamic Shadows</span>
+                            <div class="toggle on" id="shadowsToggle" onclick="toggleShadows()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Auto Time</span>
+                            <div class="toggle on" id="autoToggle" onclick="toggleAuto()"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center - Canvas -->
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="skyCanvas"></canvas>
+                    
+                    <div class="clock-overlay">
+                        <div class="clock-time" id="clockTime">12:00</div>
+                        <div class="clock-date" id="clockDate">June 21</div>
+                    </div>
+                    
+                    <div class="celestial-info">
+                        <div class="celestial-row">
+                            <span class="celestial-label">Sun Alt:</span>
+                            <span id="sunAlt" style="color: var(--sun-color);">67°</span>
+                        </div>
+                        <div class="celestial-row">
+                            <span class="celestial-label">Sun Azi:</span>
+                            <span id="sunAzi" style="color: var(--sun-color);">180°</span>
+                        </div>
+                        <div class="celestial-row">
+                            <span class="celestial-label">Moon Alt:</span>
+                            <span id="moonAlt" style="color: var(--moon-color);">-45°</span>
+                        </div>
+                        <div class="celestial-row">
+                            <span class="celestial-label">Light Level:</span>
+                            <span id="lightLevel" style="color: var(--accent-yellow);">100%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="sun-path">
+                        <div class="sun-arc"></div>
+                        <div class="sun-marker" id="sunMarker"></div>
+                        <div class="moon-marker" id="moonMarker"></div>
+                        <div class="horizon-line"></div>
+                        <div class="time-labels">
+                            <span>6AM</span>
+                            <span>12PM</span>
+                            <span>6PM</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel -->
+            <div class="panel">
+                <div class="panel-header">📊 LIGHTING DATA</div>
+                <div class="panel-content">
+                    <!-- DRO Display -->
+                    <div class="dro-display">
+                        <div class="dro-title">DYNAMIC RADIX OPTIMIZER</div>
+                        <div class="dro-meter">
+                            <div class="dro-fill" id="droFill" style="width: 25%; background: linear-gradient(90deg, var(--base-8), var(--base-8));">
+                                BASE-8
+                            </div>
+                        </div>
+                        <div class="dro-scale">
+                            <span>B-4</span>
+                            <span>B-8</span>
+                            <span>B-12</span>
+                            <span>B-16</span>
+                            <span>B-24</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Light Stats -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Light Properties</div>
+                        <div class="light-stats">
+                            <div class="light-stat">
+                                <div class="light-stat-value" id="ambientLevel">80%</div>
+                                <div class="light-stat-label">Ambient</div>
+                            </div>
+                            <div class="light-stat">
+                                <div class="light-stat-value" id="directLevel">100%</div>
+                                <div class="light-stat-label">Direct</div>
+                            </div>
+                            <div class="light-stat">
+                                <div class="light-stat-value" id="shadowLength">1.2x</div>
+                                <div class="light-stat-label">Shadow Len</div>
+                            </div>
+                            <div class="light-stat">
+                                <div class="light-stat-value" id="colorTemp">5500K</div>
+                                <div class="light-stat-label">Color Temp</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sky Colors -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Sky Gradient</div>
+                        <div class="atmo-preview" id="atmoPreview"></div>
+                        <div class="color-preview">
+                            <div class="color-swatch" id="zenithColor">Zenith</div>
+                            <div class="color-swatch" id="horizonColor">Horizon</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Shadow Preview -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Shadow Direction</div>
+                        <div class="shadow-preview">
+                            <div class="shadow-object"></div>
+                            <div class="shadow-cast" id="shadowCast"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sun Times -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Sun Times</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85em;">
+                            <div>
+                                <span style="color: var(--text-dim);">Sunrise:</span>
+                                <span id="sunriseTime" style="color: var(--sun-color); margin-left: 5px;">05:30</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-dim);">Sunset:</span>
+                                <span id="sunsetTime" style="color: var(--accent-orange); margin-left: 5px;">20:30</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-dim);">Day Length:</span>
+                                <span id="dayLength" style="color: var(--accent-cyan); margin-left: 5px;">15h 00m</span>
+                            </div>
+                            <div>
+                                <span style="color: var(--text-dim);">Solar Noon:</span>
+                                <span id="solarNoon" style="color: var(--accent-yellow); margin-left: 5px;">13:00</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- LOD Info -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">LOD Philosophy</div>
+                        <div style="font-size: 0.75em; color: var(--text-dim); line-height: 1.6;">
+                            Day/Night uses <span style="color: #ff8844;">MINIMAL precision</span>:
+                            <br>• Base-8 for sun position
+                            <br>• Base-4 for shadow angles
+                            <br>• Smooth interpolation masks errors
+                            <br>• Visual changes are gradual
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ===== BASE-X ENGINE: DAY/NIGHT CYCLE =====
+        
+        const canvas = document.getElementById('skyCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Time state
+        let currentTime = 720; // Minutes from midnight (720 = 12:00)
+        let timeSpeed = 1;
+        let autoTime = true;
+        let latitude = 45;
+        let dayOfYear = 172; // June 21 (summer solstice)
+        
+        // Display toggles
+        let showStars = true;
+        let showMoon = true;
+        let showScatter = true;
+        let showShadows = true;
+        
+        // Stars
+        let stars = [];
+        
+        // Terrain
+        let terrain = [];
+        let trees = [];
+        
+        // DRO
+        let dro = {
+            currentBase: 8,
+            sunBase: 8,
+            shadowBase: 4
+        };
+        
+        // Performance
+        let lastTime = performance.now();
+        
+        function init() {
+            resizeCanvas();
+            generateStars();
+            generateTerrain();
+            generateTrees();
+            
+            window.addEventListener('resize', resizeCanvas);
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function resizeCanvas() {
+            const wrapper = canvas.parentElement;
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            generateTerrain();
+            generateTrees();
+        }
+        
+        function generateStars() {
+            stars = [];
+            for (let i = 0; i < 200; i++) {
+                stars.push({
+                    x: Math.random(),
+                    y: Math.random() * 0.7,
+                    size: 0.5 + Math.random() * 2,
+                    brightness: 0.3 + Math.random() * 0.7,
+                    twinkle: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        
+        function generateTerrain() {
+            terrain = [];
+            const points = 50;
+            const baseY = canvas.height * 0.75;
+            
+            for (let i = 0; i <= points; i++) {
+                const x = (i / points) * canvas.width;
+                const h1 = Math.sin(i * 0.2) * 20;
+                const h2 = Math.sin(i * 0.1 + 1) * 40;
+                const h3 = Math.sin(i * 0.05 + 2) * 30;
+                terrain.push({ x, y: baseY + h1 + h2 + h3 });
+            }
+        }
+        
+        function generateTrees() {
+            trees = [];
+            for (let i = 0; i < 15; i++) {
+                const x = 50 + Math.random() * (canvas.width - 100);
+                const baseY = getTerrainHeight(x);
+                trees.push({
+                    x,
+                    y: baseY,
+                    height: 40 + Math.random() * 60,
+                    width: 20 + Math.random() * 20
+                });
+            }
+            trees.sort((a, b) => a.y - b.y);
+        }
+        
+        function getTerrainHeight(x) {
+            const idx = (x / canvas.width) * (terrain.length - 1);
+            const i = Math.floor(idx);
+            const t = idx - i;
+            if (i >= terrain.length - 1) return terrain[terrain.length - 1].y;
+            return terrain[i].y * (1 - t) + terrain[i + 1].y * t;
+        }
+        
+        // ===== CELESTIAL CALCULATIONS =====
+        
+        function getSunPosition() {
+            // Simplified sun position based on time and latitude
+            const hours = currentTime / 60;
+            const hourAngle = (hours - 12) * 15; // degrees from solar noon
+            
+            // Declination based on day of year (simplified)
+            const declination = 23.45 * Math.sin((360 / 365) * (dayOfYear - 81) * Math.PI / 180);
+            
+            // Altitude
+            const latRad = latitude * Math.PI / 180;
+            const decRad = declination * Math.PI / 180;
+            const haRad = hourAngle * Math.PI / 180;
+            
+            const altitude = Math.asin(
+                Math.sin(latRad) * Math.sin(decRad) +
+                Math.cos(latRad) * Math.cos(decRad) * Math.cos(haRad)
+            ) * 180 / Math.PI;
+            
+            // Azimuth (simplified)
+            const azimuth = 180 + hourAngle;
+            
+            return { altitude, azimuth, hourAngle };
+        }
+        
+        function getMoonPosition() {
+            // Moon is roughly opposite to sun (simplified)
+            const sun = getSunPosition();
+            return {
+                altitude: -sun.altitude * 0.8 + 20 * Math.sin(currentTime / 60 * 0.5),
+                azimuth: (sun.azimuth + 180) % 360
+            };
+        }
+        
+        function getSunriseSunset() {
+            // Simplified calculation
+            const declination = 23.45 * Math.sin((360 / 365) * (dayOfYear - 81) * Math.PI / 180);
+            const latRad = latitude * Math.PI / 180;
+            const decRad = declination * Math.PI / 180;
+            
+            const cosH = -Math.tan(latRad) * Math.tan(decRad);
+            const cosHClamped = Math.max(-1, Math.min(1, cosH));
+            const H = Math.acos(cosHClamped) * 180 / Math.PI;
+            
+            const sunrise = 12 - H / 15;
+            const sunset = 12 + H / 15;
+            
+            return { sunrise, sunset, dayLength: sunset - sunrise };
+        }
+        
+        function getLightLevel() {
+            const sun = getSunPosition();
+            if (sun.altitude > 0) {
+                return Math.min(1, sun.altitude / 45);
+            } else if (sun.altitude > -18) {
+                // Twilight
+                return Math.max(0, (sun.altitude + 18) / 18 * 0.3);
+            }
+            return 0;
+        }
+        
+        // ===== SKY COLORS =====
+        
+        function getSkyColors() {
+            const sun = getSunPosition();
+            const light = getLightLevel();
+            
+            // Night colors
+            const nightZenith = { r: 5, g: 10, b: 25 };
+            const nightHorizon = { r: 15, g: 25, b: 45 };
+            
+            // Day colors
+            const dayZenith = { r: 65, g: 140, b: 210 };
+            const dayHorizon = { r: 135, g: 190, b: 230 };
+            
+            // Sunrise/sunset colors
+            const sunriseZenith = { r: 70, g: 100, b: 150 };
+            const sunriseHorizon = { r: 255, g: 150, b: 80 };
+            
+            let zenith, horizon;
+            
+            if (sun.altitude > 10) {
+                // Full day
+                zenith = dayZenith;
+                horizon = dayHorizon;
+            } else if (sun.altitude > -5) {
+                // Sunrise/sunset
+                const t = (sun.altitude + 5) / 15;
+                zenith = blendColors(sunriseZenith, dayZenith, t);
+                horizon = blendColors(sunriseHorizon, dayHorizon, t);
+            } else if (sun.altitude > -18) {
+                // Twilight
+                const t = (sun.altitude + 18) / 13;
+                zenith = blendColors(nightZenith, sunriseZenith, t);
+                horizon = blendColors(nightHorizon, sunriseHorizon, t);
+            } else {
+                // Night
+                zenith = nightZenith;
+                horizon = nightHorizon;
+            }
+            
+            return { zenith, horizon };
+        }
+        
+        function blendColors(c1, c2, t) {
+            return {
+                r: Math.round(c1.r * (1 - t) + c2.r * t),
+                g: Math.round(c1.g * (1 - t) + c2.g * t),
+                b: Math.round(c1.b * (1 - t) + c2.b * t)
+            };
+        }
+        
+        function getColorTemp() {
+            const sun = getSunPosition();
+            if (sun.altitude > 30) return 5500;
+            if (sun.altitude > 10) return 5000;
+            if (sun.altitude > 0) return 3500;
+            if (sun.altitude > -10) return 2500;
+            return 4000; // Moonlight
+        }
+        
+        // ===== RENDERING =====
+        
+        function render() {
+            const sun = getSunPosition();
+            const moon = getMoonPosition();
+            const colors = getSkyColors();
+            const light = getLightLevel();
+            
+            // Sky gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.75);
+            gradient.addColorStop(0, `rgb(${colors.zenith.r}, ${colors.zenith.g}, ${colors.zenith.b})`);
+            gradient.addColorStop(1, `rgb(${colors.horizon.r}, ${colors.horizon.g}, ${colors.horizon.b})`);
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Atmospheric scattering effect near horizon
+            if (showScatter && sun.altitude > -10 && sun.altitude < 20) {
+                const scatterGradient = ctx.createLinearGradient(0, canvas.height * 0.4, 0, canvas.height * 0.75);
+                const intensity = Math.max(0, 1 - Math.abs(sun.altitude) / 20) * 0.5;
+                
+                if (sun.altitude > 0) {
+                    scatterGradient.addColorStop(0, `rgba(255, 200, 100, 0)`);
+                    scatterGradient.addColorStop(1, `rgba(255, 150, 50, ${intensity})`);
+                } else {
+                    scatterGradient.addColorStop(0, `rgba(255, 100, 50, 0)`);
+                    scatterGradient.addColorStop(1, `rgba(200, 80, 100, ${intensity})`);
+                }
+                
+                ctx.fillStyle = scatterGradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height * 0.75);
+            }
+            
+            // Stars
+            if (showStars && light < 0.5) {
+                const starAlpha = (0.5 - light) * 2;
+                stars.forEach(star => {
+                    star.twinkle += 0.02;
+                    const twinkle = 0.5 + Math.sin(star.twinkle) * 0.5;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness * starAlpha * twinkle})`;
+                    ctx.beginPath();
+                    ctx.arc(star.x * canvas.width, star.y * canvas.height, star.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+            
+            // Sun
+            if (sun.altitude > -5) {
+                const sunX = canvas.width * 0.5 + (sun.hourAngle / 90) * canvas.width * 0.4;
+                const sunY = canvas.height * 0.7 - (sun.altitude / 90) * canvas.height * 0.6;
+                
+                // Sun glow
+                const glowGradient = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 100);
+                const glowIntensity = sun.altitude > 0 ? 0.5 : 0.3;
+                glowGradient.addColorStop(0, `rgba(255, 230, 150, ${glowIntensity})`);
+                glowGradient.addColorStop(0.3, `rgba(255, 200, 100, ${glowIntensity * 0.5})`);
+                glowGradient.addColorStop(1, 'rgba(255, 150, 50, 0)');
+                
+                ctx.fillStyle = glowGradient;
+                ctx.beginPath();
+                ctx.arc(sunX, sunY, 100, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Sun disc
+                const sunSize = sun.altitude > 5 ? 30 : 40;
+                ctx.fillStyle = sun.altitude > 5 ? '#ffdd44' : '#ff9944';
+                ctx.beginPath();
+                ctx.arc(sunX, sunY, sunSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Moon
+            if (showMoon && moon.altitude > -5 && light < 0.7) {
+                const moonX = canvas.width * 0.5 - (sun.hourAngle / 90) * canvas.width * 0.3;
+                const moonY = canvas.height * 0.5 - (moon.altitude / 90) * canvas.height * 0.4;
+                
+                const moonAlpha = Math.min(1, (0.7 - light) * 2);
+                
+                // Moon glow
+                ctx.fillStyle = `rgba(200, 210, 230, ${moonAlpha * 0.2})`;
+                ctx.beginPath();
+                ctx.arc(moonX, moonY, 40, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Moon disc
+                ctx.fillStyle = `rgba(230, 235, 245, ${moonAlpha})`;
+                ctx.beginPath();
+                ctx.arc(moonX, moonY, 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Terrain with shadows
+            renderTerrain(sun, light);
+            
+            // Trees with shadows
+            if (showShadows) {
+                renderTreeShadows(sun, light);
+            }
+            renderTrees(light);
+        }
+        
+        function renderTerrain(sun, light) {
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            terrain.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.closePath();
+            
+            // Terrain color based on lighting
+            const baseGreen = Math.round(60 + light * 40);
+            const terrainGradient = ctx.createLinearGradient(0, canvas.height * 0.6, 0, canvas.height);
+            terrainGradient.addColorStop(0, `rgb(${20 + light * 30}, ${baseGreen}, ${20 + light * 20})`);
+            terrainGradient.addColorStop(1, `rgb(${10 + light * 15}, ${30 + light * 20}, ${10 + light * 10})`);
+            
+            ctx.fillStyle = terrainGradient;
+            ctx.fill();
+        }
+        
+        function renderTreeShadows(sun, light) {
+            if (sun.altitude <= 0 || light < 0.1) return;
+            
+            const shadowLength = Math.min(5, 1 / Math.tan(sun.altitude * Math.PI / 180));
+            const shadowDir = sun.azimuth > 180 ? 1 : -1;
+            
+            ctx.fillStyle = `rgba(0, 0, 0, ${light * 0.3})`;
+            
+            trees.forEach(tree => {
+                const shadowLen = tree.height * shadowLength * shadowDir;
+                
+                ctx.beginPath();
+                ctx.moveTo(tree.x, tree.y);
+                ctx.lineTo(tree.x + shadowLen, tree.y);
+                ctx.lineTo(tree.x + shadowLen + tree.width * 0.3 * shadowDir, tree.y);
+                ctx.lineTo(tree.x + tree.width * 0.5, tree.y);
+                ctx.closePath();
+                ctx.fill();
+            });
+        }
+        
+        function renderTrees(light) {
+            trees.forEach(tree => {
+                // Trunk
+                const trunkLight = 0.3 + light * 0.4;
+                ctx.fillStyle = `rgb(${Math.round(60 * trunkLight)}, ${Math.round(40 * trunkLight)}, ${Math.round(20 * trunkLight)})`;
+                ctx.fillRect(tree.x - 5, tree.y - tree.height * 0.4, 10, tree.height * 0.4);
+                
+                // Foliage
+                const greenVal = Math.round(80 + light * 60);
+                ctx.fillStyle = `rgb(${Math.round(30 + light * 30)}, ${greenVal}, ${Math.round(30 + light * 20)})`;
+                ctx.beginPath();
+                ctx.moveTo(tree.x, tree.y - tree.height);
+                ctx.lineTo(tree.x - tree.width / 2, tree.y - tree.height * 0.3);
+                ctx.lineTo(tree.x + tree.width / 2, tree.y - tree.height * 0.3);
+                ctx.closePath();
+                ctx.fill();
+            });
+        }
+        
+        // ===== UPDATE =====
+        
+        function update(dt) {
+            if (autoTime) {
+                currentTime += timeSpeed * dt * 0.5;
+                if (currentTime >= 1440) currentTime -= 1440;
+                if (currentTime < 0) currentTime += 1440;
+                
+                document.getElementById('timeSlider').value = currentTime;
+            }
+            
+            updateUI();
+        }
+        
+        function updateUI() {
+            const hours = Math.floor(currentTime / 60);
+            const minutes = Math.floor(currentTime % 60);
+            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            
+            document.getElementById('headerTime').textContent = timeStr;
+            document.getElementById('clockTime').textContent = timeStr;
+            document.getElementById('timeValue').textContent = timeStr;
+            
+            // Date
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            let day = dayOfYear;
+            let month = 0;
+            while (day > daysInMonth[month]) {
+                day -= daysInMonth[month];
+                month++;
+            }
+            document.getElementById('clockDate').textContent = `${months[month]} ${day}`;
+            document.getElementById('dayValue').textContent = `${months[month]} ${day}`;
+            
+            // Sun/Moon position
+            const sun = getSunPosition();
+            const moon = getMoonPosition();
+            document.getElementById('sunAlt').textContent = Math.round(sun.altitude) + '°';
+            document.getElementById('sunAzi').textContent = Math.round(sun.azimuth) + '°';
+            document.getElementById('moonAlt').textContent = Math.round(moon.altitude) + '°';
+            
+            // Light level
+            const light = getLightLevel();
+            document.getElementById('lightLevel').textContent = Math.round(light * 100) + '%';
+            document.getElementById('ambientLevel').textContent = Math.round(20 + light * 80) + '%';
+            document.getElementById('directLevel').textContent = Math.round(light * 100) + '%';
+            
+            // Shadow length
+            if (sun.altitude > 0) {
+                const shadowMult = Math.min(10, 1 / Math.tan(sun.altitude * Math.PI / 180));
+                document.getElementById('shadowLength').textContent = shadowMult.toFixed(1) + 'x';
+                
+                // Update shadow preview
+                const shadowCast = document.getElementById('shadowCast');
+                const shadowDir = sun.azimuth > 180 ? 1 : -1;
+                shadowCast.style.width = Math.min(80, shadowMult * 20) + 'px';
+                shadowCast.style.left = shadowDir > 0 ? '50%' : 'auto';
+                shadowCast.style.right = shadowDir < 0 ? '50%' : 'auto';
+                shadowCast.style.transform = `scaleX(${shadowDir})`;
+            } else {
+                document.getElementById('shadowLength').textContent = '—';
+            }
+            
+            // Color temp
+            document.getElementById('colorTemp').textContent = getColorTemp() + 'K';
+            
+            // Day phase
+            let phase = 'NIGHT';
+            if (sun.altitude > 30) phase = 'MIDDAY';
+            else if (sun.altitude > 10) phase = 'DAY';
+            else if (sun.altitude > 0) phase = 'GOLDEN';
+            else if (sun.altitude > -6) phase = 'TWILIGHT';
+            else if (sun.altitude > -12) phase = 'DUSK';
+            document.getElementById('dayPhase').textContent = phase;
+            
+            // Sun times
+            const times = getSunriseSunset();
+            const formatTime = (h) => {
+                const hrs = Math.floor(h);
+                const mins = Math.floor((h - hrs) * 60);
+                return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+            };
+            document.getElementById('sunriseTime').textContent = formatTime(times.sunrise);
+            document.getElementById('sunsetTime').textContent = formatTime(times.sunset);
+            document.getElementById('dayLength').textContent = `${Math.floor(times.dayLength)}h ${Math.round((times.dayLength % 1) * 60)}m`;
+            document.getElementById('solarNoon').textContent = '12:00';
+            
+            // Sky colors preview
+            const colors = getSkyColors();
+            document.getElementById('zenithColor').style.background = `rgb(${colors.zenith.r}, ${colors.zenith.g}, ${colors.zenith.b})`;
+            document.getElementById('horizonColor').style.background = `rgb(${colors.horizon.r}, ${colors.horizon.g}, ${colors.horizon.b})`;
+            document.getElementById('atmoPreview').style.background = `linear-gradient(to bottom, rgb(${colors.zenith.r}, ${colors.zenith.g}, ${colors.zenith.b}), rgb(${colors.horizon.r}, ${colors.horizon.g}, ${colors.horizon.b}))`;
+            
+            // Sun path markers
+            const sunMarker = document.getElementById('sunMarker');
+            const moonMarker = document.getElementById('moonMarker');
+            const arcWidth = 180;
+            const arcHeight = 80;
+            
+            const sunAngle = (currentTime / 1440) * Math.PI;
+            sunMarker.style.left = (10 + Math.sin(sunAngle) * arcWidth / 2 + arcWidth / 2) + 'px';
+            sunMarker.style.bottom = (10 + Math.sin(sunAngle) * arcHeight) + 'px';
+            sunMarker.style.display = sun.altitude > -10 ? 'block' : 'none';
+            
+            const moonAngle = ((currentTime + 720) % 1440 / 1440) * Math.PI;
+            moonMarker.style.left = (10 + Math.sin(moonAngle) * arcWidth / 2 + arcWidth / 2) + 'px';
+            moonMarker.style.bottom = (10 + Math.sin(moonAngle) * arcHeight * 0.6) + 'px';
+            moonMarker.style.display = showMoon && moon.altitude > -10 ? 'block' : 'none';
+            
+            // DRO - Day/Night uses minimal precision
+            dro.sunBase = 8;
+            dro.shadowBase = 4;
+            dro.currentBase = 8;
+            
+            document.getElementById('activeBase').textContent = `BASE-${dro.currentBase}`;
+            const droFill = document.getElementById('droFill');
+            droFill.style.width = '25%';
+            droFill.textContent = `BASE-${dro.currentBase}`;
+        }
+        
+        // ===== CONTROLS =====
+        
+        function setTime(hours) {
+            currentTime = hours * 60;
+            document.getElementById('timeSlider').value = currentTime;
+            
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.time) === hours);
+            });
+        }
+        
+        function updateTimeSlider() {
+            currentTime = parseInt(document.getElementById('timeSlider').value);
+            
+            // Update active button
+            const hours = Math.round(currentTime / 60);
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.time) === hours);
+            });
+        }
+        
+        function updateSpeed() {
+            const val = parseInt(document.getElementById('speedSlider').value);
+            timeSpeed = val / 10;
+            document.getElementById('speedValue').textContent = timeSpeed.toFixed(1) + 'x';
+        }
+        
+        function updateLatitude() {
+            latitude = parseInt(document.getElementById('latSlider').value);
+            const dir = latitude >= 0 ? 'N' : 'S';
+            document.getElementById('latValue').textContent = Math.abs(latitude) + '°' + dir;
+        }
+        
+        function updateDayOfYear() {
+            dayOfYear = parseInt(document.getElementById('daySlider').value);
+        }
+        
+        function toggleStars() {
+            showStars = !showStars;
+            document.getElementById('starsToggle').classList.toggle('on', showStars);
+        }
+        
+        function toggleMoon() {
+            showMoon = !showMoon;
+            document.getElementById('moonToggle').classList.toggle('on', showMoon);
+        }
+        
+        function toggleScatter() {
+            showScatter = !showScatter;
+            document.getElementById('scatterToggle').classList.toggle('on', showScatter);
+        }
+        
+        function toggleShadows() {
+            showShadows = !showShadows;
+            document.getElementById('shadowsToggle').classList.toggle('on', showShadows);
+        }
+        
+        function toggleAuto() {
+            autoTime = !autoTime;
+            document.getElementById('autoToggle').classList.toggle('on', autoTime);
+        }
+        
+        // ===== GAME LOOP =====
+        
+        function gameLoop(timestamp) {
+            const dt = Math.min(32, timestamp - lastTime) / 16.67;
+            lastTime = timestamp;
+            
+            update(dt);
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

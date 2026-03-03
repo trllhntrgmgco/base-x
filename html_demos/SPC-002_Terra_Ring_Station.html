@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASE-X ENGINE | SPC-002: Terra Ring Station</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-void: #020204;
+            --bg-panel: rgba(5, 8, 15, 0.95);
+            --station-silver: #8899aa;
+            --ring-blue: #3366aa;
+            --earth-blue: #4488dd;
+            --gravity-green: #00dd88;
+            --warning-yellow: #ddaa00;
+            --danger-red: #dd3344;
+            --accent-cyan: #00ccdd;
+            --text-primary: #d0d8e8;
+            --text-dim: #556688;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg-void);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            height: 50px;
+            background: linear-gradient(180deg, rgba(0, 204, 221, 0.08), transparent);
+            border-bottom: 1px solid rgba(0, 204, 221, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-badge {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--ring-blue));
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 10px;
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        
+        .logo-sub {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-left: 10px;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+        
+        .stat-value.good { color: var(--gravity-green); }
+        .stat-value.warn { color: var(--warning-yellow); }
+        .stat-value.danger { color: var(--danger-red); }
+        
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .control-panel {
+            width: 260px;
+            background: var(--bg-panel);
+            border-right: 1px solid rgba(0, 204, 221, 0.1);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .panel-section {
+            margin-bottom: 18px;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 204, 221, 0.2);
+        }
+        
+        .deck-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .deck-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 10px;
+            text-align: left;
+        }
+        
+        .deck-btn:hover { background: rgba(0, 204, 221, 0.1); }
+        .deck-btn.active {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 204, 221, 0.15);
+        }
+        
+        .deck-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+        
+        .deck-info { flex: 1; }
+        .deck-name { font-weight: 600; }
+        .deck-gravity { font-size: 9px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; }
+        
+        .base-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        
+        .base-btn {
+            padding: 8px 5px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            text-align: center;
+            transition: all 0.15s;
+        }
+        
+        .base-btn:hover { background: rgba(255, 255, 255, 0.06); }
+        .base-btn.active {
+            border-color: var(--gravity-green);
+            background: rgba(0, 221, 136, 0.15);
+            color: var(--gravity-green);
+        }
+        
+        .slider-group {
+            margin-bottom: 12px;
+        }
+        
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 10px;
+        }
+        
+        .slider-label { color: var(--text-dim); }
+        .slider-value { font-family: 'Share Tech Mono', monospace; color: var(--accent-cyan); }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .station-stats {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+        }
+        
+        .station-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .station-row:last-child { border-bottom: none; }
+        .station-key { color: var(--text-dim); }
+        .station-val { color: var(--accent-cyan); }
+        
+        .action-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        
+        .action-btn {
+            padding: 10px;
+            background: rgba(0, 204, 221, 0.1);
+            border: 1px solid rgba(0, 204, 221, 0.3);
+            border-radius: 5px;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .action-btn:hover { background: rgba(0, 204, 221, 0.2); }
+        .action-btn.full { grid-column: span 2; }
+        .action-btn.danger { 
+            background: rgba(221, 51, 68, 0.15);
+            border-color: rgba(221, 51, 68, 0.4);
+        }
+        
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .canvas-row {
+            flex: 1;
+            display: flex;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .canvas-wrapper canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .canvas-label {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            z-index: 10;
+        }
+        
+        .canvas-label.high { color: var(--gravity-green); border: 1px solid var(--gravity-green); }
+        .canvas-label.low { color: var(--danger-red); border: 1px solid var(--danger-red); }
+        
+        .gravity-hud {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(0, 204, 221, 0.3);
+            border-radius: 6px;
+            padding: 10px 15px;
+        }
+        
+        .gravity-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            color: var(--gravity-green);
+            text-align: center;
+        }
+        
+        .gravity-unit {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        
+        .gravity-label {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-align: center;
+            margin-top: 5px;
+        }
+        
+        .coriolis-indicator {
+            position: absolute;
+            top: 50px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 6px;
+            padding: 10px;
+            width: 100px;
+        }
+        
+        .coriolis-title {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .coriolis-arrow {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .info-panel {
+            width: 240px;
+            background: var(--bg-panel);
+            border-left: 1px solid rgba(0, 204, 221, 0.1);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .ring-diagram {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .ring-visual {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .metrics-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .metric-row:last-child { border-bottom: none; }
+        .metric-key { color: var(--text-dim); }
+        .metric-val { font-family: 'Share Tech Mono', monospace; }
+        .metric-val.good { color: var(--gravity-green); }
+        .metric-val.warn { color: var(--warning-yellow); }
+        .metric-val.bad { color: var(--danger-red); }
+        
+        .physics-note {
+            background: rgba(0, 100, 150, 0.15);
+            border: 1px solid rgba(0, 204, 221, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 9px;
+            line-height: 1.5;
+        }
+        
+        .physics-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            color: var(--accent-cyan);
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-badge">SPC-002</div>
+            <div class="logo-text">TERRA RING STATION</div>
+            <div class="logo-sub">Rotating Habitat Physics</div>
+        </div>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-value good" id="gravityDisplay">1.00</div>
+                <div class="stat-label">Gravity (G)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="rpmDisplay">1.5</div>
+                <div class="stat-label">Rotation (RPM)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="coriolisDisplay">0.02</div>
+                <div class="stat-label">Coriolis (m/s²)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="radiusDisplay">450</div>
+                <div class="stat-label">Radius (m)</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="control-panel">
+            <div class="panel-section">
+                <div class="section-title">Station Deck</div>
+                <div class="deck-selector">
+                    <button class="deck-btn" data-deck="hub">
+                        <div class="deck-color" style="background: #666"></div>
+                        <div class="deck-info">
+                            <div class="deck-name">Central Hub</div>
+                            <div class="deck-gravity">0.00 G (Zero-G)</div>
+                        </div>
+                    </button>
+                    <button class="deck-btn" data-deck="inner">
+                        <div class="deck-color" style="background: #4488aa"></div>
+                        <div class="deck-info">
+                            <div class="deck-name">Inner Ring</div>
+                            <div class="deck-gravity">0.33 G (Lunar)</div>
+                        </div>
+                    </button>
+                    <button class="deck-btn" data-deck="mid">
+                        <div class="deck-color" style="background: #44aa88"></div>
+                        <div class="deck-info">
+                            <div class="deck-name">Mid Ring</div>
+                            <div class="deck-gravity">0.66 G (Mars+)</div>
+                        </div>
+                    </button>
+                    <button class="deck-btn active" data-deck="outer">
+                        <div class="deck-color" style="background: #44dd66"></div>
+                        <div class="deck-info">
+                            <div class="deck-name">Outer Ring</div>
+                            <div class="deck-gravity">1.00 G (Earth)</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Base</div>
+                <div class="base-grid">
+                    <button class="base-btn" data-base="16">B-16</button>
+                    <button class="base-btn" data-base="24">B-24</button>
+                    <button class="base-btn" data-base="32">B-32</button>
+                    <button class="base-btn active" data-base="48">B-48</button>
+                    <button class="base-btn" data-base="56">B-56</button>
+                    <button class="base-btn" data-base="64">B-64</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Station Parameters</div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Rotation Speed</span>
+                        <span class="slider-value" id="rotSpeedVal">1.5 RPM</span>
+                    </div>
+                    <input type="range" id="rotSpeedSlider" min="0.5" max="3.0" step="0.1" value="1.5">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Ring Radius</span>
+                        <span class="slider-value" id="ringRadiusVal">450 m</span>
+                    </div>
+                    <input type="range" id="ringRadiusSlider" min="100" max="1000" step="50" value="450">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Time Scale</span>
+                        <span class="slider-value" id="timeScaleVal">1x</span>
+                    </div>
+                    <input type="range" id="timeScaleSlider" min="1" max="20" value="5">
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Station Stats</div>
+                <div class="station-stats">
+                    <div class="station-row">
+                        <span class="station-key">Circumference</span>
+                        <span class="station-val" id="circumference">2,827 m</span>
+                    </div>
+                    <div class="station-row">
+                        <span class="station-key">Rim Velocity</span>
+                        <span class="station-val" id="rimVelocity">70.7 m/s</span>
+                    </div>
+                    <div class="station-row">
+                        <span class="station-key">Day Length</span>
+                        <span class="station-val" id="dayLength">40 sec</span>
+                    </div>
+                    <div class="station-row">
+                        <span class="station-key">Population</span>
+                        <span class="station-val">12,500</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Actions</div>
+                <div class="action-btns">
+                    <button class="action-btn" id="btnDropBall">Drop Ball</button>
+                    <button class="action-btn" id="btnThrowBall">Throw Ball</button>
+                    <button class="action-btn" id="btnJump">Jump Test</button>
+                    <button class="action-btn" id="btnWalk">Walk Test</button>
+                    <button class="action-btn danger" id="btnEmergency">Emergency Stop</button>
+                    <button class="action-btn" id="btnReset">Reset</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-area">
+            <div class="canvas-row">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasStation"></canvas>
+                    <div class="canvas-label" style="color: var(--accent-cyan); border: 1px solid var(--accent-cyan);">
+                        EXTERNAL VIEW — Station Rotation
+                    </div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="canvasHabitat"></canvas>
+                    <div class="canvas-label high">HABITAT VIEW — Artificial Gravity</div>
+                    <div class="gravity-hud">
+                        <div class="gravity-display" id="localGravity">1.00<span class="gravity-unit">G</span></div>
+                        <div class="gravity-label">Local Gravity</div>
+                    </div>
+                    <div class="coriolis-indicator">
+                        <div class="coriolis-title">Coriolis Effect</div>
+                        <canvas id="coriolisCanvas" width="80" height="80"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="canvas-row" style="flex: 0.5">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasDetail"></canvas>
+                    <div class="canvas-label" style="color: var(--warning-yellow); border: 1px solid var(--warning-yellow);">
+                        PRECISION COMPARISON — Gravity Calculation Error
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="panel-section">
+                <div class="section-title">Ring Cross-Section</div>
+                <div class="ring-diagram">
+                    <canvas id="ringCanvas" width="180" height="180"></canvas>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Gravity Gradient</div>
+                <div class="metrics-box">
+                    <div class="metric-row">
+                        <span class="metric-key">Hub (0m)</span>
+                        <span class="metric-val">0.00 G</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Inner (150m)</span>
+                        <span class="metric-val" id="innerG">0.33 G</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Mid (300m)</span>
+                        <span class="metric-val" id="midG">0.67 G</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Outer (450m)</span>
+                        <span class="metric-val good" id="outerG">1.00 G</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Impact</div>
+                <div class="metrics-box">
+                    <div class="metric-row">
+                        <span class="metric-key">Base-64</span>
+                        <span class="metric-val good">±0.001% G</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Base-48</span>
+                        <span class="metric-val good">±0.01% G</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Base-32</span>
+                        <span class="metric-val warn">±0.1% G</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Base-16</span>
+                        <span class="metric-val bad">±2% G</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Physics Notes</div>
+                <div class="physics-note">
+                    <div class="physics-title">Centripetal Acceleration</div>
+                    a = ω²r = (2πf)²r
+                    <br><br>
+                    For 1G at 450m radius:
+                    <br>ω = √(g/r) = 0.148 rad/s
+                    <br>= 1.41 RPM
+                    <br><br>
+                    <div class="physics-title">Coriolis Effect</div>
+                    a = 2ω × v
+                    <br>Objects moving radially curve sideways
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvasStation = document.getElementById('canvasStation');
+        const ctxStation = canvasStation.getContext('2d');
+        const canvasHabitat = document.getElementById('canvasHabitat');
+        const ctxHabitat = canvasHabitat.getContext('2d');
+        const canvasDetail = document.getElementById('canvasDetail');
+        const ctxDetail = canvasDetail.getContext('2d');
+        const ringCanvas = document.getElementById('ringCanvas');
+        const ringCtx = ringCanvas.getContext('2d');
+        const coriolisCanvas = document.getElementById('coriolisCanvas');
+        const coriolisCtx = coriolisCanvas.getContext('2d');
+        
+        // Precision (relative error)
+        const BASE_PRECISION = {
+            16: 0.02,
+            24: 0.005,
+            32: 0.001,
+            48: 0.0001,
+            56: 0.00005,
+            64: 0.00001
+        };
+        
+        // Deck configurations
+        const DECKS = {
+            hub: { radius: 0, name: 'Central Hub', color: '#666666' },
+            inner: { radius: 0.33, name: 'Inner Ring', color: '#4488aa' },
+            mid: { radius: 0.66, name: 'Mid Ring', color: '#44aa88' },
+            outer: { radius: 1.0, name: 'Outer Ring', color: '#44dd66' }
+        };
+        
+        // State
+        let settings = {
+            deck: 'outer',
+            baseHigh: 48,
+            baseLow: 16,
+            rotSpeed: 1.5, // RPM
+            ringRadius: 450, // meters
+            timeScale: 5
+        };
+        
+        let stationAngle = 0;
+        let time = 0;
+        let objects = [];
+        let person = { x: 0, y: 0, vx: 0, vy: 0, onGround: true };
+        
+        // Physics
+        function calcGravity(radius, rpm, precision) {
+            // a = ω²r where ω = 2π × rpm / 60
+            const omega = (2 * Math.PI * rpm) / 60;
+            const accel = omega * omega * radius;
+            const g = accel / 9.81;
+            
+            // Add precision error
+            const error = (Math.random() - 0.5) * precision * 2;
+            return Math.max(0, g * (1 + error));
+        }
+        
+        function calcCoriolis(velocity, rpm) {
+            // Coriolis acceleration = 2ω × v
+            const omega = (2 * Math.PI * rpm) / 60;
+            return 2 * omega * velocity;
+        }
+        
+        // Initialize
+        function resize() {
+            canvasStation.width = canvasStation.parentElement.clientWidth;
+            canvasStation.height = canvasStation.parentElement.clientHeight;
+            canvasHabitat.width = canvasHabitat.parentElement.clientWidth;
+            canvasHabitat.height = canvasHabitat.parentElement.clientHeight;
+            canvasDetail.width = canvasDetail.parentElement.clientWidth;
+            canvasDetail.height = canvasDetail.parentElement.clientHeight;
+        }
+        
+        function spawnBall(vx = 0, vy = 0) {
+            const deck = DECKS[settings.deck];
+            objects.push({
+                type: 'ball',
+                x: canvasHabitat.width / 2 + (Math.random() - 0.5) * 100,
+                y: 100,
+                vx: vx,
+                vy: vy,
+                radius: 10,
+                color: '#ff6644',
+                trail: []
+            });
+        }
+        
+        function spawnPerson() {
+            person = {
+                x: canvasHabitat.width / 2,
+                y: canvasHabitat.height - 150,
+                vx: 0,
+                vy: 0,
+                onGround: true,
+                width: 20,
+                height: 50
+            };
+        }
+        
+        function update() {
+            const dt = 0.016 * settings.timeScale;
+            time += dt;
+            
+            // Station rotation
+            const rpm = settings.rotSpeed;
+            stationAngle += (rpm / 60) * 360 * dt;
+            
+            // Current deck gravity
+            const deck = DECKS[settings.deck];
+            const deckRadius = deck.radius * settings.ringRadius;
+            const gravity = calcGravity(deckRadius, rpm, BASE_PRECISION[settings.baseHigh]);
+            const gravityAccel = gravity * 9.81;
+            
+            // Coriolis coefficient
+            const omega = (2 * Math.PI * rpm) / 60;
+            
+            // Update objects
+            const groundY = canvasHabitat.height - 100;
+            
+            for (const obj of objects) {
+                if (obj.type === 'ball') {
+                    // Store trail
+                    obj.trail.push({ x: obj.x, y: obj.y });
+                    if (obj.trail.length > 50) obj.trail.shift();
+                    
+                    // Gravity (centripetal - points "down" toward rim)
+                    obj.vy += gravityAccel * dt * 10; // Scale for visualization
+                    
+                    // Coriolis effect (sideways deflection)
+                    const coriolisX = 2 * omega * obj.vy * dt * 50;
+                    obj.vx += coriolisX;
+                    
+                    // Move
+                    obj.x += obj.vx * dt * 60;
+                    obj.y += obj.vy * dt * 60;
+                    
+                    // Bounce off ground
+                    if (obj.y + obj.radius > groundY) {
+                        obj.y = groundY - obj.radius;
+                        obj.vy *= -0.6;
+                        obj.vx *= 0.9;
+                    }
+                    
+                    // Walls
+                    if (obj.x < obj.radius || obj.x > canvasHabitat.width - obj.radius) {
+                        obj.vx *= -0.8;
+                        obj.x = Math.max(obj.radius, Math.min(canvasHabitat.width - obj.radius, obj.x));
+                    }
+                }
+            }
+            
+            // Update person
+            if (!person.onGround) {
+                person.vy += gravityAccel * dt * 10;
+                const coriolisX = 2 * omega * person.vy * dt * 50;
+                person.vx += coriolisX;
+            }
+            
+            person.x += person.vx * dt * 60;
+            person.y += person.vy * dt * 60;
+            
+            if (person.y + person.height > groundY) {
+                person.y = groundY - person.height;
+                person.vy = 0;
+                person.vx *= 0.8;
+                person.onGround = true;
+            }
+            
+            // Remove old objects
+            objects = objects.filter(o => o.y < canvasHabitat.height + 100);
+            
+            // Update UI
+            updateUI();
+        }
+        
+        function updateUI() {
+            const deck = DECKS[settings.deck];
+            const deckRadius = deck.radius * settings.ringRadius;
+            const gravity = calcGravity(deckRadius, settings.rotSpeed, BASE_PRECISION[settings.baseHigh]);
+            
+            document.getElementById('gravityDisplay').textContent = gravity.toFixed(2);
+            document.getElementById('gravityDisplay').className = 'stat-value ' + 
+                (gravity >= 0.9 && gravity <= 1.1 ? 'good' : gravity >= 0.5 ? 'warn' : 'danger');
+            
+            document.getElementById('localGravity').innerHTML = 
+                gravity.toFixed(2) + '<span class="gravity-unit">G</span>';
+            
+            document.getElementById('rpmDisplay').textContent = settings.rotSpeed.toFixed(1);
+            document.getElementById('radiusDisplay').textContent = settings.ringRadius;
+            
+            // Coriolis at 1 m/s walking speed
+            const coriolis = calcCoriolis(1, settings.rotSpeed);
+            document.getElementById('coriolisDisplay').textContent = coriolis.toFixed(3);
+            
+            // Station stats
+            const circumference = 2 * Math.PI * settings.ringRadius;
+            const rimVelocity = circumference * settings.rotSpeed / 60;
+            const dayLength = 60 / settings.rotSpeed;
+            
+            document.getElementById('circumference').textContent = 
+                Math.round(circumference).toLocaleString() + ' m';
+            document.getElementById('rimVelocity').textContent = rimVelocity.toFixed(1) + ' m/s';
+            document.getElementById('dayLength').textContent = dayLength.toFixed(0) + ' sec';
+            
+            // Gravity gradient
+            document.getElementById('innerG').textContent = 
+                calcGravity(0.33 * settings.ringRadius, settings.rotSpeed, 0).toFixed(2) + ' G';
+            document.getElementById('midG').textContent = 
+                calcGravity(0.66 * settings.ringRadius, settings.rotSpeed, 0).toFixed(2) + ' G';
+            document.getElementById('outerG').textContent = 
+                calcGravity(settings.ringRadius, settings.rotSpeed, 0).toFixed(2) + ' G';
+        }
+        
+        function render() {
+            renderStation();
+            renderHabitat();
+            renderDetail();
+            renderRingDiagram();
+            renderCoriolis();
+        }
+        
+        function renderStation() {
+            const w = canvasStation.width;
+            const h = canvasStation.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            // Background (space)
+            ctxStation.fillStyle = '#020204';
+            ctxStation.fillRect(0, 0, w, h);
+            
+            // Stars
+            ctxStation.fillStyle = '#ffffff';
+            for (let i = 0; i < 100; i++) {
+                const x = (i * 137 + time * 0.1) % w;
+                const y = (i * 171) % h;
+                const size = 0.5 + (i % 3) * 0.5;
+                ctxStation.globalAlpha = 0.3 + (i % 5) * 0.1;
+                ctxStation.beginPath();
+                ctxStation.arc(x, y, size, 0, Math.PI * 2);
+                ctxStation.fill();
+            }
+            ctxStation.globalAlpha = 1;
+            
+            // Earth in background
+            const earthGrad = ctxStation.createRadialGradient(w - 100, h - 80, 0, w - 100, h - 80, 60);
+            earthGrad.addColorStop(0, '#4488dd');
+            earthGrad.addColorStop(0.7, '#2266aa');
+            earthGrad.addColorStop(1, '#113366');
+            ctxStation.fillStyle = earthGrad;
+            ctxStation.beginPath();
+            ctxStation.arc(w - 100, h - 80, 60, 0, Math.PI * 2);
+            ctxStation.fill();
+            
+            // Station
+            ctxStation.save();
+            ctxStation.translate(cx, cy);
+            ctxStation.rotate(stationAngle * Math.PI / 180);
+            
+            const scale = Math.min(w, h) * 0.35 / settings.ringRadius;
+            
+            // Outer ring
+            ctxStation.strokeStyle = '#44dd66';
+            ctxStation.lineWidth = 8;
+            ctxStation.beginPath();
+            ctxStation.arc(0, 0, settings.ringRadius * scale, 0, Math.PI * 2);
+            ctxStation.stroke();
+            
+            // Mid ring
+            ctxStation.strokeStyle = '#44aa88';
+            ctxStation.lineWidth = 6;
+            ctxStation.beginPath();
+            ctxStation.arc(0, 0, settings.ringRadius * 0.66 * scale, 0, Math.PI * 2);
+            ctxStation.stroke();
+            
+            // Inner ring
+            ctxStation.strokeStyle = '#4488aa';
+            ctxStation.lineWidth = 4;
+            ctxStation.beginPath();
+            ctxStation.arc(0, 0, settings.ringRadius * 0.33 * scale, 0, Math.PI * 2);
+            ctxStation.stroke();
+            
+            // Spokes
+            ctxStation.strokeStyle = '#556677';
+            ctxStation.lineWidth = 3;
+            for (let i = 0; i < 6; i++) {
+                const angle = i * Math.PI / 3;
+                ctxStation.beginPath();
+                ctxStation.moveTo(0, 0);
+                ctxStation.lineTo(
+                    Math.cos(angle) * settings.ringRadius * scale,
+                    Math.sin(angle) * settings.ringRadius * scale
+                );
+                ctxStation.stroke();
+            }
+            
+            // Central hub
+            ctxStation.fillStyle = '#445566';
+            ctxStation.beginPath();
+            ctxStation.arc(0, 0, 20, 0, Math.PI * 2);
+            ctxStation.fill();
+            
+            // Selected deck highlight
+            const deck = DECKS[settings.deck];
+            if (deck.radius > 0) {
+                ctxStation.strokeStyle = '#ffffff';
+                ctxStation.lineWidth = 2;
+                ctxStation.setLineDash([5, 5]);
+                ctxStation.beginPath();
+                ctxStation.arc(0, 0, deck.radius * settings.ringRadius * scale, 0, Math.PI * 2);
+                ctxStation.stroke();
+                ctxStation.setLineDash([]);
+            }
+            
+            ctxStation.restore();
+            
+            // Rotation indicator
+            ctxStation.fillStyle = '#00ccdd';
+            ctxStation.font = '10px "Share Tech Mono"';
+            ctxStation.fillText(`Rotation: ${settings.rotSpeed.toFixed(1)} RPM`, 10, 20);
+            ctxStation.fillText(`Angle: ${(stationAngle % 360).toFixed(0)}°`, 10, 35);
+        }
+        
+        function renderHabitat() {
+            const w = canvasHabitat.width;
+            const h = canvasHabitat.height;
+            const groundY = h - 100;
+            
+            // Background (curved horizon illusion)
+            const skyGrad = ctxHabitat.createLinearGradient(0, 0, 0, groundY);
+            skyGrad.addColorStop(0, '#1a2030');
+            skyGrad.addColorStop(0.5, '#2a3545');
+            skyGrad.addColorStop(1, '#3a4555');
+            ctxHabitat.fillStyle = skyGrad;
+            ctxHabitat.fillRect(0, 0, w, groundY);
+            
+            // Curved "ground" (rim of station)
+            ctxHabitat.fillStyle = '#334455';
+            ctxHabitat.fillRect(0, groundY, w, h - groundY);
+            
+            // Grid lines showing curvature
+            ctxHabitat.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctxHabitat.lineWidth = 1;
+            for (let x = 0; x < w; x += 50) {
+                ctxHabitat.beginPath();
+                ctxHabitat.moveTo(x, groundY);
+                ctxHabitat.lineTo(x, h);
+                ctxHabitat.stroke();
+            }
+            
+            // Horizon curve (slight)
+            ctxHabitat.strokeStyle = 'rgba(100, 150, 200, 0.3)';
+            ctxHabitat.lineWidth = 2;
+            ctxHabitat.beginPath();
+            ctxHabitat.moveTo(0, groundY);
+            ctxHabitat.quadraticCurveTo(w / 2, groundY - 20, w, groundY);
+            ctxHabitat.stroke();
+            
+            // Buildings/structures in distance
+            ctxHabitat.fillStyle = '#223344';
+            for (let i = 0; i < 10; i++) {
+                const x = i * 100 + 30;
+                const bh = 30 + (i * 17) % 50;
+                ctxHabitat.fillRect(x, groundY - bh, 40, bh);
+            }
+            
+            // Draw objects (balls)
+            for (const obj of objects) {
+                // Trail
+                if (obj.trail.length > 1) {
+                    ctxHabitat.strokeStyle = obj.color + '40';
+                    ctxHabitat.lineWidth = 2;
+                    ctxHabitat.beginPath();
+                    ctxHabitat.moveTo(obj.trail[0].x, obj.trail[0].y);
+                    for (let i = 1; i < obj.trail.length; i++) {
+                        ctxHabitat.lineTo(obj.trail[i].x, obj.trail[i].y);
+                    }
+                    ctxHabitat.stroke();
+                }
+                
+                // Ball
+                ctxHabitat.fillStyle = obj.color;
+                ctxHabitat.beginPath();
+                ctxHabitat.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
+                ctxHabitat.fill();
+                
+                ctxHabitat.fillStyle = '#ffffff40';
+                ctxHabitat.beginPath();
+                ctxHabitat.arc(obj.x - 3, obj.y - 3, obj.radius * 0.4, 0, Math.PI * 2);
+                ctxHabitat.fill();
+            }
+            
+            // Draw person
+            ctxHabitat.fillStyle = '#ddccbb';
+            // Head
+            ctxHabitat.beginPath();
+            ctxHabitat.arc(person.x, person.y, 10, 0, Math.PI * 2);
+            ctxHabitat.fill();
+            // Body
+            ctxHabitat.fillStyle = '#4477aa';
+            ctxHabitat.fillRect(person.x - 10, person.y + 10, 20, 30);
+            // Legs
+            ctxHabitat.fillStyle = '#335577';
+            ctxHabitat.fillRect(person.x - 8, person.y + 40, 6, 20);
+            ctxHabitat.fillRect(person.x + 2, person.y + 40, 6, 20);
+            
+            // Gravity vector
+            const deck = DECKS[settings.deck];
+            const gravity = calcGravity(deck.radius * settings.ringRadius, settings.rotSpeed, 0);
+            
+            ctxHabitat.strokeStyle = '#00dd88';
+            ctxHabitat.lineWidth = 3;
+            ctxHabitat.beginPath();
+            ctxHabitat.moveTo(person.x, person.y + 30);
+            ctxHabitat.lineTo(person.x, person.y + 30 + gravity * 40);
+            ctxHabitat.stroke();
+            
+            // Arrow head
+            ctxHabitat.fillStyle = '#00dd88';
+            ctxHabitat.beginPath();
+            ctxHabitat.moveTo(person.x, person.y + 30 + gravity * 40 + 10);
+            ctxHabitat.lineTo(person.x - 5, person.y + 30 + gravity * 40);
+            ctxHabitat.lineTo(person.x + 5, person.y + 30 + gravity * 40);
+            ctxHabitat.closePath();
+            ctxHabitat.fill();
+        }
+        
+        function renderDetail() {
+            const w = canvasDetail.width;
+            const h = canvasDetail.height;
+            
+            ctxDetail.fillStyle = '#0a0a10';
+            ctxDetail.fillRect(0, 0, w, h);
+            
+            // Compare precision levels
+            const bases = [16, 24, 32, 48, 64];
+            const barWidth = (w - 100) / bases.length;
+            const deck = DECKS[settings.deck];
+            const deckRadius = deck.radius * settings.ringRadius;
+            const trueGravity = calcGravity(deckRadius, settings.rotSpeed, 0);
+            
+            ctxDetail.font = '10px "Share Tech Mono"';
+            ctxDetail.textAlign = 'center';
+            
+            for (let i = 0; i < bases.length; i++) {
+                const base = bases[i];
+                const precision = BASE_PRECISION[base];
+                const x = 50 + i * barWidth + barWidth / 2;
+                
+                // Calculate multiple samples to show variance
+                const samples = [];
+                for (let j = 0; j < 20; j++) {
+                    samples.push(calcGravity(deckRadius, settings.rotSpeed, precision));
+                }
+                
+                const min = Math.min(...samples);
+                const max = Math.max(...samples);
+                const avg = samples.reduce((a, b) => a + b) / samples.length;
+                
+                // Error bar
+                const scale = (h - 60) / 0.2; // 0.2G range
+                const centerY = h / 2;
+                
+                // Error range
+                const minY = centerY - (min - trueGravity) * scale;
+                const maxY = centerY - (max - trueGravity) * scale;
+                
+                ctxDetail.fillStyle = base >= 48 ? '#00dd8840' : base >= 32 ? '#ddaa0040' : '#ff334440';
+                ctxDetail.fillRect(x - 15, Math.min(minY, maxY), 30, Math.abs(maxY - minY) + 2);
+                
+                // True value line
+                ctxDetail.strokeStyle = '#00dd88';
+                ctxDetail.lineWidth = 2;
+                ctxDetail.beginPath();
+                ctxDetail.moveTo(x - 20, centerY);
+                ctxDetail.lineTo(x + 20, centerY);
+                ctxDetail.stroke();
+                
+                // Label
+                ctxDetail.fillStyle = base === settings.baseHigh ? '#00ccdd' : '#888';
+                ctxDetail.fillText(`B-${base}`, x, h - 10);
+                
+                // Error percentage
+                const errorPct = ((max - min) / trueGravity * 100).toFixed(2);
+                ctxDetail.fillStyle = base >= 48 ? '#00dd88' : base >= 32 ? '#ddaa00' : '#ff3344';
+                ctxDetail.fillText(`±${errorPct}%`, x, 25);
+            }
+            
+            // Labels
+            ctxDetail.fillStyle = '#666';
+            ctxDetail.textAlign = 'left';
+            ctxDetail.fillText(`True: ${trueGravity.toFixed(3)}G`, 10, h / 2 + 4);
+            ctxDetail.textAlign = 'center';
+            ctxDetail.fillText('Gravity Calculation Error by Base', w / 2, 45);
+        }
+        
+        function renderRingDiagram() {
+            const w = ringCanvas.width;
+            const h = ringCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            ringCtx.fillStyle = '#0a0a10';
+            ringCtx.fillRect(0, 0, w, h);
+            
+            // Draw rings
+            const maxR = 80;
+            
+            // Outer
+            ringCtx.strokeStyle = '#44dd66';
+            ringCtx.lineWidth = 10;
+            ringCtx.beginPath();
+            ringCtx.arc(cx, cy, maxR, 0, Math.PI * 2);
+            ringCtx.stroke();
+            
+            // Mid
+            ringCtx.strokeStyle = '#44aa88';
+            ringCtx.lineWidth = 8;
+            ringCtx.beginPath();
+            ringCtx.arc(cx, cy, maxR * 0.66, 0, Math.PI * 2);
+            ringCtx.stroke();
+            
+            // Inner
+            ringCtx.strokeStyle = '#4488aa';
+            ringCtx.lineWidth = 6;
+            ringCtx.beginPath();
+            ringCtx.arc(cx, cy, maxR * 0.33, 0, Math.PI * 2);
+            ringCtx.stroke();
+            
+            // Hub
+            ringCtx.fillStyle = '#445566';
+            ringCtx.beginPath();
+            ringCtx.arc(cx, cy, 10, 0, Math.PI * 2);
+            ringCtx.fill();
+            
+            // Gravity arrows (pointing outward)
+            ringCtx.strokeStyle = '#00dd8880';
+            ringCtx.lineWidth = 2;
+            
+            for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+                const x1 = cx + Math.cos(angle) * (maxR - 15);
+                const y1 = cy + Math.sin(angle) * (maxR - 15);
+                const x2 = cx + Math.cos(angle) * (maxR + 10);
+                const y2 = cy + Math.sin(angle) * (maxR + 10);
+                
+                ringCtx.beginPath();
+                ringCtx.moveTo(x1, y1);
+                ringCtx.lineTo(x2, y2);
+                ringCtx.stroke();
+            }
+            
+            // Selected deck indicator
+            const deck = DECKS[settings.deck];
+            if (deck.radius > 0) {
+                ringCtx.strokeStyle = '#ffffff';
+                ringCtx.lineWidth = 2;
+                ringCtx.setLineDash([3, 3]);
+                ringCtx.beginPath();
+                ringCtx.arc(cx, cy, maxR * deck.radius, 0, Math.PI * 2);
+                ringCtx.stroke();
+                ringCtx.setLineDash([]);
+            }
+        }
+        
+        function renderCoriolis() {
+            const w = coriolisCanvas.width;
+            const h = coriolisCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            coriolisCtx.fillStyle = '#0a0a10';
+            coriolisCtx.fillRect(0, 0, w, h);
+            
+            // Direction indicator
+            const omega = (2 * Math.PI * settings.rotSpeed) / 60;
+            const deflection = Math.min(30, omega * 50);
+            
+            // Straight path (intended)
+            coriolisCtx.strokeStyle = '#ffffff40';
+            coriolisCtx.lineWidth = 2;
+            coriolisCtx.setLineDash([3, 3]);
+            coriolisCtx.beginPath();
+            coriolisCtx.moveTo(cx, h - 10);
+            coriolisCtx.lineTo(cx, 10);
+            coriolisCtx.stroke();
+            coriolisCtx.setLineDash([]);
+            
+            // Curved path (actual due to Coriolis)
+            coriolisCtx.strokeStyle = '#ff6644';
+            coriolisCtx.lineWidth = 2;
+            coriolisCtx.beginPath();
+            coriolisCtx.moveTo(cx, h - 10);
+            coriolisCtx.quadraticCurveTo(cx + deflection, cy, cx + deflection * 0.5, 10);
+            coriolisCtx.stroke();
+            
+            // Arrow
+            coriolisCtx.fillStyle = '#ff6644';
+            coriolisCtx.beginPath();
+            coriolisCtx.moveTo(cx + deflection * 0.5, 10);
+            coriolisCtx.lineTo(cx + deflection * 0.5 - 5, 20);
+            coriolisCtx.lineTo(cx + deflection * 0.5 + 5, 20);
+            coriolisCtx.closePath();
+            coriolisCtx.fill();
+            
+            // Labels
+            coriolisCtx.fillStyle = '#666';
+            coriolisCtx.font = '8px "Share Tech Mono"';
+            coriolisCtx.textAlign = 'center';
+            coriolisCtx.fillText('Deflection', cx, h - 2);
+        }
+        
+        function mainLoop() {
+            update();
+            render();
+            requestAnimationFrame(mainLoop);
+        }
+        
+        // Event handlers
+        document.querySelectorAll('.deck-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.deck-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.deck = btn.dataset.deck;
+                spawnPerson();
+            });
+        });
+        
+        document.querySelectorAll('.base-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.base-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.baseHigh = parseInt(btn.dataset.base);
+            });
+        });
+        
+        document.getElementById('rotSpeedSlider').addEventListener('input', (e) => {
+            settings.rotSpeed = parseFloat(e.target.value);
+            document.getElementById('rotSpeedVal').textContent = settings.rotSpeed.toFixed(1) + ' RPM';
+        });
+        
+        document.getElementById('ringRadiusSlider').addEventListener('input', (e) => {
+            settings.ringRadius = parseInt(e.target.value);
+            document.getElementById('ringRadiusVal').textContent = settings.ringRadius + ' m';
+        });
+        
+        document.getElementById('timeScaleSlider').addEventListener('input', (e) => {
+            settings.timeScale = parseInt(e.target.value);
+            document.getElementById('timeScaleVal').textContent = settings.timeScale + 'x';
+        });
+        
+        document.getElementById('btnDropBall').addEventListener('click', () => spawnBall(0, 0));
+        document.getElementById('btnThrowBall').addEventListener('click', () => spawnBall((Math.random() - 0.5) * 5, -3));
+        
+        document.getElementById('btnJump').addEventListener('click', () => {
+            if (person.onGround) {
+                person.vy = -8;
+                person.onGround = false;
+            }
+        });
+        
+        document.getElementById('btnWalk').addEventListener('click', () => {
+            person.vx = 3;
+        });
+        
+        document.getElementById('btnEmergency').addEventListener('click', () => {
+            settings.rotSpeed = 0;
+            document.getElementById('rotSpeedSlider').value = 0;
+            document.getElementById('rotSpeedVal').textContent = '0.0 RPM';
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            objects = [];
+            spawnPerson();
+            settings.rotSpeed = 1.5;
+            document.getElementById('rotSpeedSlider').value = 1.5;
+            document.getElementById('rotSpeedVal').textContent = '1.5 RPM';
+        });
+        
+        // Initialize
+        window.addEventListener('resize', resize);
+        resize();
+        spawnPerson();
+        mainLoop();
+    </script>
+</body>
+</html>

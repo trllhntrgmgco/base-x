@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WLD-006: Snow Accumulation | Base-X Engine Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #0a0c10;
+            --panel-bg: rgba(12, 18, 28, 0.95);
+            --snow-white: #f0f4f8;
+            --snow-blue: #c8dae8;
+            --ice-blue: #a0c4d8;
+            --accent-ice: #88ccee;
+            --accent-cyan: #00d4ff;
+            --accent-cold: #6699bb;
+            --base-32: #88ccee;
+            --base-24: #6699bb;
+            --base-16: #446688;
+            --text-primary: #d0e0f0;
+            --text-dim: #667788;
+            --border-glow: rgba(136, 204, 238, 0.3);
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            padding: 15px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: linear-gradient(90deg, rgba(136, 204, 238, 0.1), transparent, rgba(102, 153, 187, 0.1));
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .demo-badge {
+            background: linear-gradient(135deg, #88ccee, #aaddff);
+            color: #1a3040;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.75em;
+            letter-spacing: 2px;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #88ccee;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(136, 204, 238, 0.4);
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .stat-group {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .stat-value.flakes { color: var(--snow-white); }
+        .stat-value.base { color: var(--base-24); }
+        .stat-value.depth { color: var(--accent-ice); }
+        
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            background: linear-gradient(90deg, rgba(136, 204, 238, 0.15), transparent);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-glow);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: #88ccee;
+            flex-shrink: 0;
+        }
+        
+        .panel-content {
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        /* Snow Presets */
+        .snow-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .snow-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .snow-btn:hover {
+            border-color: rgba(136, 204, 238, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .snow-btn.active {
+            border-color: #88ccee;
+            box-shadow: 0 0 20px rgba(136, 204, 238, 0.3);
+            background: rgba(136, 204, 238, 0.1);
+        }
+        
+        .snow-icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .snow-name {
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .snow-rate {
+            font-size: 0.65em;
+            color: var(--text-dim);
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        /* Tool Section */
+        .tool-section {
+            margin-bottom: 20px;
+        }
+        
+        .tool-section-title {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Sliders */
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .slider-name {
+            font-size: 0.8em;
+            color: var(--text-dim);
+        }
+        
+        .slider-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85em;
+            color: #88ccee;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(136, 204, 238, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #88ccee;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(136, 204, 238, 0.5);
+        }
+        
+        /* Toggle */
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .toggle-label {
+            font-size: 0.85em;
+        }
+        
+        .toggle {
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .toggle.on {
+            background: rgba(136, 204, 238, 0.5);
+        }
+        
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        
+        .toggle.on::after {
+            transform: translateX(20px);
+        }
+        
+        /* Temperature Gauge */
+        .temp-gauge {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .thermometer {
+            width: 30px;
+            height: 80px;
+            background: linear-gradient(to top, #ff4444, #ffaa44, #44aaff);
+            border-radius: 15px;
+            position: relative;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .temp-marker {
+            position: absolute;
+            left: -8px;
+            width: 46px;
+            height: 4px;
+            background: #fff;
+            border-radius: 2px;
+            transition: bottom 0.3s;
+        }
+        
+        .temp-info {
+            flex: 1;
+        }
+        
+        .temp-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.8em;
+            color: var(--accent-ice);
+        }
+        
+        .temp-label {
+            font-size: 0.75em;
+            color: var(--text-dim);
+        }
+        
+        /* Canvas */
+        .canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #snowCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Info Overlay */
+        .info-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-glow);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8em;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            color: var(--text-dim);
+        }
+        
+        /* Snow Depth Ruler */
+        .depth-ruler {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 8px;
+            border: 1px solid var(--border-glow);
+            padding: 10px 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .ruler-label {
+            font-size: 0.55em;
+            color: var(--text-dim);
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        
+        .ruler-track {
+            flex: 1;
+            width: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(136, 204, 238, 0.3);
+        }
+        
+        .ruler-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, #e8f0f8, #c8dae8);
+            transition: height 0.3s;
+        }
+        
+        .ruler-marks {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: -20px;
+            width: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-size: 0.5em;
+            color: var(--text-dim);
+        }
+        
+        .ruler-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7em;
+            color: var(--snow-white);
+            margin-top: 5px;
+        }
+        
+        /* Right Panel Stats */
+        .snow-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .snow-stat {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .snow-stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1em;
+            color: #88ccee;
+        }
+        
+        .snow-stat-label {
+            font-size: 0.65em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* DRO Display */
+        .dro-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .dro-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7em;
+            color: var(--accent-cyan);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .dro-meter {
+            height: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .dro-fill {
+            height: 100%;
+            transition: width 0.3s, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        
+        .dro-scale {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65em;
+            color: var(--text-dim);
+        }
+        
+        /* Accumulation Map */
+        .accum-map {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .accum-canvas {
+            width: 100%;
+            height: 60px;
+            border-radius: 4px;
+        }
+        
+        /* Drift indicator */
+        .drift-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .drift-arrow {
+            font-size: 1.5em;
+            color: var(--accent-ice);
+            transition: transform 0.3s;
+        }
+        
+        .drift-info {
+            flex: 1;
+        }
+        
+        .drift-label {
+            font-size: 0.7em;
+            color: var(--text-dim);
+        }
+        
+        .drift-value {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--snow-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="demo-badge">WLD-006</div>
+                <h1>SNOW ACCUMULATION</h1>
+            </div>
+            <div class="header-right">
+                <div class="stat-group">
+                    <div class="stat-label">Snowflakes</div>
+                    <div class="stat-value flakes" id="flakeCount">0</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Active Base</div>
+                    <div class="stat-value base" id="activeBase">BASE-24</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Avg Depth</div>
+                    <div class="stat-value depth" id="avgDepth">0.0"</div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Panel -->
+            <div class="panel">
+                <div class="panel-header">❄️ SNOWFALL CONTROL</div>
+                <div class="panel-content">
+                    <!-- Snow Presets -->
+                    <div class="snow-grid">
+                        <div class="snow-btn" data-snow="flurry" onclick="setSnowfall('flurry')">
+                            <div class="snow-icon">🌨️</div>
+                            <div class="snow-name">Flurries</div>
+                            <div class="snow-rate">0.5 in/hr</div>
+                        </div>
+                        <div class="snow-btn active" data-snow="snow" onclick="setSnowfall('snow')">
+                            <div class="snow-icon">❄️</div>
+                            <div class="snow-name">Snow</div>
+                            <div class="snow-rate">1.0 in/hr</div>
+                        </div>
+                        <div class="snow-btn" data-snow="heavy" onclick="setSnowfall('heavy')">
+                            <div class="snow-icon">🌬️</div>
+                            <div class="snow-name">Heavy</div>
+                            <div class="snow-rate">2.0 in/hr</div>
+                        </div>
+                        <div class="snow-btn" data-snow="blizzard" onclick="setSnowfall('blizzard')">
+                            <div class="snow-icon">🏔️</div>
+                            <div class="snow-name">Blizzard</div>
+                            <div class="snow-rate">4.0 in/hr</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Temperature Gauge -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Temperature</div>
+                        <div class="temp-gauge">
+                            <div class="thermometer">
+                                <div class="temp-marker" id="tempMarker" style="bottom: 30%;"></div>
+                            </div>
+                            <div class="temp-info">
+                                <div class="temp-value" id="tempDisplay">28°F</div>
+                                <div class="temp-label">Current Temperature</div>
+                                <input type="range" id="tempSlider" min="-20" max="45" value="28" 
+                                    style="margin-top: 10px;" oninput="updateTemp()">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Snow Controls -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Snowfall Settings</div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Intensity</span>
+                                <span class="slider-value" id="intensityValue">50%</span>
+                            </div>
+                            <input type="range" id="intensitySlider" min="0" max="100" value="50" oninput="updateIntensity()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Flake Size</span>
+                                <span class="slider-value" id="flakeSizeValue">3mm</span>
+                            </div>
+                            <input type="range" id="flakeSizeSlider" min="1" max="10" value="3" oninput="updateFlakeSize()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Wind Speed</span>
+                                <span class="slider-value" id="windValue">15 mph</span>
+                            </div>
+                            <input type="range" id="windSlider" min="0" max="60" value="15" oninput="updateWind()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Wind Direction</span>
+                                <span class="slider-value" id="windDirValue">W</span>
+                            </div>
+                            <input type="range" id="windDirSlider" min="0" max="360" value="270" oninput="updateWindDir()">
+                        </div>
+                    </div>
+                    
+                    <!-- Toggles -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Effects</div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Snow Drifting</span>
+                            <div class="toggle on" id="driftToggle" onclick="toggleDrift()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Accumulation</span>
+                            <div class="toggle on" id="accumToggle" onclick="toggleAccum()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Melting</span>
+                            <div class="toggle on" id="meltToggle" onclick="toggleMelt()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Show Terrain</span>
+                            <div class="toggle on" id="terrainToggle" onclick="toggleTerrain()"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center - Canvas -->
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="snowCanvas"></canvas>
+                    
+                    <div class="info-overlay">
+                        <div class="info-row">
+                            <span class="info-label">Snow Base:</span>
+                            <span id="snowBase" style="color: var(--base-24);">B-24</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Accum Base:</span>
+                            <span id="accumBase" style="color: var(--base-32);">B-32</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Melt Rate:</span>
+                            <span id="meltRate" style="color: #ff8866;">0.0 in/hr</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Drift Factor:</span>
+                            <span id="driftFactor" style="color: var(--snow-blue);">1.0x</span>
+                        </div>
+                    </div>
+                    
+                    <div class="depth-ruler">
+                        <div class="ruler-label">SNOW<br>DEPTH</div>
+                        <div class="ruler-track">
+                            <div class="ruler-fill" id="rulerFill" style="height: 0%;"></div>
+                            <div class="ruler-marks">
+                                <span>12"</span>
+                                <span>6"</span>
+                                <span>0"</span>
+                            </div>
+                        </div>
+                        <div class="ruler-value" id="rulerValue">0.0"</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel -->
+            <div class="panel">
+                <div class="panel-header">📊 SNOW DATA</div>
+                <div class="panel-content">
+                    <!-- DRO Display -->
+                    <div class="dro-display">
+                        <div class="dro-title">DYNAMIC RADIX OPTIMIZER</div>
+                        <div class="dro-meter">
+                            <div class="dro-fill" id="droFill" style="width: 50%; background: linear-gradient(90deg, var(--base-16), var(--base-24));">
+                                BASE-24
+                            </div>
+                        </div>
+                        <div class="dro-scale">
+                            <span>B-16</span>
+                            <span>B-24</span>
+                            <span>B-32</span>
+                            <span>B-48</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Snow Stats -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Accumulation Stats</div>
+                        <div class="snow-stats">
+                            <div class="snow-stat">
+                                <div class="snow-stat-value" id="totalSnow">0.0"</div>
+                                <div class="snow-stat-label">Total Fall</div>
+                            </div>
+                            <div class="snow-stat">
+                                <div class="snow-stat-value" id="maxDepth">0.0"</div>
+                                <div class="snow-stat-label">Max Depth</div>
+                            </div>
+                            <div class="snow-stat">
+                                <div class="snow-stat-value" id="meltedTotal">0.0"</div>
+                                <div class="snow-stat-label">Melted</div>
+                            </div>
+                            <div class="snow-stat">
+                                <div class="snow-stat-value" id="driftedTotal">0.0"</div>
+                                <div class="snow-stat-label">Drifted</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Accumulation Map -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Depth Profile</div>
+                        <div class="accum-map">
+                            <canvas id="accumCanvas" class="accum-canvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Drift Indicator -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Wind Drift</div>
+                        <div class="drift-indicator">
+                            <div class="drift-arrow" id="driftArrow">➡️</div>
+                            <div class="drift-info">
+                                <div class="drift-label">Drift Direction</div>
+                                <div class="drift-value" id="driftDirection">Eastward</div>
+                            </div>
+                        </div>
+                        <div class="drift-indicator">
+                            <div class="drift-arrow">📏</div>
+                            <div class="drift-info">
+                                <div class="drift-label">Drift Height</div>
+                                <div class="drift-value" id="driftHeight">0.0"</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Storm Duration -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Storm Statistics</div>
+                        <div style="font-size: 0.85em; line-height: 1.8;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-dim);">Duration:</span>
+                                <span id="stormDuration" style="color: var(--snow-white);">0:00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-dim);">Flakes Fallen:</span>
+                                <span id="totalFlakes" style="color: var(--accent-ice);">0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-dim);">Visibility:</span>
+                                <span id="visibility" style="color: var(--snow-blue);">10 mi</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- LOD Info -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">LOD Philosophy</div>
+                        <div style="font-size: 0.75em; color: var(--text-dim); line-height: 1.6;">
+                            Snow uses <span style="color: #88ccee;">MEDIUM precision</span>:
+                            <br>• Base-24 for flake physics
+                            <br>• Base-32 for accumulation grid
+                            <br>• Drift uses wind vector data
+                            <br>• Melt rate from temperature
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ===== BASE-X ENGINE: SNOW ACCUMULATION =====
+        
+        const canvas = document.getElementById('snowCanvas');
+        const ctx = canvas.getContext('2d');
+        const accumCanvas = document.getElementById('accumCanvas');
+        const accumCtx = accumCanvas.getContext('2d');
+        
+        // Snow settings
+        let snowType = 'snow';
+        let intensity = 0.5;
+        let flakeSize = 3;
+        let windSpeed = 15;
+        let windDirection = 270; // degrees
+        let temperature = 28; // Fahrenheit
+        
+        // Toggles
+        let showDrift = true;
+        let showAccum = true;
+        let showMelt = true;
+        let showTerrain = true;
+        
+        // Particles
+        let snowflakes = [];
+        
+        // Accumulation grid
+        const ACCUM_GRID = 64;
+        let accumGrid = [];
+        
+        // Terrain
+        let terrain = [];
+        const TERRAIN_POINTS = 80;
+        
+        // Tracking
+        let totalSnowfall = 0;
+        let totalMelted = 0;
+        let totalDrifted = 0;
+        let totalFlakesFallen = 0;
+        let stormStartTime = Date.now();
+        
+        // DRO
+        let dro = {
+            currentBase: 24,
+            snowBase: 24,
+            accumBase: 32
+        };
+        
+        // Snow types
+        const SNOW_TYPES = {
+            flurry: { rate: 10, size: 2, wind: 10, intensity: 0.3 },
+            snow: { rate: 25, size: 3, wind: 15, intensity: 0.5 },
+            heavy: { rate: 50, size: 4, wind: 25, intensity: 0.75 },
+            blizzard: { rate: 100, size: 5, wind: 50, intensity: 1.0 }
+        };
+        
+        // Performance
+        let lastTime = performance.now();
+        
+        function init() {
+            resizeCanvas();
+            generateTerrain();
+            initAccumGrid();
+            
+            window.addEventListener('resize', resizeCanvas);
+            
+            setSnowfall('snow');
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function resizeCanvas() {
+            const wrapper = canvas.parentElement;
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            
+            accumCanvas.width = accumCanvas.clientWidth;
+            accumCanvas.height = accumCanvas.clientHeight;
+            
+            generateTerrain();
+            initAccumGrid();
+        }
+        
+        function generateTerrain() {
+            terrain = [];
+            const baseY = canvas.height * 0.75;
+            
+            for (let i = 0; i <= TERRAIN_POINTS; i++) {
+                const x = (i / TERRAIN_POINTS) * canvas.width;
+                const h1 = Math.sin(i * 0.12) * 30;
+                const h2 = Math.sin(i * 0.06 + 1) * 20;
+                const h3 = Math.sin(i * 0.03 + 2) * 40;
+                terrain.push({ 
+                    x, 
+                    y: baseY + h1 + h2 + h3
+                });
+            }
+        }
+        
+        function initAccumGrid() {
+            accumGrid = [];
+            for (let i = 0; i < ACCUM_GRID; i++) {
+                const x = (i / ACCUM_GRID) * canvas.width;
+                const baseY = getTerrainHeight(x);
+                accumGrid[i] = {
+                    x,
+                    baseY,
+                    depth: 0,
+                    isLeeward: false // Will be set by wind
+                };
+            }
+            updateLeewardAreas();
+        }
+        
+        function updateLeewardAreas() {
+            // Determine which areas are sheltered from wind (will accumulate more)
+            const windRad = windDirection * Math.PI / 180;
+            const windX = Math.cos(windRad);
+            
+            for (let i = 0; i < ACCUM_GRID; i++) {
+                // Simple: areas on the downwind side of terrain bumps
+                if (i > 0 && i < ACCUM_GRID - 1) {
+                    const prevHeight = getTerrainHeight(accumGrid[i-1].x);
+                    const currHeight = getTerrainHeight(accumGrid[i].x);
+                    const slope = (currHeight - prevHeight) / (canvas.width / ACCUM_GRID);
+                    
+                    // Leeward if terrain slopes down in wind direction
+                    accumGrid[i].isLeeward = (windX > 0 && slope > 2) || (windX < 0 && slope < -2);
+                }
+            }
+        }
+        
+        function getTerrainHeight(x) {
+            const idx = (x / canvas.width) * TERRAIN_POINTS;
+            const i = Math.floor(idx);
+            const t = idx - i;
+            if (i >= TERRAIN_POINTS) return terrain[TERRAIN_POINTS].y;
+            if (i < 0) return terrain[0].y;
+            return terrain[i].y * (1 - t) + terrain[Math.min(i + 1, TERRAIN_POINTS)].y * t;
+        }
+        
+        function getSnowHeight(x) {
+            const idx = Math.floor((x / canvas.width) * ACCUM_GRID);
+            if (idx < 0 || idx >= ACCUM_GRID) return 0;
+            return accumGrid[idx].depth;
+        }
+        
+        // ===== SNOWFALL CONTROL =====
+        
+        function setSnowfall(type) {
+            snowType = type;
+            const snow = SNOW_TYPES[type];
+            
+            intensity = snow.intensity;
+            flakeSize = snow.size;
+            windSpeed = snow.wind;
+            
+            document.getElementById('intensitySlider').value = intensity * 100;
+            document.getElementById('flakeSizeSlider').value = flakeSize;
+            document.getElementById('windSlider').value = windSpeed;
+            
+            updateIntensity();
+            updateFlakeSize();
+            updateWind();
+            
+            document.querySelectorAll('.snow-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.snow === type);
+            });
+        }
+        
+        function updateTemp() {
+            temperature = parseInt(document.getElementById('tempSlider').value);
+            document.getElementById('tempDisplay').textContent = temperature + '°F';
+            
+            // Update thermometer marker
+            const percent = ((temperature + 20) / 65) * 100;
+            document.getElementById('tempMarker').style.bottom = Math.max(0, Math.min(90, percent)) + '%';
+        }
+        
+        function updateIntensity() {
+            intensity = parseInt(document.getElementById('intensitySlider').value) / 100;
+            document.getElementById('intensityValue').textContent = Math.round(intensity * 100) + '%';
+        }
+        
+        function updateFlakeSize() {
+            flakeSize = parseInt(document.getElementById('flakeSizeSlider').value);
+            document.getElementById('flakeSizeValue').textContent = flakeSize + 'mm';
+        }
+        
+        function updateWind() {
+            windSpeed = parseInt(document.getElementById('windSlider').value);
+            document.getElementById('windValue').textContent = windSpeed + ' mph';
+            updateLeewardAreas();
+        }
+        
+        function updateWindDir() {
+            windDirection = parseInt(document.getElementById('windDirSlider').value);
+            const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const idx = Math.round(windDirection / 45) % 8;
+            document.getElementById('windDirValue').textContent = dirs[idx];
+            updateLeewardAreas();
+            
+            // Update drift arrow
+            const arrow = document.getElementById('driftArrow');
+            arrow.style.transform = `rotate(${windDirection - 270}deg)`;
+        }
+        
+        function toggleDrift() {
+            showDrift = !showDrift;
+            document.getElementById('driftToggle').classList.toggle('on', showDrift);
+        }
+        
+        function toggleAccum() {
+            showAccum = !showAccum;
+            document.getElementById('accumToggle').classList.toggle('on', showAccum);
+        }
+        
+        function toggleMelt() {
+            showMelt = !showMelt;
+            document.getElementById('meltToggle').classList.toggle('on', showMelt);
+        }
+        
+        function toggleTerrain() {
+            showTerrain = !showTerrain;
+            document.getElementById('terrainToggle').classList.toggle('on', showTerrain);
+        }
+        
+        // ===== SNOW PHYSICS =====
+        
+        function spawnSnow(dt) {
+            const spawnRate = intensity * 40 * dt;
+            
+            for (let i = 0; i < spawnRate; i++) {
+                if (snowflakes.length < 2000) {
+                    const windRad = windDirection * Math.PI / 180;
+                    snowflakes.push({
+                        x: Math.random() * canvas.width * 1.5 - canvas.width * 0.25,
+                        y: -10 - Math.random() * 50,
+                        vx: Math.cos(windRad) * windSpeed * 0.2 + (Math.random() - 0.5) * 2,
+                        vy: 2 + Math.random() * 3,
+                        size: flakeSize * (0.5 + Math.random() * 1),
+                        wobble: Math.random() * Math.PI * 2,
+                        wobbleSpeed: 0.05 + Math.random() * 0.1,
+                        rotation: Math.random() * Math.PI * 2
+                    });
+                    totalFlakesFallen++;
+                }
+            }
+        }
+        
+        function updateSnow(dt) {
+            for (let i = snowflakes.length - 1; i >= 0; i--) {
+                const flake = snowflakes[i];
+                
+                // Wobble motion
+                flake.wobble += flake.wobbleSpeed * dt;
+                flake.x += flake.vx * dt + Math.sin(flake.wobble) * 0.5;
+                flake.y += flake.vy * dt;
+                flake.rotation += 0.02 * dt;
+                
+                // Ground collision (including accumulated snow)
+                const groundY = getTerrainHeight(flake.x);
+                const snowDepth = showAccum ? getSnowHeight(flake.x) : 0;
+                const surfaceY = groundY - snowDepth;
+                
+                if (flake.y >= surfaceY) {
+                    handleSnowLanding(flake);
+                    snowflakes.splice(i, 1);
+                } else if (flake.x < -50 || flake.x > canvas.width + 50) {
+                    snowflakes.splice(i, 1);
+                }
+            }
+        }
+        
+        function handleSnowLanding(flake) {
+            if (!showAccum) return;
+            
+            const gridIdx = Math.floor((flake.x / canvas.width) * ACCUM_GRID);
+            if (gridIdx < 0 || gridIdx >= ACCUM_GRID) return;
+            
+            const snowAmount = flake.size * 0.002;
+            totalSnowfall += snowAmount;
+            
+            // More accumulation in leeward areas
+            const driftMultiplier = accumGrid[gridIdx].isLeeward && showDrift ? 1.5 : 1.0;
+            accumGrid[gridIdx].depth += snowAmount * driftMultiplier;
+            
+            if (driftMultiplier > 1) {
+                totalDrifted += snowAmount * (driftMultiplier - 1);
+            }
+        }
+        
+        function updateAccumulation(dt) {
+            if (!showAccum) return;
+            
+            // Melting based on temperature
+            if (showMelt && temperature > 32) {
+                const meltRate = (temperature - 32) * 0.0001 * dt;
+                for (let i = 0; i < ACCUM_GRID; i++) {
+                    if (accumGrid[i].depth > 0) {
+                        const melted = Math.min(accumGrid[i].depth, meltRate);
+                        accumGrid[i].depth -= melted;
+                        totalMelted += melted;
+                    }
+                }
+            }
+            
+            // Snow drifting (wind moves snow from windward to leeward)
+            if (showDrift && windSpeed > 20) {
+                const windRad = windDirection * Math.PI / 180;
+                const driftDir = Math.cos(windRad) > 0 ? 1 : -1;
+                const driftAmount = windSpeed * 0.00001 * dt;
+                
+                for (let i = 1; i < ACCUM_GRID - 1; i++) {
+                    if (!accumGrid[i].isLeeward && accumGrid[i].depth > 0.1) {
+                        const transfer = Math.min(accumGrid[i].depth * driftAmount, 0.01);
+                        accumGrid[i].depth -= transfer;
+                        
+                        const targetIdx = i + driftDir;
+                        if (targetIdx >= 0 && targetIdx < ACCUM_GRID) {
+                            accumGrid[targetIdx].depth += transfer;
+                        }
+                    }
+                }
+            }
+            
+            // Settling/compaction
+            for (let i = 0; i < ACCUM_GRID; i++) {
+                accumGrid[i].depth *= (1 - 0.0001 * dt);
+            }
+        }
+        
+        // ===== DRO =====
+        
+        function calculateDRO() {
+            if (snowflakes.length > 1500) {
+                dro.snowBase = 16;
+            } else if (snowflakes.length > 800) {
+                dro.snowBase = 24;
+            } else {
+                dro.snowBase = 24;
+            }
+            
+            dro.accumBase = 32;
+            dro.currentBase = Math.max(dro.snowBase, showAccum ? dro.accumBase : 16);
+        }
+        
+        function getBaseColor(base) {
+            if (base >= 32) return 'var(--base-32)';
+            if (base >= 24) return 'var(--base-24)';
+            return 'var(--base-16)';
+        }
+        
+        // ===== RENDERING =====
+        
+        function render() {
+            // Sky gradient (winter gray)
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.7);
+            const storminess = intensity;
+            gradient.addColorStop(0, `rgb(${70 - storminess * 30}, ${80 - storminess * 35}, ${95 - storminess * 40})`);
+            gradient.addColorStop(1, `rgb(${130 - storminess * 40}, ${140 - storminess * 45}, ${155 - storminess * 50})`);
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Terrain base
+            if (showTerrain) {
+                renderTerrain();
+            }
+            
+            // Snow accumulation
+            if (showAccum) {
+                renderAccumulation();
+            }
+            
+            // Snowflakes
+            renderSnowflakes();
+            
+            // Render accumulation map
+            renderAccumMap();
+        }
+        
+        function renderTerrain() {
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            terrain.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.closePath();
+            
+            const terrainGradient = ctx.createLinearGradient(0, canvas.height * 0.6, 0, canvas.height);
+            terrainGradient.addColorStop(0, '#3a4a3a');
+            terrainGradient.addColorStop(1, '#2a3a2a');
+            
+            ctx.fillStyle = terrainGradient;
+            ctx.fill();
+        }
+        
+        function renderAccumulation() {
+            const cellWidth = canvas.width / ACCUM_GRID;
+            
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            
+            for (let i = 0; i < ACCUM_GRID; i++) {
+                const cell = accumGrid[i];
+                const x = cell.x + cellWidth / 2;
+                const baseY = getTerrainHeight(x);
+                const snowY = baseY - cell.depth * 20; // Scale depth for visibility
+                
+                if (i === 0) {
+                    ctx.moveTo(x, snowY);
+                } else {
+                    ctx.lineTo(x, snowY);
+                }
+            }
+            
+            // Close path along terrain
+            for (let i = ACCUM_GRID - 1; i >= 0; i--) {
+                const cell = accumGrid[i];
+                const x = cell.x + cellWidth / 2;
+                const baseY = getTerrainHeight(x);
+                ctx.lineTo(x, baseY);
+            }
+            
+            ctx.closePath();
+            
+            // Snow gradient
+            const snowGradient = ctx.createLinearGradient(0, canvas.height * 0.5, 0, canvas.height * 0.8);
+            snowGradient.addColorStop(0, '#f0f4f8');
+            snowGradient.addColorStop(0.3, '#e0e8f0');
+            snowGradient.addColorStop(1, '#c8d8e8');
+            
+            ctx.fillStyle = snowGradient;
+            ctx.fill();
+            
+            // Highlight on snow surface
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < ACCUM_GRID; i++) {
+                const cell = accumGrid[i];
+                const x = cell.x + cellWidth / 2;
+                const baseY = getTerrainHeight(x);
+                const snowY = baseY - cell.depth * 20;
+                if (i === 0) ctx.moveTo(x, snowY);
+                else ctx.lineTo(x, snowY);
+            }
+            ctx.stroke();
+        }
+        
+        function renderSnowflakes() {
+            ctx.fillStyle = '#f8fafc';
+            
+            snowflakes.forEach(flake => {
+                ctx.save();
+                ctx.translate(flake.x, flake.y);
+                ctx.rotate(flake.rotation);
+                
+                // Draw snowflake as star shape
+                const size = flake.size;
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    const x1 = Math.cos(angle) * size;
+                    const y1 = Math.sin(angle) * size;
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(x1, y1);
+                }
+                ctx.strokeStyle = `rgba(248, 250, 252, ${0.6 + flake.size * 0.1})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // Center dot
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            });
+        }
+        
+        function renderAccumMap() {
+            const w = accumCanvas.width;
+            const h = accumCanvas.height;
+            const cellWidth = w / ACCUM_GRID;
+            
+            accumCtx.fillStyle = '#1a2530';
+            accumCtx.fillRect(0, 0, w, h);
+            
+            let maxDepth = 0;
+            accumGrid.forEach(cell => {
+                if (cell.depth > maxDepth) maxDepth = cell.depth;
+            });
+            maxDepth = Math.max(maxDepth, 0.5);
+            
+            for (let i = 0; i < ACCUM_GRID; i++) {
+                const cell = accumGrid[i];
+                const fillHeight = (cell.depth / maxDepth) * h;
+                
+                // Background
+                accumCtx.fillStyle = cell.isLeeward ? '#2a3a4a' : '#1a2a3a';
+                accumCtx.fillRect(i * cellWidth, 0, cellWidth - 1, h);
+                
+                // Snow level
+                if (cell.depth > 0) {
+                    const gradient = accumCtx.createLinearGradient(0, h - fillHeight, 0, h);
+                    gradient.addColorStop(0, '#e8f0f8');
+                    gradient.addColorStop(1, '#a0c0d8');
+                    accumCtx.fillStyle = gradient;
+                    accumCtx.fillRect(i * cellWidth, h - fillHeight, cellWidth - 1, fillHeight);
+                }
+            }
+        }
+        
+        // ===== UPDATE =====
+        
+        function update(dt) {
+            spawnSnow(dt);
+            updateSnow(dt);
+            updateAccumulation(dt);
+            calculateDRO();
+            updateUI();
+        }
+        
+        function updateUI() {
+            // Header stats
+            document.getElementById('flakeCount').textContent = snowflakes.length;
+            document.getElementById('activeBase').textContent = `BASE-${dro.currentBase}`;
+            document.getElementById('activeBase').style.color = getBaseColor(dro.currentBase);
+            
+            // Calculate average depth
+            let totalDepth = 0;
+            let maxDepth = 0;
+            accumGrid.forEach(cell => {
+                totalDepth += cell.depth;
+                if (cell.depth > maxDepth) maxDepth = cell.depth;
+            });
+            const avgDepth = totalDepth / ACCUM_GRID;
+            
+            document.getElementById('avgDepth').textContent = (avgDepth * 10).toFixed(1) + '"';
+            
+            // Info overlay
+            document.getElementById('snowBase').textContent = `B-${dro.snowBase}`;
+            document.getElementById('accumBase').textContent = `B-${dro.accumBase}`;
+            
+            // Melt rate
+            const meltRate = temperature > 32 ? (temperature - 32) * 0.1 : 0;
+            document.getElementById('meltRate').textContent = meltRate.toFixed(1) + ' in/hr';
+            document.getElementById('meltRate').style.color = meltRate > 0 ? '#ff8866' : 'var(--text-dim)';
+            
+            // Drift factor
+            const driftFactor = showDrift && windSpeed > 20 ? (windSpeed / 20).toFixed(1) : '1.0';
+            document.getElementById('driftFactor').textContent = driftFactor + 'x';
+            
+            // Depth ruler
+            const rulerPercent = Math.min(100, (maxDepth / 0.6) * 100);
+            document.getElementById('rulerFill').style.height = rulerPercent + '%';
+            document.getElementById('rulerValue').textContent = (maxDepth * 20).toFixed(1) + '"';
+            
+            // Snow stats
+            document.getElementById('totalSnow').textContent = (totalSnowfall * 10).toFixed(1) + '"';
+            document.getElementById('maxDepth').textContent = (maxDepth * 20).toFixed(1) + '"';
+            document.getElementById('meltedTotal').textContent = (totalMelted * 10).toFixed(1) + '"';
+            document.getElementById('driftedTotal').textContent = (totalDrifted * 10).toFixed(1) + '"';
+            
+            // Drift direction
+            const windRad = windDirection * Math.PI / 180;
+            const driftDir = Math.cos(windRad) > 0 ? 'Eastward' : 'Westward';
+            document.getElementById('driftDirection').textContent = driftDir;
+            document.getElementById('driftHeight').textContent = (maxDepth * 20).toFixed(1) + '"';
+            
+            // Storm stats
+            const duration = Math.floor((Date.now() - stormStartTime) / 1000);
+            const mins = Math.floor(duration / 60);
+            const secs = duration % 60;
+            document.getElementById('stormDuration').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            document.getElementById('totalFlakes').textContent = totalFlakesFallen.toLocaleString();
+            
+            // Visibility
+            const vis = Math.max(0.1, 10 - intensity * 9).toFixed(1);
+            document.getElementById('visibility').textContent = vis + ' mi';
+            
+            // DRO meter
+            const droFill = document.getElementById('droFill');
+            const fillPercent = ((dro.currentBase - 16) / 32) * 100;
+            droFill.style.width = Math.min(100, fillPercent) + '%';
+            droFill.style.background = `linear-gradient(90deg, var(--base-16), ${getBaseColor(dro.currentBase)})`;
+            droFill.textContent = `BASE-${dro.currentBase}`;
+        }
+        
+        // ===== GAME LOOP =====
+        
+        function gameLoop(timestamp) {
+            const dt = Math.min(32, timestamp - lastTime) / 16.67;
+            lastTime = timestamp;
+            
+            update(dt);
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

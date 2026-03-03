@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEC-006: Character Movement — Base-X Game Engine</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Pirata+One&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bone: #d4c5a0;
+  --blood: #8b0000;
+  --blood-bright: #cc2222;
+  --dark: #0a0808;
+  --dark-mid: #1a1412;
+  --dark-soft: #2a201a;
+  --ember: #ff4400;
+  --soul-cyan: #00cccc;
+  --ghost-green: #44cc66;
+  --void-purple: #6622aa;
+  --gold: #c9a84c;
+  --ice-blue: #88ccee;
+  --nether-pink: #cc44aa;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--dark);
+  color: var(--bone);
+  font-family: 'JetBrains Mono', monospace;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  user-select: none;
+}
+
+/* HEADER */
+.header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 44px;
+  background: linear-gradient(180deg, rgba(10,8,8,0.97), rgba(10,8,8,0.9));
+  border-bottom: 1px solid var(--blood);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 100;
+}
+
+.hdr-left { display: flex; align-items: center; gap: 12px; }
+
+.badge {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--dark);
+  background: var(--blood-bright);
+  padding: 2px 7px;
+  letter-spacing: 1.5px;
+}
+
+.title {
+  font-family: 'Pirata One', cursive;
+  font-size: 14px;
+  color: var(--blood-bright);
+  letter-spacing: 2px;
+}
+
+.hdr-right {
+  font-size: 8px;
+  color: #555;
+  letter-spacing: 1px;
+}
+
+/* DRO BAR */
+.dro-bar {
+  position: fixed;
+  top: 44px; left: 0; right: 0;
+  height: 24px;
+  background: rgba(10,8,8,0.8);
+  border-bottom: 1px solid rgba(139,0,0,0.2);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+  z-index: 99;
+  font-size: 9px;
+}
+
+.dro-item { display: flex; gap: 5px; }
+.dro-lbl { color: #555; letter-spacing: 1px; }
+.dro-val { color: var(--ember); font-weight: 500; }
+
+/* GAME CANVAS */
+canvas {
+  position: fixed;
+  top: 68px;
+  left: 0;
+  z-index: 1;
+}
+
+/* LEFT PANEL - CHARACTER STATS */
+.panel-left {
+  position: fixed;
+  top: 68px; left: 0;
+  width: 200px;
+  bottom: 0;
+  background: rgba(10,8,8,0.85);
+  border-right: 1px solid rgba(139,0,0,0.2);
+  padding: 12px;
+  z-index: 50;
+  overflow-y: auto;
+  font-size: 9px;
+}
+
+.panel-left::-webkit-scrollbar { width: 4px; }
+.panel-left::-webkit-scrollbar-thumb { background: var(--blood); }
+
+.panel-section {
+  margin-bottom: 14px;
+}
+
+.panel-title {
+  font-family: 'Pirata One', cursive;
+  font-size: 13px;
+  color: var(--blood-bright);
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(139,0,0,0.08);
+}
+
+.stat-label { color: #666; }
+.stat-val { color: var(--bone); font-weight: 500; }
+.stat-val.active { color: var(--ember); }
+.stat-val.cyan { color: var(--soul-cyan); }
+
+/* STATE BAR */
+.state-bar {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.state-tag {
+  font-size: 7px;
+  padding: 2px 5px;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(139,0,0,0.2);
+  color: #666;
+}
+
+.state-tag.on {
+  color: var(--ember);
+  border-color: var(--ember);
+  background: rgba(255,68,0,0.08);
+}
+
+/* VELOCITY BARS */
+.vel-bar-wrap {
+  margin: 3px 0;
+}
+
+.vel-bar-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1px;
+}
+
+.vel-bar {
+  height: 4px;
+  background: rgba(139,0,0,0.15);
+  position: relative;
+}
+
+.vel-bar-fill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  transition: width 0.1s;
+}
+
+/* RIGHT PANEL - REALM SELECTOR */
+.panel-right {
+  position: fixed;
+  top: 68px; right: 0;
+  width: 180px;
+  bottom: 0;
+  background: rgba(10,8,8,0.85);
+  border-left: 1px solid rgba(139,0,0,0.2);
+  padding: 12px;
+  z-index: 50;
+  overflow-y: auto;
+  font-size: 9px;
+}
+
+.panel-right::-webkit-scrollbar { width: 4px; }
+.panel-right::-webkit-scrollbar-thumb { background: var(--blood); }
+
+.realm-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  background: transparent;
+  border: 1px solid rgba(139,0,0,0.12);
+  color: var(--bone);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.realm-btn:hover {
+  background: rgba(139,0,0,0.1);
+  border-color: var(--blood);
+}
+
+.realm-btn.active {
+  background: rgba(139,0,0,0.15);
+  border-color: var(--blood-bright);
+  color: var(--blood-bright);
+}
+
+.realm-icon { font-size: 14px; }
+
+.realm-terrain {
+  font-size: 7px;
+  color: #555;
+  margin-top: 1px;
+}
+
+/* CONTROLS HINT */
+.controls-hint {
+  position: fixed;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  font-size: 8px;
+  color: #444;
+  display: flex;
+  gap: 8px;
+}
+
+.controls-hint kbd {
+  background: rgba(139,0,0,0.12);
+  border: 1px solid rgba(139,0,0,0.25);
+  padding: 1px 5px;
+  color: var(--blood-bright);
+  font-size: 8px;
+}
+
+/* CHARACTER SELECTOR */
+.char-select {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.char-btn {
+  flex: 1;
+  padding: 4px 2px;
+  background: transparent;
+  border: 1px solid rgba(139,0,0,0.15);
+  color: #666;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+
+.char-btn:hover { border-color: var(--blood); color: var(--bone); }
+.char-btn.active { border-color: var(--blood-bright); color: var(--blood-bright); background: rgba(139,0,0,0.1); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="hdr-left">
+    <div class="badge">NEC-006</div>
+    <div class="title">Character Movement</div>
+  </div>
+  <div class="hdr-right">NECROTOPIA VR · BASE-X ENGINE · © Keenan Dunham & Troll Hunter Gaming LLC</div>
+</div>
+
+<div class="dro-bar">
+  <div class="dro-item"><span class="dro-lbl">DRO</span><span class="dro-val" id="droState">ACTIVE</span></div>
+  <div class="dro-item"><span class="dro-lbl">MOVEMENT</span><span class="dro-val" id="droMove">BASE-8</span></div>
+  <div class="dro-item"><span class="dro-lbl">TERRAIN</span><span class="dro-val" id="droTerrain">BASE-16</span></div>
+  <div class="dro-item"><span class="dro-lbl">COLLISION</span><span class="dro-val" id="droColl">BASE-32</span></div>
+  <div class="dro-item"><span class="dro-lbl">IK/CONTACT</span><span class="dro-val" id="droIK">BASE-48</span></div>
+  <div class="dro-item"><span class="dro-lbl">FPS</span><span class="dro-val" id="droFps">60</span></div>
+  <div class="dro-item"><span class="dro-lbl">STATE</span><span class="dro-val" id="droAction">IDLE</span></div>
+</div>
+
+<canvas id="game"></canvas>
+
+<!-- LEFT PANEL -->
+<div class="panel-left">
+  <div class="panel-section">
+    <div class="panel-title">Character</div>
+    <div class="char-select" id="charSelect"></div>
+    <div class="stat-row"><span class="stat-label">Name</span><span class="stat-val" id="sName">Billy Tait</span></div>
+    <div class="stat-row"><span class="stat-label">Class</span><span class="stat-val" id="sClass">Ghost Detective</span></div>
+    <div class="stat-row"><span class="stat-label">Speed</span><span class="stat-val" id="sSpeed">5.0</span></div>
+    <div class="stat-row"><span class="stat-label">Jump</span><span class="stat-val" id="sJump">12.0</span></div>
+    <div class="stat-row"><span class="stat-label">Dodge CD</span><span class="stat-val" id="sDodgeCd">0.4s</span></div>
+    <div class="stat-row"><span class="stat-label">Climb</span><span class="stat-val" id="sClimb">3.0</span></div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-title">Motion State</div>
+    <div class="state-bar" id="stateBar"></div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-title">Velocity</div>
+    <div class="vel-bar-wrap">
+      <div class="vel-bar-label"><span class="stat-label">Horizontal</span><span class="stat-val" id="velX">0.0</span></div>
+      <div class="vel-bar"><div class="vel-bar-fill" id="velXBar" style="width:0%;background:var(--ember)"></div></div>
+    </div>
+    <div class="vel-bar-wrap">
+      <div class="vel-bar-label"><span class="stat-label">Vertical</span><span class="stat-val" id="velY">0.0</span></div>
+      <div class="vel-bar"><div class="vel-bar-fill" id="velYBar" style="width:0%;background:var(--soul-cyan)"></div></div>
+    </div>
+    <div class="vel-bar-wrap">
+      <div class="vel-bar-label"><span class="stat-label">Angular</span><span class="stat-val" id="velA">0.0</span></div>
+      <div class="vel-bar"><div class="vel-bar-fill" id="velABar" style="width:0%;background:var(--ghost-green)"></div></div>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-title">DRO Allocation</div>
+    <div class="stat-row"><span class="stat-label">Movement</span><span class="stat-val" id="allocMove">B-8</span></div>
+    <div class="stat-row"><span class="stat-label">Terrain</span><span class="stat-val" id="allocTerrain">B-16</span></div>
+    <div class="stat-row"><span class="stat-label">Collision</span><span class="stat-val" id="allocColl">B-32</span></div>
+    <div class="stat-row"><span class="stat-label">Foot IK</span><span class="stat-val" id="allocIK">B-48</span></div>
+    <div class="stat-row"><span class="stat-label">Combat</span><span class="stat-val" id="allocCombat">B-64</span></div>
+    <div class="stat-row"><span class="stat-label">Savings</span><span class="stat-val cyan" id="allocSave">62%</span></div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-title">Terrain Contact</div>
+    <div class="stat-row"><span class="stat-label">Surface</span><span class="stat-val" id="tSurface">Stone</span></div>
+    <div class="stat-row"><span class="stat-label">Friction</span><span class="stat-val" id="tFriction">0.80</span></div>
+    <div class="stat-row"><span class="stat-label">Slope°</span><span class="stat-val" id="tSlope">0.0</span></div>
+    <div class="stat-row"><span class="stat-label">Climbable</span><span class="stat-val" id="tClimb">No</span></div>
+  </div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="panel-right">
+  <div class="panel-title">Realm</div>
+  <div id="realmList"></div>
+
+  <div class="panel-section" style="margin-top:14px">
+    <div class="panel-title">Realm Physics</div>
+    <div class="stat-row"><span class="stat-label">Gravity</span><span class="stat-val" id="rGrav">1.0x</span></div>
+    <div class="stat-row"><span class="stat-label">Air Resist</span><span class="stat-val" id="rAir">0.02</span></div>
+    <div class="stat-row"><span class="stat-label">Hazard</span><span class="stat-val" id="rHazard">Lava</span></div>
+    <div class="stat-row"><span class="stat-label">Visibility</span><span class="stat-val" id="rVis">100%</span></div>
+  </div>
+</div>
+
+<div class="controls-hint">
+  <span><kbd>A</kbd><kbd>D</kbd> Move</span>
+  <span><kbd>W</kbd> Jump</span>
+  <span><kbd>Shift</kbd> Sprint</span>
+  <span><kbd>Space</kbd> Dodge Roll</span>
+  <span><kbd>E</kbd> Climb</span>
+  <span><kbd>S</kbd> Crouch</span>
+  <span><kbd>1</kbd>-<kbd>4</kbd> Character</span>
+</div>
+
+<script>
+// ========================================
+// NEC-006: CHARACTER MOVEMENT
+// Base-X Game Engine · Necrotopia VR
+// © Keenan Dunham & Troll Hunter Gaming LLC
+// ========================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight - 68;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ========== CHARACTERS ==========
+const CHARACTERS = [
+  { name: "Billy Tait", cls: "Ghost Detective", icon: "👻",
+    speed: 5, jump: 12, dodgeCd: 0.4, climb: 3, color: "#44cc88",
+    armor: 2, dodge: 0.25, w: 28, h: 48 },
+  { name: "Bonnie", cls: "Soldier", icon: "🔫",
+    speed: 4.5, jump: 11, dodgeCd: 0.5, climb: 2.5, color: "#cc6644",
+    armor: 4, dodge: 0.15, w: 30, h: 50 },
+  { name: "Finnagan", cls: "Werewolf", icon: "🐺",
+    speed: 6, jump: 14, dodgeCd: 0.3, climb: 4, color: "#8888cc",
+    armor: 3, dodge: 0.2, w: 32, h: 52 },
+  { name: "Raktooth", cls: "Rogue", icon: "🗡️",
+    speed: 5.5, jump: 13, dodgeCd: 0.25, climb: 5, color: "#cc44cc",
+    armor: 1, dodge: 0.35, w: 26, h: 46 }
+];
+
+// ========== REALMS ==========
+const REALMS = [
+  { name: "Hell", icon: "🔥", god: "Satan", terrain: "Brimstone, Lava",
+    gravity: 1.0, airResist: 0.02, friction: 0.7, hazard: "Lava", vis: 80,
+    bgTop: "#1a0505", bgBot: "#0a0000", groundColor: "#3a1a0a",
+    platformColor: "#551a0a", accentColor: "#ff4400", climbColor: "#882200",
+    hazardColor: "#ff2200", particles: "ember" },
+  { name: "Asgard", icon: "ᚱ", god: "Wodin", terrain: "Ice, Stone, Snow",
+    gravity: 1.0, airResist: 0.03, friction: 0.4, hazard: "Frostbite", vis: 90,
+    bgTop: "#0a1520", bgBot: "#050a10", groundColor: "#2a3a4a",
+    platformColor: "#1a2a3a", accentColor: "#88ccee", climbColor: "#556688",
+    hazardColor: "#44aaff", particles: "snow" },
+  { name: "Manna", icon: "☯", god: "Happ-Shuggah", terrain: "Jade, Mist, Bamboo",
+    gravity: 0.85, airResist: 0.01, friction: 0.75, hazard: "Spirit Drain", vis: 70,
+    bgTop: "#0a150a", bgBot: "#050a05", groundColor: "#1a3a1a",
+    platformColor: "#0a2a0a", accentColor: "#44cc66", climbColor: "#228844",
+    hazardColor: "#22cc44", particles: "spirit" },
+  { name: "Void", icon: "◉", god: "Omnivoid", terrain: "Null-Space, Fractured",
+    gravity: 0.5, airResist: 0.0, friction: 0.6, hazard: "Reality Tear", vis: 60,
+    bgTop: "#0a0520", bgBot: "#020010", groundColor: "#1a0a3a",
+    platformColor: "#120828", accentColor: "#6622aa", climbColor: "#4411aa",
+    hazardColor: "#8844ff", particles: "void" },
+  { name: "Nether", icon: "🐙", god: "Azathoth", terrain: "Flesh, Non-Euclidean",
+    gravity: 1.2, airResist: 0.04, friction: 0.65, hazard: "Madness", vis: 50,
+    bgTop: "#200a15", bgBot: "#100508", groundColor: "#3a1a2a",
+    platformColor: "#2a0a1a", accentColor: "#cc44aa", climbColor: "#882266",
+    hazardColor: "#ff44cc", particles: "tentacle" },
+  { name: "Egypt Prime", icon: "𓂀", god: "Bastet", terrain: "Sandstone, Gold",
+    gravity: 1.0, airResist: 0.015, friction: 0.8, hazard: "Sand Trap", vis: 95,
+    bgTop: "#1a1508", bgBot: "#0a0a04", groundColor: "#3a2a10",
+    platformColor: "#2a1a08", accentColor: "#c9a84c", climbColor: "#887733",
+    hazardColor: "#ccaa22", particles: "sand" },
+  { name: "Tempus", icon: "⚙", god: "I.A.M.", terrain: "Metal, Circuit, Neon",
+    gravity: 1.0, airResist: 0.02, friction: 0.9, hazard: "EMP Field", vis: 100,
+    bgTop: "#0a0a15", bgBot: "#04040a", groundColor: "#1a1a2a",
+    platformColor: "#10102a", accentColor: "#00cccc", climbColor: "#006688",
+    hazardColor: "#00ffff", particles: "spark" },
+  { name: "Summon Realm", icon: "🪶", god: "Quetzalcoatl", terrain: "Jungle, Pyramid",
+    gravity: 0.9, airResist: 0.025, friction: 0.7, hazard: "Poison Vines", vis: 75,
+    bgTop: "#0a1508", bgBot: "#040a04", groundColor: "#2a3a1a",
+    platformColor: "#1a2a0a", accentColor: "#88cc22", climbColor: "#558811",
+    hazardColor: "#66cc00", particles: "feather" },
+  { name: "Serpentverse", icon: "🐍", god: "Xerses", terrain: "Scales, Venom Pools",
+    gravity: 1.1, airResist: 0.03, friction: 0.55, hazard: "Venom", vis: 65,
+    bgTop: "#101508", bgBot: "#080a04", groundColor: "#2a2a10",
+    platformColor: "#1a1a08", accentColor: "#aacc00", climbColor: "#668800",
+    hazardColor: "#88ff00", particles: "scale" },
+  { name: "Feymeria", icon: "🧚", god: "Fey Court", terrain: "Crystal, Mushroom, Bloom",
+    gravity: 0.7, airResist: 0.005, friction: 0.85, hazard: "Enchantment", vis: 100,
+    bgTop: "#150a18", bgBot: "#0a0510", groundColor: "#2a1a30",
+    platformColor: "#1a1028", accentColor: "#cc66ff", climbColor: "#8844aa",
+    hazardColor: "#ff88ff", particles: "sparkle" }
+];
+
+// ========== GAME STATE ==========
+let charIdx = 0;
+let realmIdx = 0;
+let keys = {};
+let lastTime = 0;
+let frameCount = 0;
+let fps = 60;
+let fpsTimer = 0;
+
+const STATES = ['IDLE','WALK','RUN','JUMP','FALL','DODGE','CLIMB','CROUCH','WALL_SLIDE','LEDGE_GRAB','LAND'];
+let player = {
+  x: 400, y: 300,
+  vx: 0, vy: 0,
+  grounded: false,
+  facing: 1,
+  state: 'IDLE',
+  dodgeTimer: 0,
+  dodgeCooldown: 0,
+  climbTarget: null,
+  crouching: false,
+  wallSliding: false,
+  landTimer: 0,
+  animTimer: 0,
+  trail: [],
+  coyoteTime: 0,
+  jumpBuffered: false
+};
+
+// ========== LEVEL GENERATION ==========
+let platforms = [];
+let climbWalls = [];
+let hazards = [];
+let particles = [];
+
+function generateLevel() {
+  const R = REALMS[realmIdx];
+  const W = canvas.width;
+  const H = canvas.height;
+  const gY = H - 60;
+
+  platforms = [];
+  climbWalls = [];
+  hazards = [];
+
+  // Ground
+  platforms.push({ x: 0, y: gY, w: W, h: 60, type: 'ground' });
+
+  // Platforms at varying heights
+  const count = 8 + Math.floor(Math.random() * 5);
+  for (let i = 0; i < count; i++) {
+    const pw = 80 + Math.random() * 120;
+    const px = 220 + Math.random() * (W - 440);
+    const py = gY - 80 - Math.random() * (H - 280);
+    platforms.push({ x: px, y: py, w: pw, h: 14, type: 'platform' });
+  }
+
+  // Climb walls
+  const wallCount = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < wallCount; i++) {
+    const wx = 240 + Math.random() * (W - 480);
+    const wy = gY - 120 - Math.random() * (H - 300);
+    const wh = 100 + Math.random() * 150;
+    climbWalls.push({ x: wx, y: wy, w: 20, h: wh });
+  }
+
+  // Hazards
+  const hazCount = 2 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < hazCount; i++) {
+    const hx = 250 + Math.random() * (W - 500);
+    const hy = gY - 16;
+    hazards.push({ x: hx, y: hy, w: 60 + Math.random() * 40, h: 16 });
+  }
+
+  // Reset player position
+  player.x = 300;
+  player.y = gY - 60;
+  player.vx = 0;
+  player.vy = 0;
+  player.grounded = false;
+  player.state = 'FALL';
+  player.trail = [];
+}
+
+// ========== PHYSICS ==========
+function updatePhysics(dt) {
+  const C = CHARACTERS[charIdx];
+  const R = REALMS[realmIdx];
+  const grav = 0.6 * R.gravity;
+  const fric = R.friction;
+  const airR = R.airResist;
+
+  // Coyote time
+  if (player.grounded) player.coyoteTime = 6;
+  else if (player.coyoteTime > 0) player.coyoteTime--;
+
+  // --- DODGE ROLL ---
+  if (player.dodgeTimer > 0) {
+    player.dodgeTimer -= dt;
+    player.vx = player.facing * C.speed * 3.5;
+    player.vy = 0;
+    if (player.dodgeTimer <= 0) {
+      player.dodgeTimer = 0;
+      player.dodgeCooldown = C.dodgeCd * 60;
+    }
+    player.state = 'DODGE';
+  }
+  // --- CLIMBING ---
+  else if (player.climbTarget) {
+    const wall = player.climbTarget;
+    player.vx = 0;
+    if (keys['w'] || keys['arrowup']) player.vy = -C.climb;
+    else if (keys['s'] || keys['arrowdown']) player.vy = C.climb * 0.8;
+    else player.vy = 0.3; // slow slide
+
+    // Detach
+    if (keys[' '] || keys['w'] && player.y < wall.y - 10) {
+      player.climbTarget = null;
+      player.vy = -C.jump * 0.7;
+      player.vx = player.facing * C.speed * 0.5;
+    }
+    // Check still on wall
+    if (player.y > wall.y + wall.h || player.y + C.h < wall.y) {
+      player.climbTarget = null;
+    }
+    player.state = 'CLIMB';
+  }
+  else {
+    // --- HORIZONTAL ---
+    let moveSpeed = C.speed;
+    let sprinting = false;
+    let crouching = false;
+
+    if (keys['s'] || keys['arrowdown']) {
+      crouching = true;
+      moveSpeed *= 0.4;
+    }
+    if ((keys['shift'] || keys['shiftleft']) && !crouching) {
+      sprinting = true;
+      moveSpeed *= 1.8;
+    }
+
+    if (keys['a'] || keys['arrowleft']) {
+      player.vx -= moveSpeed * 0.3;
+      player.facing = -1;
+    }
+    if (keys['d'] || keys['arrowright']) {
+      player.vx += moveSpeed * 0.3;
+      player.facing = 1;
+    }
+
+    // Friction
+    if (player.grounded) {
+      player.vx *= (0.7 + fric * 0.2);
+    } else {
+      player.vx *= (0.95 - airR);
+    }
+
+    // Clamp speed
+    const maxSpd = sprinting ? C.speed * 2 : C.speed * 1.2;
+    player.vx = Math.max(-maxSpd, Math.min(maxSpd, player.vx));
+
+    // --- JUMP ---
+    if ((keys['w'] || keys['arrowup'] || player.jumpBuffered) && player.coyoteTime > 0) {
+      player.vy = -C.jump;
+      player.grounded = false;
+      player.coyoteTime = 0;
+      player.jumpBuffered = false;
+    }
+
+    // Jump buffer
+    if (keys['w'] || keys['arrowup']) {
+      if (!player.grounded && player.vy > 0) player.jumpBuffered = true;
+    } else {
+      player.jumpBuffered = false;
+    }
+
+    // Variable jump height
+    if (!(keys['w'] || keys['arrowup']) && player.vy < -2) {
+      player.vy *= 0.85;
+    }
+
+    // Gravity
+    player.vy += grav;
+    player.vy = Math.min(player.vy, 16);
+
+    // --- DODGE ---
+    if (keys[' '] && player.dodgeCooldown <= 0 && player.dodgeTimer <= 0 && player.grounded) {
+      player.dodgeTimer = 12;
+      player.dodgeCooldown = C.dodgeCd * 60;
+    }
+
+    // --- CLIMB ATTACH ---
+    if (keys['e']) {
+      for (const wall of climbWalls) {
+        const px = player.x + C.w / 2;
+        const py = player.y + C.h / 2;
+        if (px > wall.x - 15 && px < wall.x + wall.w + 15 &&
+            py > wall.y && py < wall.y + wall.h) {
+          player.climbTarget = wall;
+          player.x = (player.facing > 0) ? wall.x - C.w : wall.x + wall.w;
+          player.vy = 0;
+          break;
+        }
+      }
+    }
+
+    // Wall slide detection
+    player.wallSliding = false;
+    if (!player.grounded && player.vy > 0) {
+      for (const wall of climbWalls) {
+        const px = player.x + C.w / 2;
+        const py = player.y + C.h / 2;
+        if (px > wall.x - 10 && px < wall.x + wall.w + 10 &&
+            py > wall.y && py < wall.y + wall.h) {
+          if ((keys['a'] || keys['arrowleft'] || keys['d'] || keys['arrowright'])) {
+            player.wallSliding = true;
+            player.vy = Math.min(player.vy, 2);
+          }
+        }
+      }
+    }
+
+    // State determination
+    player.crouching = crouching;
+    if (player.landTimer > 0) {
+      player.state = 'LAND';
+      player.landTimer--;
+    } else if (crouching && player.grounded) {
+      player.state = 'CROUCH';
+    } else if (player.wallSliding) {
+      player.state = 'WALL_SLIDE';
+    } else if (!player.grounded && player.vy < 0) {
+      player.state = 'JUMP';
+    } else if (!player.grounded && player.vy > 0) {
+      player.state = 'FALL';
+    } else if (sprinting && Math.abs(player.vx) > 1) {
+      player.state = 'RUN';
+    } else if (Math.abs(player.vx) > 0.5) {
+      player.state = 'WALK';
+    } else {
+      player.state = 'IDLE';
+    }
+  }
+
+  // Cooldown
+  if (player.dodgeCooldown > 0) player.dodgeCooldown -= 1;
+
+  // --- MOVE & COLLIDE ---
+  const wasGrounded = player.grounded;
+  player.x += player.vx;
+  player.y += player.vy;
+  player.grounded = false;
+
+  const C2 = CHARACTERS[charIdx];
+
+  // Platform collision
+  for (const p of platforms) {
+    const ph = player.crouching ? C2.h * 0.6 : C2.h;
+    // Top collision (landing)
+    if (player.vx !== 0 || player.vy >= 0) {
+      if (player.x + C2.w > p.x && player.x < p.x + p.w) {
+        if (player.y + ph > p.y && player.y + ph < p.y + p.h + 10 && player.vy >= 0) {
+          player.y = p.y - ph;
+          player.vy = 0;
+          player.grounded = true;
+          if (!wasGrounded && player.state !== 'DODGE') {
+            player.landTimer = 5;
+          }
+        }
+      }
+    }
+    // Side collision for ground blocks
+    if (p.type === 'ground' || p.h > 20) {
+      if (player.y + ph > p.y + 4 && player.y < p.y + p.h) {
+        if (player.x + C2.w > p.x && player.x + C2.w < p.x + 10 && player.vx > 0) {
+          player.x = p.x - C2.w;
+          player.vx = 0;
+        }
+        if (player.x < p.x + p.w && player.x > p.x + p.w - 10 && player.vx < 0) {
+          player.x = p.x + p.w;
+          player.vx = 0;
+        }
+      }
+    }
+  }
+
+  // Screen bounds
+  if (player.x < 200) { player.x = 200; player.vx = 0; }
+  if (player.x > canvas.width - 180 - C2.w) { player.x = canvas.width - 180 - C2.w; player.vx = 0; }
+  if (player.y > canvas.height + 50) {
+    player.y = 100;
+    player.vy = 0;
+  }
+
+  // Trail
+  player.animTimer++;
+  if (player.animTimer % 2 === 0 && (Math.abs(player.vx) > 1 || Math.abs(player.vy) > 1 || player.dodgeTimer > 0)) {
+    player.trail.push({ x: player.x, y: player.y, life: 10, state: player.state });
+  }
+  player.trail = player.trail.filter(t => { t.life--; return t.life > 0; });
+
+  // Particles
+  spawnParticles();
+}
+
+// ========== PARTICLES ==========
+function spawnParticles() {
+  const R = REALMS[realmIdx];
+  if (Math.random() > 0.15) return;
+
+  const px = 200 + Math.random() * (canvas.width - 380);
+  let py, pvx, pvy, color, size;
+
+  switch (R.particles) {
+    case 'ember':
+      py = canvas.height - 60;
+      pvx = (Math.random() - 0.5) * 0.5;
+      pvy = -1 - Math.random() * 2;
+      color = Math.random() > 0.5 ? '#ff4400' : '#ffaa00';
+      size = 2 + Math.random() * 3;
+      break;
+    case 'snow':
+      py = 0;
+      pvx = (Math.random() - 0.5) * 0.3;
+      pvy = 0.5 + Math.random();
+      color = '#ddeeff';
+      size = 2 + Math.random() * 2;
+      break;
+    case 'spirit':
+      py = Math.random() * canvas.height;
+      pvx = (Math.random() - 0.5) * 0.3;
+      pvy = -0.3 + Math.random() * 0.6;
+      color = '#44cc6688';
+      size = 3 + Math.random() * 4;
+      break;
+    case 'void':
+      py = Math.random() * canvas.height;
+      pvx = (Math.random() - 0.5) * 2;
+      pvy = (Math.random() - 0.5) * 2;
+      color = '#6622aa66';
+      size = 1 + Math.random() * 6;
+      break;
+    case 'spark':
+      py = Math.random() * canvas.height;
+      pvx = (Math.random() - 0.5) * 3;
+      pvy = (Math.random() - 0.5) * 3;
+      color = '#00cccc';
+      size = 1 + Math.random() * 2;
+      break;
+    default:
+      py = Math.random() * canvas.height;
+      pvx = (Math.random() - 0.5);
+      pvy = (Math.random() - 0.5);
+      color = R.accentColor + '66';
+      size = 2 + Math.random() * 3;
+  }
+
+  particles.push({ x: px, y: py, vx: pvx, vy: pvy, color, size, life: 80 + Math.random() * 60 });
+}
+
+function updateParticles() {
+  particles = particles.filter(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+    return p.life > 0;
+  });
+  if (particles.length > 120) particles.splice(0, particles.length - 120);
+}
+
+// ========== RENDER ==========
+function render() {
+  const W = canvas.width;
+  const H = canvas.height;
+  const R = REALMS[realmIdx];
+  const C = CHARACTERS[charIdx];
+
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, R.bgTop);
+  bg.addColorStop(1, R.bgBot);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Particles (behind)
+  for (const p of particles) {
+    ctx.globalAlpha = Math.min(1, p.life / 30);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Hazards
+  for (const h of hazards) {
+    ctx.fillStyle = R.hazardColor;
+    ctx.globalAlpha = 0.4 + Math.sin(Date.now() * 0.005) * 0.2;
+    ctx.fillRect(h.x, h.y, h.w, h.h);
+    ctx.globalAlpha = 1;
+  }
+
+  // Platforms
+  for (const p of platforms) {
+    ctx.fillStyle = p.type === 'ground' ? R.groundColor : R.platformColor;
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    // Top edge accent
+    ctx.fillStyle = R.accentColor + '44';
+    ctx.fillRect(p.x, p.y, p.w, 2);
+  }
+
+  // Climb walls
+  for (const w of climbWalls) {
+    ctx.fillStyle = R.climbColor;
+    ctx.fillRect(w.x, w.y, w.w, w.h);
+    // Grip marks
+    ctx.fillStyle = R.accentColor + '33';
+    for (let gy = w.y + 10; gy < w.y + w.h - 10; gy += 20) {
+      ctx.fillRect(w.x + 4, gy, 12, 3);
+    }
+    // Climbable label
+    ctx.fillStyle = R.accentColor + '66';
+    ctx.font = '7px JetBrains Mono';
+    ctx.fillText('CLIMB', w.x - 2, w.y - 4);
+  }
+
+  // Player trail
+  for (const t of player.trail) {
+    ctx.globalAlpha = t.life / 12;
+    ctx.fillStyle = t.state === 'DODGE' ? '#ff440066' : C.color + '44';
+    const ph = player.crouching ? C.h * 0.6 : C.h;
+    ctx.fillRect(t.x, t.y, C.w, ph);
+    ctx.globalAlpha = 1;
+  }
+
+  // Player
+  const ph = player.crouching ? C.h * 0.6 : C.h;
+  const py = player.crouching ? player.y + C.h * 0.4 : player.y;
+
+  // Shadow
+  if (player.grounded) {
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(player.x + C.w / 2, py + ph + 2, C.w * 0.6, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Body
+  ctx.save();
+  if (player.dodgeTimer > 0) {
+    ctx.translate(player.x + C.w / 2, py + ph / 2);
+    ctx.rotate(player.facing * (12 - player.dodgeTimer) * 0.5);
+    ctx.translate(-(player.x + C.w / 2), -(py + ph / 2));
+  }
+
+  // Dodge flash
+  if (player.dodgeTimer > 0) {
+    ctx.fillStyle = '#ffffff44';
+    ctx.fillRect(player.x - 2, py - 2, C.w + 4, ph + 4);
+  }
+
+  ctx.fillStyle = C.color;
+  ctx.fillRect(player.x, py, C.w, ph);
+
+  // Eyes
+  const eyeX = player.facing > 0 ? player.x + C.w * 0.65 : player.x + C.w * 0.2;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(eyeX, py + 8, 4, 4);
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(eyeX + (player.facing > 0 ? 2 : 0), py + 9, 2, 2);
+
+  // Climb indicator
+  if (player.state === 'CLIMB') {
+    ctx.fillStyle = R.accentColor;
+    ctx.fillRect(player.x + (player.facing > 0 ? C.w : -4), py + 10, 4, 6);
+    ctx.fillRect(player.x + (player.facing > 0 ? C.w : -4), py + 24, 4, 6);
+  }
+
+  // Wall slide streaks
+  if (player.wallSliding) {
+    ctx.strokeStyle = R.accentColor + '88';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(player.x + C.w / 2 + (Math.random() - 0.5) * C.w, py);
+      ctx.lineTo(player.x + C.w / 2 + (Math.random() - 0.5) * C.w, py - 12);
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+
+  // State label above player
+  ctx.fillStyle = R.accentColor;
+  ctx.font = '8px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText(player.state, player.x + C.w / 2, py - 8);
+  ctx.textAlign = 'left';
+
+  // DRO precision ring around player
+  const droBase = getDROBase();
+  ctx.strokeStyle = R.accentColor + '33';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(player.x + C.w / 2, py + ph / 2, droBase, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = R.accentColor + '44';
+  ctx.font = '7px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText(`B-${droBase}`, player.x + C.w / 2, py + ph / 2 + droBase + 10);
+  ctx.textAlign = 'left';
+}
+
+function getDROBase() {
+  switch (player.state) {
+    case 'IDLE': return 8;
+    case 'WALK': return 16;
+    case 'RUN': return 24;
+    case 'JUMP': return 32;
+    case 'FALL': return 24;
+    case 'DODGE': return 48;
+    case 'CLIMB': return 48;
+    case 'CROUCH': return 12;
+    case 'WALL_SLIDE': return 32;
+    case 'LEDGE_GRAB': return 48;
+    case 'LAND': return 32;
+    default: return 8;
+  }
+}
+
+// ========== UI UPDATES ==========
+function updateUI() {
+  const C = CHARACTERS[charIdx];
+  const R = REALMS[realmIdx];
+  const base = getDROBase();
+
+  // DRO bar
+  document.getElementById('droMove').textContent = `BASE-${base}`;
+  document.getElementById('droTerrain').textContent = `BASE-${Math.max(8, base - 8)}`;
+  document.getElementById('droColl').textContent = `BASE-${Math.min(64, base + 16)}`;
+  document.getElementById('droIK').textContent = player.grounded ? `BASE-${Math.min(64, base + 24)}` : 'OFF';
+  document.getElementById('droFps').textContent = fps;
+  document.getElementById('droAction').textContent = player.state;
+
+  // Character stats
+  document.getElementById('sName').textContent = C.name;
+  document.getElementById('sClass').textContent = C.cls;
+  document.getElementById('sSpeed').textContent = C.speed.toFixed(1);
+  document.getElementById('sJump').textContent = C.jump.toFixed(1);
+  document.getElementById('sDodgeCd').textContent = C.dodgeCd + 's';
+  document.getElementById('sClimb').textContent = C.climb.toFixed(1);
+
+  // State bar
+  const stateBar = document.getElementById('stateBar');
+  stateBar.innerHTML = STATES.map(s =>
+    `<div class="state-tag${player.state === s ? ' on' : ''}">${s}</div>`
+  ).join('');
+
+  // Velocity
+  document.getElementById('velX').textContent = Math.abs(player.vx).toFixed(1);
+  document.getElementById('velY').textContent = Math.abs(player.vy).toFixed(1);
+  document.getElementById('velA').textContent = (player.dodgeTimer > 0 ? player.dodgeTimer * 30 : 0).toFixed(0) + '°';
+  document.getElementById('velXBar').style.width = Math.min(100, Math.abs(player.vx) / (C.speed * 2) * 100) + '%';
+  document.getElementById('velYBar').style.width = Math.min(100, Math.abs(player.vy) / 16 * 100) + '%';
+  document.getElementById('velABar').style.width = player.dodgeTimer > 0 ? '100%' : '0%';
+
+  // DRO allocation
+  document.getElementById('allocMove').textContent = `B-${base}`;
+  document.getElementById('allocTerrain').textContent = `B-${Math.max(8, base - 8)}`;
+  document.getElementById('allocColl').textContent = `B-${Math.min(64, base + 16)}`;
+  document.getElementById('allocIK').textContent = player.grounded ? `B-${Math.min(64, base + 24)}` : 'OFF';
+  document.getElementById('allocCombat').textContent = player.dodgeTimer > 0 ? 'B-64' : 'OFF';
+  const savings = 100 - Math.round((base / 64) * 100);
+  document.getElementById('allocSave').textContent = savings + '%';
+
+  // Terrain contact
+  document.getElementById('tSurface').textContent = R.terrain.split(',')[0];
+  document.getElementById('tFriction').textContent = R.friction.toFixed(2);
+  document.getElementById('tSlope').textContent = '0.0';
+  document.getElementById('tClimb').textContent = player.climbTarget ? 'Yes' : 'No';
+
+  // Realm physics
+  document.getElementById('rGrav').textContent = R.gravity.toFixed(1) + 'x';
+  document.getElementById('rAir').textContent = R.airResist.toFixed(3);
+  document.getElementById('rHazard').textContent = R.hazard;
+  document.getElementById('rVis').textContent = R.vis + '%';
+}
+
+// ========== BUILD UI ==========
+function buildCharSelect() {
+  document.getElementById('charSelect').innerHTML = CHARACTERS.map((c, i) =>
+    `<button class="char-btn${i === charIdx ? ' active' : ''}" onclick="selectChar(${i})">${c.icon}<br>${c.name.split(' ')[0]}</button>`
+  ).join('');
+}
+
+function buildRealmList() {
+  document.getElementById('realmList').innerHTML = REALMS.map((r, i) =>
+    `<button class="realm-btn${i === realmIdx ? ' active' : ''}" onclick="selectRealm(${i})">
+      <span class="realm-icon">${r.icon}</span>
+      <div><div>${r.name}</div><div class="realm-terrain">${r.terrain}</div></div>
+    </button>`
+  ).join('');
+}
+
+function selectChar(i) {
+  charIdx = i;
+  buildCharSelect();
+}
+
+function selectRealm(i) {
+  realmIdx = i;
+  buildRealmList();
+  generateLevel();
+}
+
+// ========== INPUT ==========
+document.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  if (e.key >= '1' && e.key <= '4') selectChar(parseInt(e.key) - 1);
+  if (e.key === 'r') generateLevel();
+});
+document.addEventListener('keyup', e => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+// ========== GAME LOOP ==========
+function gameLoop(timestamp) {
+  const dt = Math.min((timestamp - lastTime) / 16.67, 3);
+  lastTime = timestamp;
+
+  // FPS counter
+  frameCount++;
+  fpsTimer += dt * 16.67;
+  if (fpsTimer >= 1000) {
+    fps = frameCount;
+    frameCount = 0;
+    fpsTimer = 0;
+  }
+
+  updatePhysics(dt);
+  updateParticles();
+  render();
+  updateUI();
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ========== INIT ==========
+buildCharSelect();
+buildRealmList();
+generateLevel();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>

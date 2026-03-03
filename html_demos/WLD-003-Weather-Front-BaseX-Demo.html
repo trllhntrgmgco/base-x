@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WLD-003: Weather Front | Base-X Engine Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #030508;
+            --panel-bg: rgba(8, 14, 24, 0.95);
+            --sky-clear: #4a90c2;
+            --sky-storm: #1a2a3a;
+            --cloud-light: #e8e8e8;
+            --cloud-dark: #3a4a5a;
+            --cloud-storm: #2a3040;
+            --rain-color: #7ab8e8;
+            --lightning-color: #fff8a0;
+            --accent-cyan: #00d4ff;
+            --accent-yellow: #ffdd00;
+            --accent-purple: #9966ff;
+            --accent-orange: #ff8844;
+            --base-32: #ffdd00;
+            --base-24: #ff8844;
+            --base-16: #ff4444;
+            --base-12: #aa4444;
+            --text-primary: #d0e0f0;
+            --text-dim: #556677;
+            --border-glow: rgba(0, 212, 255, 0.3);
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            padding: 15px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: linear-gradient(90deg, rgba(153, 102, 255, 0.1), transparent, rgba(0, 212, 255, 0.1));
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .demo-badge {
+            background: linear-gradient(135deg, #9966ff, #6633cc);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.75em;
+            letter-spacing: 2px;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #9966ff;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(153, 102, 255, 0.4);
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .stat-group {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .stat-value.base { color: var(--base-24); }
+        .stat-value.temp { color: var(--accent-cyan); }
+        .stat-value.wind { color: var(--accent-yellow); }
+        
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 260px;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            background: linear-gradient(90deg, rgba(153, 102, 255, 0.15), transparent);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-glow);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: #9966ff;
+            flex-shrink: 0;
+        }
+        
+        .panel-content {
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        /* Weather Presets */
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .weather-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .weather-btn:hover {
+            border-color: rgba(153, 102, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .weather-btn.active {
+            border-color: #9966ff;
+            box-shadow: 0 0 20px rgba(153, 102, 255, 0.3);
+            background: rgba(153, 102, 255, 0.1);
+        }
+        
+        .weather-icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .weather-name {
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .weather-desc {
+            font-size: 0.65em;
+            color: var(--text-dim);
+        }
+        
+        /* Tool Section */
+        .tool-section {
+            margin-bottom: 20px;
+        }
+        
+        .tool-section-title {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Sliders */
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .slider-name {
+            font-size: 0.8em;
+            color: var(--text-dim);
+        }
+        
+        .slider-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85em;
+            color: #9966ff;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(153, 102, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #9966ff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(153, 102, 255, 0.5);
+        }
+        
+        /* Toggle */
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .toggle-label {
+            font-size: 0.85em;
+        }
+        
+        .toggle {
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .toggle.on {
+            background: rgba(153, 102, 255, 0.5);
+        }
+        
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        
+        .toggle.on::after {
+            transform: translateX(20px);
+        }
+        
+        /* Canvas */
+        .canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #weatherCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Storm Info Overlay */
+        .storm-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-glow);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8em;
+        }
+        
+        .storm-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .storm-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .storm-label {
+            color: var(--text-dim);
+        }
+        
+        /* Compass */
+        .compass {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 80px;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 50%;
+            border: 2px solid var(--border-glow);
+        }
+        
+        .compass-arrow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 30px;
+            background: linear-gradient(to top, #ff4444, #ffaa00);
+            transform-origin: center bottom;
+            transform: translate(-50%, -100%);
+            border-radius: 2px;
+        }
+        
+        .compass-labels {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            font-size: 0.7em;
+            color: var(--text-dim);
+        }
+        
+        .compass-labels span {
+            position: absolute;
+        }
+        
+        .compass-n { top: 5px; left: 50%; transform: translateX(-50%); color: #ff4444; }
+        .compass-s { bottom: 5px; left: 50%; transform: translateX(-50%); }
+        .compass-e { right: 8px; top: 50%; transform: translateY(-50%); }
+        .compass-w { left: 8px; top: 50%; transform: translateY(-50%); }
+        
+        /* Lightning Flash */
+        .lightning-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.05s;
+        }
+        
+        .lightning-flash.active {
+            opacity: 1;
+        }
+        
+        /* Right Panel Stats */
+        .weather-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .weather-stat {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .weather-stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1em;
+            color: #9966ff;
+        }
+        
+        .weather-stat-label {
+            font-size: 0.65em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* DRO Display */
+        .dro-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .dro-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7em;
+            color: var(--accent-cyan);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .dro-meter {
+            height: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .dro-fill {
+            height: 100%;
+            transition: width 0.3s, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        
+        .dro-scale {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65em;
+            color: var(--text-dim);
+        }
+        
+        /* Forecast */
+        .forecast {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .forecast-item {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .forecast-time {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        
+        .forecast-icon {
+            font-size: 1.5em;
+            margin-bottom: 4px;
+        }
+        
+        .forecast-temp {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85em;
+        }
+        
+        /* Precipitation bar */
+        .precip-bar {
+            height: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .precip-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a90c2, #2266ff);
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="demo-badge">WLD-003</div>
+                <h1>WEATHER FRONT</h1>
+            </div>
+            <div class="header-right">
+                <div class="stat-group">
+                    <div class="stat-label">Active Base</div>
+                    <div class="stat-value base" id="activeBase">BASE-16</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Temperature</div>
+                    <div class="stat-value temp" id="tempValue">72°F</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Wind</div>
+                    <div class="stat-value wind" id="windValue">12 mph</div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Panel -->
+            <div class="panel">
+                <div class="panel-header">🌦️ WEATHER CONTROL</div>
+                <div class="panel-content">
+                    <!-- Weather Presets -->
+                    <div class="weather-grid">
+                        <div class="weather-btn" data-weather="clear" onclick="setWeather('clear')">
+                            <div class="weather-icon">☀️</div>
+                            <div class="weather-name">Clear</div>
+                            <div class="weather-desc">Sunny skies</div>
+                        </div>
+                        <div class="weather-btn" data-weather="cloudy" onclick="setWeather('cloudy')">
+                            <div class="weather-icon">⛅</div>
+                            <div class="weather-name">Cloudy</div>
+                            <div class="weather-desc">Overcast</div>
+                        </div>
+                        <div class="weather-btn" data-weather="rain" onclick="setWeather('rain')">
+                            <div class="weather-icon">🌧️</div>
+                            <div class="weather-name">Rain</div>
+                            <div class="weather-desc">Steady rain</div>
+                        </div>
+                        <div class="weather-btn active" data-weather="storm" onclick="setWeather('storm')">
+                            <div class="weather-icon">⛈️</div>
+                            <div class="weather-name">Storm</div>
+                            <div class="weather-desc">Thunder & lightning</div>
+                        </div>
+                        <div class="weather-btn" data-weather="snow" onclick="setWeather('snow')">
+                            <div class="weather-icon">🌨️</div>
+                            <div class="weather-name">Snow</div>
+                            <div class="weather-desc">Winter weather</div>
+                        </div>
+                        <div class="weather-btn" data-weather="fog" onclick="setWeather('fog')">
+                            <div class="weather-icon">🌫️</div>
+                            <div class="weather-name">Fog</div>
+                            <div class="weather-desc">Low visibility</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Storm Controls -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Storm System</div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Front Speed</span>
+                                <span class="slider-value" id="frontSpeedValue">50%</span>
+                            </div>
+                            <input type="range" id="frontSpeed" min="0" max="100" value="50" oninput="updateFrontSpeed()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Storm Intensity</span>
+                                <span class="slider-value" id="intensityValue">70%</span>
+                            </div>
+                            <input type="range" id="intensity" min="0" max="100" value="70" oninput="updateIntensity()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Wind Direction</span>
+                                <span class="slider-value" id="windDirValue">SW</span>
+                            </div>
+                            <input type="range" id="windDir" min="0" max="360" value="225" oninput="updateWindDir()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Precipitation</span>
+                                <span class="slider-value" id="precipValue">60%</span>
+                            </div>
+                            <input type="range" id="precip" min="0" max="100" value="60" oninput="updatePrecip()">
+                        </div>
+                    </div>
+                    
+                    <!-- Toggles -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Effects</div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Lightning</span>
+                            <div class="toggle on" id="lightningToggle" onclick="toggleLightning()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Thunder Sound</span>
+                            <div class="toggle" id="thunderToggle" onclick="toggleThunder()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Show Wind Field</span>
+                            <div class="toggle on" id="windFieldToggle" onclick="toggleWindField()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Show Terrain</span>
+                            <div class="toggle on" id="terrainToggle" onclick="toggleTerrain()"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center - Canvas -->
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="weatherCanvas"></canvas>
+                    <div class="lightning-flash" id="lightningFlash"></div>
+                    
+                    <div class="storm-info">
+                        <div class="storm-row">
+                            <span class="storm-label">Front Position:</span>
+                            <span id="frontPos" style="color: var(--accent-cyan);">45%</span>
+                        </div>
+                        <div class="storm-row">
+                            <span class="storm-label">Cloud Cover:</span>
+                            <span id="cloudCover" style="color: var(--accent-yellow);">75%</span>
+                        </div>
+                        <div class="storm-row">
+                            <span class="storm-label">Rain Drops:</span>
+                            <span id="rainCount" style="color: #7ab8e8;">0</span>
+                        </div>
+                        <div class="storm-row">
+                            <span class="storm-label">Weather Base:</span>
+                            <span id="weatherBase" style="color: var(--base-24);">B-16</span>
+                        </div>
+                    </div>
+                    
+                    <div class="compass">
+                        <div class="compass-arrow" id="compassArrow"></div>
+                        <div class="compass-labels">
+                            <span class="compass-n">N</span>
+                            <span class="compass-s">S</span>
+                            <span class="compass-e">E</span>
+                            <span class="compass-w">W</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel -->
+            <div class="panel">
+                <div class="panel-header">📊 ATMOSPHERIC DATA</div>
+                <div class="panel-content">
+                    <!-- DRO Display -->
+                    <div class="dro-display">
+                        <div class="dro-title">DYNAMIC RADIX OPTIMIZER</div>
+                        <div class="dro-meter">
+                            <div class="dro-fill" id="droFill" style="width: 35%; background: linear-gradient(90deg, var(--base-12), var(--base-16));">
+                                BASE-16
+                            </div>
+                        </div>
+                        <div class="dro-scale">
+                            <span>B-8</span>
+                            <span>B-12</span>
+                            <span>B-16</span>
+                            <span>B-24</span>
+                            <span>B-32</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Weather Stats -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Current Conditions</div>
+                        <div class="weather-stats">
+                            <div class="weather-stat">
+                                <div class="weather-stat-value" id="humidity">65%</div>
+                                <div class="weather-stat-label">Humidity</div>
+                            </div>
+                            <div class="weather-stat">
+                                <div class="weather-stat-value" id="pressure">29.8"</div>
+                                <div class="weather-stat-label">Pressure</div>
+                            </div>
+                            <div class="weather-stat">
+                                <div class="weather-stat-value" id="visibility">5 mi</div>
+                                <div class="weather-stat-label">Visibility</div>
+                            </div>
+                            <div class="weather-stat">
+                                <div class="weather-stat-value" id="dewPoint">58°F</div>
+                                <div class="weather-stat-label">Dew Point</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Precipitation -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Precipitation Rate</div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span style="font-size: 0.8em; color: var(--text-dim);">Light</span>
+                            <span style="font-size: 0.8em; color: var(--text-dim);">Heavy</span>
+                        </div>
+                        <div class="precip-bar">
+                            <div class="precip-fill" id="precipBar" style="width: 60%;"></div>
+                        </div>
+                        <div style="text-align: center; margin-top: 8px;">
+                            <span id="precipRate" style="font-family: 'Share Tech Mono', monospace; color: #7ab8e8;">0.25 in/hr</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 3-Hour Forecast -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">3-Hour Forecast</div>
+                        <div class="forecast">
+                            <div class="forecast-item">
+                                <div class="forecast-time">Now</div>
+                                <div class="forecast-icon" id="forecast0">⛈️</div>
+                                <div class="forecast-temp">68°</div>
+                            </div>
+                            <div class="forecast-item">
+                                <div class="forecast-time">+1h</div>
+                                <div class="forecast-icon" id="forecast1">🌧️</div>
+                                <div class="forecast-temp">65°</div>
+                            </div>
+                            <div class="forecast-item">
+                                <div class="forecast-time">+2h</div>
+                                <div class="forecast-icon" id="forecast2">⛅</div>
+                                <div class="forecast-temp">67°</div>
+                            </div>
+                            <div class="forecast-item">
+                                <div class="forecast-time">+3h</div>
+                                <div class="forecast-icon" id="forecast3">☀️</div>
+                                <div class="forecast-temp">70°</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Base Selection Info -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">LOD Philosophy</div>
+                        <div style="font-size: 0.75em; color: var(--text-dim); line-height: 1.6;">
+                            Weather uses <span style="color: #9966ff;">LOW precision</span> by design:
+                            <br>• Base-12 to Base-16 optimal
+                            <br>• Coarse grids (32×32) sufficient
+                            <br>• Players don't notice wind errors
+                            <br>• Saves compute for physics
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ===== BASE-X ENGINE: WEATHER FRONT =====
+        
+        const canvas = document.getElementById('weatherCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Weather state
+        let currentWeather = 'storm';
+        let frontPosition = 0.3; // 0-1, position of storm front
+        let frontSpeed = 0.5;
+        let intensity = 0.7;
+        let windDirection = 225; // degrees
+        let precipitation = 0.6;
+        
+        // Toggles
+        let showLightning = true;
+        let showThunder = false;
+        let showWindField = true;
+        let showTerrain = true;
+        
+        // Particles
+        let rainDrops = [];
+        let snowFlakes = [];
+        let clouds = [];
+        let windVectors = [];
+        
+        // Lightning
+        let lightningTimer = 0;
+        let nextLightning = 2000;
+        
+        // Terrain
+        let terrain = [];
+        const TERRAIN_POINTS = 100;
+        
+        // DRO
+        let dro = {
+            currentBase: 16,
+            weatherBase: 12,
+            particleBase: 8
+        };
+        
+        // Performance
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 60;
+        
+        // Weather definitions
+        const WEATHER_TYPES = {
+            clear: {
+                skyTop: '#4a90c2',
+                skyBottom: '#87ceeb',
+                cloudCover: 0.1,
+                rainChance: 0,
+                snowChance: 0,
+                windSpeed: 5,
+                temp: 75,
+                icon: '☀️'
+            },
+            cloudy: {
+                skyTop: '#6a8a9a',
+                skyBottom: '#9ab0c0',
+                cloudCover: 0.7,
+                rainChance: 0,
+                snowChance: 0,
+                windSpeed: 10,
+                temp: 68,
+                icon: '⛅'
+            },
+            rain: {
+                skyTop: '#4a5a6a',
+                skyBottom: '#6a7a8a',
+                cloudCover: 0.9,
+                rainChance: 0.8,
+                snowChance: 0,
+                windSpeed: 15,
+                temp: 62,
+                icon: '🌧️'
+            },
+            storm: {
+                skyTop: '#1a2a3a',
+                skyBottom: '#3a4a5a',
+                cloudCover: 1.0,
+                rainChance: 1.0,
+                snowChance: 0,
+                windSpeed: 35,
+                temp: 58,
+                icon: '⛈️'
+            },
+            snow: {
+                skyTop: '#8a9aaa',
+                skyBottom: '#c0d0e0',
+                cloudCover: 0.85,
+                rainChance: 0,
+                snowChance: 0.9,
+                windSpeed: 12,
+                temp: 28,
+                icon: '🌨️'
+            },
+            fog: {
+                skyTop: '#9aa0a5',
+                skyBottom: '#b0b5ba',
+                cloudCover: 0.3,
+                rainChance: 0.1,
+                snowChance: 0,
+                windSpeed: 3,
+                temp: 55,
+                icon: '🌫️'
+            }
+        };
+        
+        function init() {
+            resizeCanvas();
+            generateTerrain();
+            generateClouds();
+            generateWindField();
+            
+            window.addEventListener('resize', resizeCanvas);
+            
+            setWeather('storm');
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function resizeCanvas() {
+            const wrapper = canvas.parentElement;
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            generateTerrain();
+            generateWindField();
+        }
+        
+        function generateTerrain() {
+            terrain = [];
+            const baseHeight = canvas.height * 0.7;
+            
+            for (let i = 0; i <= TERRAIN_POINTS; i++) {
+                const x = (i / TERRAIN_POINTS) * canvas.width;
+                // Multiple sine waves for natural look
+                const h1 = Math.sin(i * 0.1) * 30;
+                const h2 = Math.sin(i * 0.05 + 1) * 50;
+                const h3 = Math.sin(i * 0.02 + 2) * 80;
+                const y = baseHeight + h1 + h2 + h3;
+                terrain.push({ x, y });
+            }
+        }
+        
+        function generateClouds() {
+            clouds = [];
+            for (let i = 0; i < 15; i++) {
+                clouds.push({
+                    x: Math.random() * canvas.width * 1.5 - canvas.width * 0.25,
+                    y: Math.random() * canvas.height * 0.4,
+                    width: 150 + Math.random() * 200,
+                    height: 60 + Math.random() * 80,
+                    speed: 0.2 + Math.random() * 0.5,
+                    darkness: Math.random()
+                });
+            }
+        }
+        
+        function generateWindField() {
+            windVectors = [];
+            const cols = 16;
+            const rows = 12;
+            const cellW = canvas.width / cols;
+            const cellH = canvas.height / rows;
+            
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    windVectors.push({
+                        x: x * cellW + cellW / 2,
+                        y: y * cellH + cellH / 2,
+                        angle: windDirection * Math.PI / 180,
+                        speed: 0.5 + Math.random() * 0.5
+                    });
+                }
+            }
+        }
+        
+        // ===== WEATHER CONTROL =====
+        
+        function setWeather(type) {
+            currentWeather = type;
+            document.querySelectorAll('.weather-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.weather === type);
+            });
+            
+            // Update forecast
+            updateForecast();
+        }
+        
+        function updateForecast() {
+            const icons = {
+                clear: '☀️', cloudy: '⛅', rain: '🌧️',
+                storm: '⛈️', snow: '🌨️', fog: '🌫️'
+            };
+            
+            // Simple forecast progression
+            const progression = {
+                storm: ['⛈️', '🌧️', '⛅', '☀️'],
+                rain: ['🌧️', '🌧️', '⛅', '☀️'],
+                cloudy: ['⛅', '⛅', '☀️', '☀️'],
+                clear: ['☀️', '☀️', '⛅', '⛅'],
+                snow: ['🌨️', '🌨️', '⛅', '☀️'],
+                fog: ['🌫️', '⛅', '☀️', '☀️']
+            };
+            
+            const forecast = progression[currentWeather] || ['☀️', '☀️', '☀️', '☀️'];
+            for (let i = 0; i < 4; i++) {
+                document.getElementById(`forecast${i}`).textContent = forecast[i];
+            }
+        }
+        
+        function updateFrontSpeed() {
+            frontSpeed = parseInt(document.getElementById('frontSpeed').value) / 100;
+            document.getElementById('frontSpeedValue').textContent = Math.round(frontSpeed * 100) + '%';
+        }
+        
+        function updateIntensity() {
+            intensity = parseInt(document.getElementById('intensity').value) / 100;
+            document.getElementById('intensityValue').textContent = Math.round(intensity * 100) + '%';
+        }
+        
+        function updateWindDir() {
+            windDirection = parseInt(document.getElementById('windDir').value);
+            const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const idx = Math.round(windDirection / 45) % 8;
+            document.getElementById('windDirValue').textContent = dirs[idx];
+            
+            // Update wind vectors
+            windVectors.forEach(v => {
+                v.angle = windDirection * Math.PI / 180 + (Math.random() - 0.5) * 0.3;
+            });
+            
+            // Update compass
+            document.getElementById('compassArrow').style.transform = 
+                `translate(-50%, -100%) rotate(${windDirection}deg)`;
+        }
+        
+        function updatePrecip() {
+            precipitation = parseInt(document.getElementById('precip').value) / 100;
+            document.getElementById('precipValue').textContent = Math.round(precipitation * 100) + '%';
+        }
+        
+        function toggleLightning() {
+            showLightning = !showLightning;
+            document.getElementById('lightningToggle').classList.toggle('on', showLightning);
+        }
+        
+        function toggleThunder() {
+            showThunder = !showThunder;
+            document.getElementById('thunderToggle').classList.toggle('on', showThunder);
+        }
+        
+        function toggleWindField() {
+            showWindField = !showWindField;
+            document.getElementById('windFieldToggle').classList.toggle('on', showWindField);
+        }
+        
+        function toggleTerrain() {
+            showTerrain = !showTerrain;
+            document.getElementById('terrainToggle').classList.toggle('on', showTerrain);
+        }
+        
+        // ===== DRO =====
+        
+        function calculateDRO() {
+            // Weather is intentionally low precision
+            const totalParticles = rainDrops.length + snowFlakes.length;
+            
+            if (totalParticles > 1000) {
+                dro.particleBase = 8;
+                dro.weatherBase = 12;
+            } else if (totalParticles > 500) {
+                dro.particleBase = 12;
+                dro.weatherBase = 16;
+            } else {
+                dro.particleBase = 16;
+                dro.weatherBase = 16;
+            }
+            
+            // Storm increases weather base slightly
+            if (currentWeather === 'storm' && showLightning) {
+                dro.weatherBase = Math.min(24, dro.weatherBase + 8);
+            }
+            
+            dro.currentBase = Math.max(dro.particleBase, dro.weatherBase);
+        }
+        
+        function getBaseColor(base) {
+            if (base >= 24) return 'var(--base-24)';
+            if (base >= 16) return 'var(--base-16)';
+            if (base >= 12) return 'var(--base-12)';
+            return 'var(--base-12)';
+        }
+        
+        // ===== PARTICLE SYSTEMS =====
+        
+        function spawnRain() {
+            const weather = WEATHER_TYPES[currentWeather];
+            const spawnRate = precipitation * intensity * weather.rainChance * 10;
+            
+            for (let i = 0; i < spawnRate; i++) {
+                if (rainDrops.length < 2000) {
+                    const windRad = windDirection * Math.PI / 180;
+                    rainDrops.push({
+                        x: Math.random() * canvas.width * 1.2 - canvas.width * 0.1,
+                        y: -10 - Math.random() * 50,
+                        vx: Math.cos(windRad) * weather.windSpeed * 0.3,
+                        vy: 8 + Math.random() * 4,
+                        length: 10 + Math.random() * 15
+                    });
+                }
+            }
+        }
+        
+        function spawnSnow() {
+            const weather = WEATHER_TYPES[currentWeather];
+            const spawnRate = precipitation * intensity * weather.snowChance * 5;
+            
+            for (let i = 0; i < spawnRate; i++) {
+                if (snowFlakes.length < 1000) {
+                    snowFlakes.push({
+                        x: Math.random() * canvas.width * 1.2 - canvas.width * 0.1,
+                        y: -10,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: 1 + Math.random() * 2,
+                        size: 2 + Math.random() * 4,
+                        wobble: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+        }
+        
+        function updateParticles(dt) {
+            // Rain
+            for (let i = rainDrops.length - 1; i >= 0; i--) {
+                const drop = rainDrops[i];
+                drop.x += drop.vx * dt;
+                drop.y += drop.vy * dt;
+                
+                // Check terrain collision
+                const terrainY = getTerrainHeight(drop.x);
+                if (drop.y > terrainY || drop.x < -50 || drop.x > canvas.width + 50) {
+                    rainDrops.splice(i, 1);
+                }
+            }
+            
+            // Snow
+            for (let i = snowFlakes.length - 1; i >= 0; i--) {
+                const flake = snowFlakes[i];
+                flake.wobble += 0.05;
+                flake.x += flake.vx + Math.sin(flake.wobble) * 0.5;
+                flake.y += flake.vy * dt;
+                
+                const terrainY = getTerrainHeight(flake.x);
+                if (flake.y > terrainY || flake.x < -50 || flake.x > canvas.width + 50) {
+                    snowFlakes.splice(i, 1);
+                }
+            }
+        }
+        
+        function getTerrainHeight(x) {
+            if (!showTerrain) return canvas.height;
+            
+            const idx = (x / canvas.width) * TERRAIN_POINTS;
+            const i = Math.floor(idx);
+            const t = idx - i;
+            
+            if (i < 0) return terrain[0]?.y || canvas.height;
+            if (i >= terrain.length - 1) return terrain[terrain.length - 1]?.y || canvas.height;
+            
+            return terrain[i].y * (1 - t) + terrain[i + 1].y * t;
+        }
+        
+        // ===== LIGHTNING =====
+        
+        function updateLightning(dt) {
+            if (!showLightning || currentWeather !== 'storm') return;
+            
+            lightningTimer += dt * 1000;
+            
+            if (lightningTimer >= nextLightning) {
+                triggerLightning();
+                lightningTimer = 0;
+                nextLightning = 1000 + Math.random() * 4000 / intensity;
+            }
+        }
+        
+        function triggerLightning() {
+            const flash = document.getElementById('lightningFlash');
+            flash.classList.add('active');
+            
+            setTimeout(() => {
+                flash.classList.remove('active');
+            }, 50);
+            
+            setTimeout(() => {
+                flash.classList.add('active');
+                setTimeout(() => flash.classList.remove('active'), 30);
+            }, 100);
+        }
+        
+        // ===== RENDERING =====
+        
+        function render() {
+            const weather = WEATHER_TYPES[currentWeather];
+            
+            // Sky gradient based on front position
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.7);
+            
+            // Blend between clear and storm based on front position
+            const clearTop = hexToRgb('#4a90c2');
+            const stormTop = hexToRgb(weather.skyTop);
+            const clearBot = hexToRgb('#87ceeb');
+            const stormBot = hexToRgb(weather.skyBottom);
+            
+            const blendFactor = Math.min(1, frontPosition * 2);
+            
+            const topColor = blendColors(clearTop, stormTop, blendFactor);
+            const botColor = blendColors(clearBot, stormBot, blendFactor);
+            
+            gradient.addColorStop(0, `rgb(${topColor.r}, ${topColor.g}, ${topColor.b})`);
+            gradient.addColorStop(1, `rgb(${botColor.r}, ${botColor.g}, ${botColor.b})`);
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Clouds
+            renderClouds();
+            
+            // Wind field
+            if (showWindField) {
+                renderWindField();
+            }
+            
+            // Rain
+            renderRain();
+            
+            // Snow
+            renderSnow();
+            
+            // Fog
+            if (currentWeather === 'fog') {
+                renderFog();
+            }
+            
+            // Terrain
+            if (showTerrain) {
+                renderTerrain();
+            }
+            
+            // Storm front line
+            renderFrontLine();
+        }
+        
+        function renderClouds() {
+            const weather = WEATHER_TYPES[currentWeather];
+            
+            clouds.forEach(cloud => {
+                // Only show clouds in storm area
+                const cloudFrontPos = cloud.x / canvas.width;
+                const inStorm = cloudFrontPos < frontPosition + 0.3;
+                
+                if (!inStorm && weather.cloudCover < 0.5) return;
+                
+                const darkness = inStorm ? 0.3 + cloud.darkness * 0.4 : 0.1;
+                const alpha = weather.cloudCover * (inStorm ? 1 : 0.5);
+                
+                ctx.fillStyle = `rgba(${50 + darkness * 100}, ${60 + darkness * 100}, ${70 + darkness * 100}, ${alpha})`;
+                
+                // Draw cloud as overlapping ellipses
+                ctx.beginPath();
+                ctx.ellipse(cloud.x, cloud.y, cloud.width * 0.5, cloud.height * 0.4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.ellipse(cloud.x - cloud.width * 0.25, cloud.y + 10, cloud.width * 0.35, cloud.height * 0.35, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.ellipse(cloud.x + cloud.width * 0.25, cloud.y + 5, cloud.width * 0.4, cloud.height * 0.35, 0, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        function renderWindField() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 1;
+            
+            windVectors.forEach(v => {
+                const len = 15 * v.speed;
+                const endX = v.x + Math.cos(v.angle) * len;
+                const endY = v.y + Math.sin(v.angle) * len;
+                
+                ctx.beginPath();
+                ctx.moveTo(v.x, v.y);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+                
+                // Arrow head
+                const headLen = 5;
+                const headAngle = 0.5;
+                ctx.beginPath();
+                ctx.moveTo(endX, endY);
+                ctx.lineTo(
+                    endX - Math.cos(v.angle - headAngle) * headLen,
+                    endY - Math.sin(v.angle - headAngle) * headLen
+                );
+                ctx.moveTo(endX, endY);
+                ctx.lineTo(
+                    endX - Math.cos(v.angle + headAngle) * headLen,
+                    endY - Math.sin(v.angle + headAngle) * headLen
+                );
+                ctx.stroke();
+            });
+        }
+        
+        function renderRain() {
+            ctx.strokeStyle = 'rgba(122, 184, 232, 0.6)';
+            ctx.lineWidth = 1;
+            
+            rainDrops.forEach(drop => {
+                ctx.beginPath();
+                ctx.moveTo(drop.x, drop.y);
+                ctx.lineTo(drop.x - drop.vx * 0.5, drop.y - drop.length);
+                ctx.stroke();
+            });
+        }
+        
+        function renderSnow() {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            
+            snowFlakes.forEach(flake => {
+                ctx.beginPath();
+                ctx.arc(flake.x, flake.y, flake.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        function renderFog() {
+            const fogGradient = ctx.createLinearGradient(0, canvas.height * 0.4, 0, canvas.height);
+            fogGradient.addColorStop(0, 'rgba(180, 185, 190, 0)');
+            fogGradient.addColorStop(0.5, 'rgba(180, 185, 190, 0.5)');
+            fogGradient.addColorStop(1, 'rgba(180, 185, 190, 0.8)');
+            
+            ctx.fillStyle = fogGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        function renderTerrain() {
+            // Draw terrain
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            
+            terrain.forEach(point => {
+                ctx.lineTo(point.x, point.y);
+            });
+            
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.closePath();
+            
+            // Gradient for terrain
+            const terrainGradient = ctx.createLinearGradient(0, canvas.height * 0.5, 0, canvas.height);
+            terrainGradient.addColorStop(0, '#2d5a3d');
+            terrainGradient.addColorStop(0.3, '#1a4d2e');
+            terrainGradient.addColorStop(1, '#0a2a1a');
+            
+            ctx.fillStyle = terrainGradient;
+            ctx.fill();
+            
+            // Terrain outline
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        
+        function renderFrontLine() {
+            const frontX = frontPosition * canvas.width;
+            
+            // Front line indicator
+            ctx.strokeStyle = 'rgba(255, 100, 100, 0.5)';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(frontX, 0);
+            ctx.lineTo(frontX, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Front label
+            ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
+            ctx.font = '12px Orbitron';
+            ctx.fillText('FRONT', frontX + 5, 20);
+        }
+        
+        // ===== UPDATE =====
+        
+        function update(dt) {
+            // Move front
+            frontPosition += frontSpeed * 0.001 * dt;
+            if (frontPosition > 1.5) frontPosition = -0.2;
+            
+            // Move clouds
+            clouds.forEach(cloud => {
+                cloud.x += cloud.speed * dt * (frontSpeed + 0.2);
+                if (cloud.x > canvas.width + cloud.width) {
+                    cloud.x = -cloud.width;
+                }
+            });
+            
+            // Spawn and update particles
+            if (WEATHER_TYPES[currentWeather].rainChance > 0) {
+                spawnRain();
+            }
+            if (WEATHER_TYPES[currentWeather].snowChance > 0) {
+                spawnSnow();
+            }
+            updateParticles(dt);
+            
+            // Lightning
+            updateLightning(dt);
+            
+            // Update DRO
+            calculateDRO();
+            
+            // Update UI
+            updateUI();
+        }
+        
+        function updateUI() {
+            const weather = WEATHER_TYPES[currentWeather];
+            
+            // Header stats
+            document.getElementById('activeBase').textContent = `BASE-${dro.currentBase}`;
+            document.getElementById('activeBase').style.color = getBaseColor(dro.currentBase);
+            document.getElementById('tempValue').textContent = weather.temp + '°F';
+            document.getElementById('windValue').textContent = Math.round(weather.windSpeed * intensity) + ' mph';
+            
+            // Storm info
+            document.getElementById('frontPos').textContent = Math.round(frontPosition * 100) + '%';
+            document.getElementById('cloudCover').textContent = Math.round(WEATHER_TYPES[currentWeather].cloudCover * 100) + '%';
+            document.getElementById('rainCount').textContent = rainDrops.length + snowFlakes.length;
+            document.getElementById('weatherBase').textContent = `B-${dro.weatherBase}`;
+            
+            // Weather stats
+            document.getElementById('humidity').textContent = Math.round(50 + precipitation * 40) + '%';
+            document.getElementById('visibility').textContent = currentWeather === 'fog' ? '0.5 mi' : 
+                currentWeather === 'storm' ? '2 mi' : '10 mi';
+            document.getElementById('precipBar').style.width = (precipitation * 100) + '%';
+            document.getElementById('precipRate').textContent = (precipitation * 0.5).toFixed(2) + ' in/hr';
+            
+            // DRO meter
+            const droFill = document.getElementById('droFill');
+            const fillPercent = ((dro.currentBase - 8) / 24) * 100;
+            droFill.style.width = Math.min(100, fillPercent) + '%';
+            droFill.style.background = `linear-gradient(90deg, var(--base-12), ${getBaseColor(dro.currentBase)})`;
+            droFill.textContent = `BASE-${dro.currentBase}`;
+        }
+        
+        // ===== HELPERS =====
+        
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+        
+        function blendColors(c1, c2, t) {
+            return {
+                r: Math.round(c1.r * (1 - t) + c2.r * t),
+                g: Math.round(c1.g * (1 - t) + c2.g * t),
+                b: Math.round(c1.b * (1 - t) + c2.b * t)
+            };
+        }
+        
+        // ===== GAME LOOP =====
+        
+        function gameLoop(timestamp) {
+            const dt = Math.min(32, timestamp - lastTime) / 16.67;
+            lastTime = timestamp;
+            
+            frameCount++;
+            if (frameCount % 60 === 0) {
+                fps = Math.round(1000 / (timestamp - lastTime + 0.001));
+            }
+            
+            update(dt);
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

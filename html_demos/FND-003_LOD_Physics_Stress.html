@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASE-X ENGINE | FND-003: LOD Physics Stress Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #080810;
+            --bg-panel: rgba(12, 15, 25, 0.95);
+            --accent-green: #00ff88;
+            --accent-cyan: #00ffcc;
+            --accent-yellow: #ffcc00;
+            --accent-orange: #ff8844;
+            --accent-red: #ff4466;
+            --accent-purple: #aa44ff;
+            --text-primary: #e0e0e0;
+            --text-dim: #606878;
+            
+            /* Smoother LOD color gradient - all in green/cyan family */
+            --lod0: #00ffa0;
+            --lod1: #00e890;
+            --lod2: #00d080;
+            --lod3: #00b870;
+            --lod4: #00a060;
+            --lod5: #008850;
+            --lod-skip: #006840;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* HEADER */
+        .header {
+            height: 60px;
+            background: linear-gradient(180deg, rgba(0, 255, 136, 0.1), transparent);
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 25px;
+            flex-shrink: 0;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-badge {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            color: #000;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 12px;
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        
+        .logo-sub {
+            font-size: 10px;
+            color: var(--text-dim);
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        /* MAIN STATS */
+        .main-stats {
+            display: flex;
+            gap: 40px;
+        }
+        
+        .stat-box {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 900;
+        }
+        
+        .stat-value.good { color: var(--accent-green); }
+        .stat-value.warning { color: var(--accent-yellow); }
+        .stat-value.critical { color: var(--accent-red); }
+        
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        /* CONTROL PANEL */
+        .control-panel {
+            width: 300px;
+            background: var(--bg-panel);
+            border-right: 1px solid rgba(0, 255, 136, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .panel-section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-green);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        
+        /* MODE BUTTONS */
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .mode-btn {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: var(--text-primary);
+            padding: 12px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .mode-btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: var(--accent-green);
+        }
+        
+        .mode-btn.active {
+            background: var(--accent-green);
+            color: #000;
+            font-weight: 600;
+        }
+        
+        .mode-btn.full-width {
+            grid-column: span 2;
+        }
+        
+        /* SLIDERS */
+        .slider-group {
+            margin-bottom: 18px;
+        }
+        
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 11px;
+        }
+        
+        .slider-label {
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .slider-value {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--accent-cyan);
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent-green);
+        }
+        
+        /* LOD DISTRIBUTION */
+        .lod-distribution {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .lod-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .lod-label {
+            width: 55px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .lod-bar-bg {
+            flex: 1;
+            height: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .lod-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+        
+        .lod-count {
+            width: 45px;
+            text-align: right;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+        
+        .lod-0 .lod-label { color: var(--lod0); }
+        .lod-0 .lod-bar { background: var(--lod0); }
+        .lod-1 .lod-label { color: var(--lod1); }
+        .lod-1 .lod-bar { background: var(--lod1); }
+        .lod-2 .lod-label { color: var(--lod2); }
+        .lod-2 .lod-bar { background: var(--lod2); }
+        .lod-3 .lod-label { color: var(--lod3); }
+        .lod-3 .lod-bar { background: var(--lod3); }
+        .lod-4 .lod-label { color: var(--lod4); }
+        .lod-4 .lod-bar { background: var(--lod4); }
+        .lod-5 .lod-label { color: var(--lod5); }
+        .lod-5 .lod-bar { background: var(--lod5); }
+        .lod-skip .lod-label { color: var(--lod-skip); }
+        .lod-skip .lod-bar { background: var(--lod-skip); }
+        
+        /* CANVAS AREA */
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            position: relative;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .canvas-wrapper canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .canvas-label {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 6px 15px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            letter-spacing: 2px;
+            z-index: 10;
+        }
+        
+        .canvas-label.lod-on { color: var(--accent-green); border: 1px solid var(--accent-green); }
+        .canvas-label.lod-off { color: var(--accent-red); border: 1px solid var(--accent-red); }
+        
+        .canvas-stats {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            z-index: 10;
+        }
+        
+        .canvas-stats-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 2px 0;
+        }
+        
+        .canvas-stats-key { color: var(--text-dim); }
+        .canvas-stats-val { color: var(--accent-cyan); }
+        
+        .divider {
+            width: 3px;
+            background: linear-gradient(180deg, var(--accent-green), var(--accent-red));
+            flex-shrink: 0;
+        }
+        
+        /* BOTTOM PANEL - GRAPHS */
+        .bottom-panel {
+            height: 180px;
+            background: var(--bg-panel);
+            border-top: 1px solid rgba(0, 255, 136, 0.1);
+            display: flex;
+            flex-shrink: 0;
+        }
+        
+        .graph-section {
+            flex: 1;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .graph-section:not(:last-child) {
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .graph-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-green);
+            margin-bottom: 10px;
+        }
+        
+        .graph-canvas {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+        
+        /* SAVINGS DISPLAY */
+        .savings-panel {
+            width: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            background: rgba(0, 255, 136, 0.05);
+        }
+        
+        .savings-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--accent-green);
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+            line-height: 1;
+        }
+        
+        .savings-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            margin-top: 5px;
+        }
+        
+        .savings-detail {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            color: var(--accent-cyan);
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        /* LEGEND */
+        .legend {
+            display: flex;
+            gap: 15px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        
+        /* FOCUS POINT */
+        .focus-indicator {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 100;
+            transform: translate(-50%, -50%);
+        }
+        
+        .focus-crosshair {
+            position: absolute;
+            pointer-events: none;
+            z-index: 99;
+        }
+        
+        .focus-crosshair::before,
+        .focus-crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(0, 255, 204, 0.3);
+        }
+        
+        .focus-crosshair::before {
+            width: 1px;
+            height: 100%;
+            left: 50%;
+            top: 0;
+        }
+        
+        .focus-crosshair::after {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-badge">FND-003</div>
+            <div>
+                <div class="logo-text">LOD PHYSICS STRESS TEST</div>
+                <div class="logo-sub">Level of Detail Performance Analysis</div>
+            </div>
+        </div>
+        <div class="main-stats">
+            <div class="stat-box">
+                <div class="stat-value good" id="totalObjects">0</div>
+                <div class="stat-label">Total Objects</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value good" id="fpsLod">60</div>
+                <div class="stat-label">FPS (LOD)</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value warning" id="fpsNoLod">60</div>
+                <div class="stat-label">FPS (No LOD)</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value good" id="speedup">1.0x</div>
+                <div class="stat-label">Speedup</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="control-panel">
+            <div class="panel-section">
+                <div class="section-title">Test Mode</div>
+                <div class="mode-grid">
+                    <button class="mode-btn active" data-mode="comparison">Side by Side</button>
+                    <button class="mode-btn" data-mode="lod-only">LOD Only</button>
+                    <button class="mode-btn" data-mode="stress">Stress Test</button>
+                    <button class="mode-btn" data-mode="quality">Quality Test</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Simulation</div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Object Count</span>
+                        <span class="slider-value" id="objectCountVal">1000</span>
+                    </div>
+                    <input type="range" id="objectCount" min="100" max="10000" value="1000" step="100">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Physics Complexity</span>
+                        <span class="slider-value" id="complexityVal">Medium</span>
+                    </div>
+                    <input type="range" id="complexity" min="1" max="5" value="3">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">LOD Aggressiveness</span>
+                        <span class="slider-value" id="aggressivenessVal">50%</span>
+                    </div>
+                    <input type="range" id="aggressiveness" min="0" max="100" value="50">
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">LOD Distribution</div>
+                <div class="lod-distribution">
+                    <div class="lod-row lod-0">
+                        <span class="lod-label">LOD 0</span>
+                        <div class="lod-bar-bg"><div class="lod-bar" id="lodBar0"></div></div>
+                        <span class="lod-count" id="lodCount0">0</span>
+                    </div>
+                    <div class="lod-row lod-1">
+                        <span class="lod-label">LOD 1</span>
+                        <div class="lod-bar-bg"><div class="lod-bar" id="lodBar1"></div></div>
+                        <span class="lod-count" id="lodCount1">0</span>
+                    </div>
+                    <div class="lod-row lod-2">
+                        <span class="lod-label">LOD 2</span>
+                        <div class="lod-bar-bg"><div class="lod-bar" id="lodBar2"></div></div>
+                        <span class="lod-count" id="lodCount2">0</span>
+                    </div>
+                    <div class="lod-row lod-3">
+                        <span class="lod-label">LOD 3</span>
+                        <div class="lod-bar-bg"><div class="lod-bar" id="lodBar3"></div></div>
+                        <span class="lod-count" id="lodCount3">0</span>
+                    </div>
+                    <div class="lod-row lod-4">
+                        <span class="lod-label">LOD 4</span>
+                        <div class="lod-bar-bg"><div class="lod-bar" id="lodBar4"></div></div>
+                        <span class="lod-count" id="lodCount4">0</span>
+                    </div>
+                    <div class="lod-row lod-5">
+                        <span class="lod-label">LOD 5</span>
+                        <div class="lod-bar-bg"><div class="lod-bar" id="lodBar5"></div></div>
+                        <span class="lod-count" id="lodCount5">0</span>
+                    </div>
+                    <div class="lod-row lod-skip">
+                        <span class="lod-label">SKIP</span>
+                        <div class="lod-bar-bg"><div class="lod-bar" id="lodBarSkip"></div></div>
+                        <span class="lod-count" id="lodCountSkip">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Controls</div>
+                <div class="mode-grid">
+                    <button class="mode-btn" id="btnPause">⏸ Pause</button>
+                    <button class="mode-btn" id="btnReset">↺ Reset</button>
+                    <button class="mode-btn full-width" id="btnExplode">💥 Explode Objects</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-area">
+            <div class="legend">
+                <div class="legend-item"><div class="legend-color" style="background: var(--lod0)"></div>Nearest</div>
+                <div class="legend-item"><div class="legend-color" style="background: var(--lod2)"></div>Near</div>
+                <div class="legend-item"><div class="legend-color" style="background: var(--lod4)"></div>Mid</div>
+                <div class="legend-item"><div class="legend-color" style="background: var(--lod5)"></div>Far</div>
+            </div>
+            
+            <div class="canvas-container">
+                <div class="canvas-wrapper" id="lodWrapper">
+                    <canvas id="canvasLod"></canvas>
+                    <div class="canvas-label lod-on">LOD ENABLED</div>
+                    <div class="canvas-stats" id="statsLod">
+                        <div class="canvas-stats-row">
+                            <span class="canvas-stats-key">Physics Time</span>
+                            <span class="canvas-stats-val" id="physTimeLod">0.0 ms</span>
+                        </div>
+                        <div class="canvas-stats-row">
+                            <span class="canvas-stats-key">Updates/Frame</span>
+                            <span class="canvas-stats-val" id="updatesLod">0</span>
+                        </div>
+                        <div class="canvas-stats-row">
+                            <span class="canvas-stats-key">Ops/Frame</span>
+                            <span class="canvas-stats-val" id="opsLod">0</span>
+                        </div>
+                    </div>
+                    <div class="focus-indicator" id="focusLod"></div>
+                </div>
+                
+                <div class="divider" id="divider"></div>
+                
+                <div class="canvas-wrapper" id="noLodWrapper">
+                    <canvas id="canvasNoLod"></canvas>
+                    <div class="canvas-label lod-off">LOD DISABLED</div>
+                    <div class="canvas-stats" id="statsNoLod">
+                        <div class="canvas-stats-row">
+                            <span class="canvas-stats-key">Physics Time</span>
+                            <span class="canvas-stats-val" id="physTimeNoLod">0.0 ms</span>
+                        </div>
+                        <div class="canvas-stats-row">
+                            <span class="canvas-stats-key">Updates/Frame</span>
+                            <span class="canvas-stats-val" id="updatesNoLod">0</span>
+                        </div>
+                        <div class="canvas-stats-row">
+                            <span class="canvas-stats-key">Ops/Frame</span>
+                            <span class="canvas-stats-val" id="opsNoLod">0</span>
+                        </div>
+                    </div>
+                    <div class="focus-indicator" id="focusNoLod"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bottom-panel">
+        <div class="graph-section">
+            <div class="graph-title">Frame Time History</div>
+            <canvas class="graph-canvas" id="frameTimeGraph"></canvas>
+        </div>
+        <div class="graph-section">
+            <div class="graph-title">Physics Operations</div>
+            <canvas class="graph-canvas" id="opsGraph"></canvas>
+        </div>
+        <div class="graph-section">
+            <div class="graph-title">LOD Level Over Time</div>
+            <canvas class="graph-canvas" id="lodGraph"></canvas>
+        </div>
+        <div class="savings-panel">
+            <div class="savings-value" id="savingsPercent">0%</div>
+            <div class="savings-label">Compute Saved</div>
+            <div class="savings-detail" id="savingsDetail">0 / 0 ops skipped</div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // LOD PHYSICS STRESS TEST
+        // ============================================================
+        
+        const canvasLod = document.getElementById('canvasLod');
+        const ctxLod = canvasLod.getContext('2d');
+        const canvasNoLod = document.getElementById('canvasNoLod');
+        const ctxNoLod = canvasNoLod.getContext('2d');
+        
+        const frameTimeGraph = document.getElementById('frameTimeGraph');
+        const frameTimeCtx = frameTimeGraph.getContext('2d');
+        const opsGraph = document.getElementById('opsGraph');
+        const opsCtx = opsGraph.getContext('2d');
+        const lodGraph = document.getElementById('lodGraph');
+        const lodCtx = lodGraph.getContext('2d');
+        
+        // LOD Colors - smooth gradient from bright to dim green
+        const LOD_COLORS = {
+            0: '#00ffa0',
+            1: '#00e890',
+            2: '#00d080',
+            3: '#00b870',
+            4: '#00a060',
+            5: '#008850',
+            skip: '#006840'
+        };
+        
+        // LOD Configuration
+        const LOD_CONFIG = {
+            0: { updateFreq: 1, complexity: 1.0, distanceMax: 80 },
+            1: { updateFreq: 1, complexity: 0.8, distanceMax: 150 },
+            2: { updateFreq: 2, complexity: 0.6, distanceMax: 250 },
+            3: { updateFreq: 4, complexity: 0.4, distanceMax: 400 },
+            4: { updateFreq: 8, complexity: 0.2, distanceMax: 600 },
+            5: { updateFreq: 16, complexity: 0.1, distanceMax: Infinity }
+        };
+        
+        // State
+        let settings = {
+            objectCount: 1000,
+            complexity: 3,
+            aggressiveness: 0.5,
+            mode: 'comparison'
+        };
+        
+        let objectsLod = [];
+        let objectsNoLod = [];
+        let focusPoint = { x: 0, y: 0 };
+        let paused = false;
+        let frameCount = 0;
+        
+        // Metrics
+        let metrics = {
+            fpsLod: 60,
+            fpsNoLod: 60,
+            frameTimeLod: [],
+            frameTimeNoLod: [],
+            opsLod: 0,
+            opsNoLod: 0,
+            opsHistory: [],
+            lodDistribution: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, skip: 0 },
+            lodHistory: [],
+            lastFrameTime: performance.now(),
+            fpsCounterLod: 0,
+            fpsCounterNoLod: 0,
+            lastFpsUpdate: performance.now()
+        };
+        
+        // ============================================================
+        // PHYSICS OBJECT
+        // ============================================================
+        
+        class PhysicsObject {
+            constructor(x, y, canvas) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 3;
+                this.vy = (Math.random() - 0.5) * 3;
+                this.radius = 3 + Math.random() * 8;
+                this.mass = this.radius * 0.5;
+                this.canvas = canvas;
+                
+                // LOD state
+                this.lod = 0;
+                this.framesSinceUpdate = 0;
+                this.lastX = x;
+                this.lastY = y;
+                this.interpX = x;
+                this.interpY = y;
+                this.skipped = false;
+            }
+            
+            calculateLOD(focusX, focusY, aggressiveness) {
+                const dx = this.x - focusX;
+                const dy = this.y - focusY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Apply aggressiveness (shifts thresholds)
+                const aggFactor = 1 - aggressiveness * 0.7;
+                
+                for (let lod = 0; lod <= 5; lod++) {
+                    if (distance < LOD_CONFIG[lod].distanceMax * aggFactor) {
+                        return lod;
+                    }
+                }
+                return 5;
+            }
+            
+            shouldUpdate(frameCount, useLod) {
+                if (!useLod) return true;
+                
+                const freq = LOD_CONFIG[this.lod].updateFreq;
+                return frameCount % freq === 0;
+            }
+            
+            update(complexity, useLod, frameCount) {
+                this.skipped = false;
+                
+                if (!this.shouldUpdate(frameCount, useLod)) {
+                    // Interpolate position
+                    const freq = LOD_CONFIG[this.lod].updateFreq;
+                    const t = (frameCount % freq) / freq;
+                    this.interpX = this.lastX + (this.x - this.lastX) * (1 + t);
+                    this.interpY = this.lastY + (this.y - this.lastY) * (1 + t);
+                    this.skipped = true;
+                    return 0;  // No ops performed
+                }
+                
+                // Store for interpolation
+                this.lastX = this.x;
+                this.lastY = this.y;
+                
+                // Complexity factor from LOD
+                const lodComplexity = useLod ? LOD_CONFIG[this.lod].complexity : 1.0;
+                const totalComplexity = complexity * lodComplexity;
+                
+                // Simulated physics operations
+                let ops = 0;
+                
+                // Basic velocity integration
+                this.x += this.vx;
+                this.y += this.vy;
+                ops += 4;
+                
+                // Additional complexity based on settings
+                for (let i = 0; i < Math.floor(totalComplexity * 5); i++) {
+                    // Simulate complex calculations
+                    const noise = Math.sin(this.x * 0.1) * Math.cos(this.y * 0.1) * 0.1;
+                    this.vx += noise * (Math.random() - 0.5);
+                    this.vy += noise * (Math.random() - 0.5);
+                    ops += 8;
+                }
+                
+                // Boundary collision
+                if (this.x < this.radius) { this.x = this.radius; this.vx *= -0.8; ops += 4; }
+                if (this.x > this.canvas.width - this.radius) { this.x = this.canvas.width - this.radius; this.vx *= -0.8; ops += 4; }
+                if (this.y < this.radius) { this.y = this.radius; this.vy *= -0.8; ops += 4; }
+                if (this.y > this.canvas.height - this.radius) { this.y = this.canvas.height - this.radius; this.vy *= -0.8; ops += 4; }
+                
+                // Damping
+                this.vx *= 0.998;
+                this.vy *= 0.998;
+                ops += 2;
+                
+                // Update interpolation target
+                this.interpX = this.x;
+                this.interpY = this.y;
+                
+                return ops;
+            }
+            
+            draw(ctx, showLod) {
+                const drawX = this.interpX;
+                const drawY = this.interpY;
+                
+                // Color based ONLY on LOD level (distance), never on skip state
+                const color = showLod ? LOD_COLORS[this.lod] : '#4488ff';
+                
+                // Subtle glow
+                const gradient = ctx.createRadialGradient(drawX, drawY, 0, drawX, drawY, this.radius * 1.5);
+                gradient.addColorStop(0, color + '30');
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(drawX, drawY, this.radius * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Object - solid, no state-based changes
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(drawX, drawY, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        
+        function resizeCanvases() {
+            const lodWrapper = document.getElementById('lodWrapper');
+            const noLodWrapper = document.getElementById('noLodWrapper');
+            
+            canvasLod.width = lodWrapper.clientWidth;
+            canvasLod.height = lodWrapper.clientHeight;
+            canvasNoLod.width = noLodWrapper.clientWidth;
+            canvasNoLod.height = noLodWrapper.clientHeight;
+            
+            frameTimeGraph.width = frameTimeGraph.parentElement.clientWidth - 30;
+            frameTimeGraph.height = frameTimeGraph.parentElement.clientHeight - 40;
+            opsGraph.width = opsGraph.parentElement.clientWidth - 30;
+            opsGraph.height = opsGraph.parentElement.clientHeight - 40;
+            lodGraph.width = lodGraph.parentElement.clientWidth - 30;
+            lodGraph.height = lodGraph.parentElement.clientHeight - 40;
+            
+            // Update focus point to center
+            focusPoint = { 
+                x: canvasLod.width / 2, 
+                y: canvasLod.height / 2 
+            };
+            updateFocusIndicators();
+            
+            // Reinitialize if objects exist
+            if (objectsLod.length > 0) {
+                initObjects();
+            }
+        }
+        
+        function initObjects() {
+            objectsLod = [];
+            objectsNoLod = [];
+            
+            const count = settings.objectCount;
+            
+            for (let i = 0; i < count; i++) {
+                // Random position
+                const x = Math.random() * canvasLod.width;
+                const y = Math.random() * canvasLod.height;
+                
+                const objLod = new PhysicsObject(x, y, canvasLod);
+                const objNoLod = new PhysicsObject(x, y, canvasNoLod);
+                
+                // Sync initial velocities
+                objNoLod.vx = objLod.vx;
+                objNoLod.vy = objLod.vy;
+                objNoLod.radius = objLod.radius;
+                objNoLod.mass = objLod.mass;
+                
+                objectsLod.push(objLod);
+                objectsNoLod.push(objNoLod);
+            }
+            
+            // Reset metrics
+            metrics.frameTimeLod = [];
+            metrics.frameTimeNoLod = [];
+            metrics.opsHistory = [];
+            metrics.lodHistory = [];
+        }
+        
+        function updateFocusIndicators() {
+            const focusLod = document.getElementById('focusLod');
+            const focusNoLod = document.getElementById('focusNoLod');
+            
+            focusLod.style.left = focusPoint.x + 'px';
+            focusLod.style.top = focusPoint.y + 'px';
+            focusNoLod.style.left = focusPoint.x + 'px';
+            focusNoLod.style.top = focusPoint.y + 'px';
+        }
+        
+        // ============================================================
+        // SIMULATION
+        // ============================================================
+        
+        function simulate() {
+            if (paused) return;
+            
+            frameCount++;
+            const now = performance.now();
+            
+            // Reset LOD distribution
+            metrics.lodDistribution = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, skip: 0 };
+            
+            // === LOD SIMULATION ===
+            const startLod = performance.now();
+            let opsLod = 0;
+            let updatesLod = 0;
+            
+            for (const obj of objectsLod) {
+                // Calculate LOD based on distance to focus
+                obj.lod = obj.calculateLOD(focusPoint.x, focusPoint.y, settings.aggressiveness);
+                
+                // Update physics
+                const ops = obj.update(settings.complexity, true, frameCount);
+                opsLod += ops;
+                
+                if (obj.skipped) {
+                    metrics.lodDistribution.skip++;
+                } else {
+                    metrics.lodDistribution[obj.lod]++;
+                    updatesLod++;
+                }
+            }
+            
+            const endLod = performance.now();
+            const timeLod = endLod - startLod;
+            
+            // === NO LOD SIMULATION ===
+            const startNoLod = performance.now();
+            let opsNoLod = 0;
+            
+            for (const obj of objectsNoLod) {
+                obj.lod = 0;  // Always full detail
+                const ops = obj.update(settings.complexity, false, frameCount);
+                opsNoLod += ops;
+            }
+            
+            const endNoLod = performance.now();
+            const timeNoLod = endNoLod - startNoLod;
+            
+            // Store metrics
+            metrics.opsLod = opsLod;
+            metrics.opsNoLod = opsNoLod;
+            
+            metrics.frameTimeLod.push(timeLod);
+            metrics.frameTimeNoLod.push(timeNoLod);
+            if (metrics.frameTimeLod.length > 120) metrics.frameTimeLod.shift();
+            if (metrics.frameTimeNoLod.length > 120) metrics.frameTimeNoLod.shift();
+            
+            metrics.opsHistory.push({ lod: opsLod, noLod: opsNoLod });
+            if (metrics.opsHistory.length > 120) metrics.opsHistory.shift();
+            
+            metrics.lodHistory.push({ ...metrics.lodDistribution });
+            if (metrics.lodHistory.length > 120) metrics.lodHistory.shift();
+            
+            // Update stats display
+            document.getElementById('physTimeLod').textContent = timeLod.toFixed(2) + ' ms';
+            document.getElementById('physTimeNoLod').textContent = timeNoLod.toFixed(2) + ' ms';
+            document.getElementById('updatesLod').textContent = updatesLod.toLocaleString();
+            document.getElementById('updatesNoLod').textContent = objectsNoLod.length.toLocaleString();
+            document.getElementById('opsLod').textContent = opsLod.toLocaleString();
+            document.getElementById('opsNoLod').textContent = opsNoLod.toLocaleString();
+            
+            // FPS counting
+            metrics.fpsCounterLod++;
+            metrics.fpsCounterNoLod++;
+            
+            if (now - metrics.lastFpsUpdate > 500) {
+                const elapsed = (now - metrics.lastFpsUpdate) / 1000;
+                metrics.fpsLod = Math.round(metrics.fpsCounterLod / elapsed);
+                metrics.fpsNoLod = Math.round(metrics.fpsCounterNoLod / elapsed);
+                metrics.fpsCounterLod = 0;
+                metrics.fpsCounterNoLod = 0;
+                metrics.lastFpsUpdate = now;
+            }
+        }
+        
+        // ============================================================
+        // RENDERING
+        // ============================================================
+        
+        function render() {
+            // Clear canvases
+            ctxLod.fillStyle = '#080810';
+            ctxLod.fillRect(0, 0, canvasLod.width, canvasLod.height);
+            ctxNoLod.fillStyle = '#080810';
+            ctxNoLod.fillRect(0, 0, canvasNoLod.width, canvasNoLod.height);
+            
+            // Draw distance rings on LOD canvas
+            drawDistanceRings(ctxLod);
+            
+            // Draw objects
+            for (const obj of objectsLod) {
+                obj.draw(ctxLod, true);
+            }
+            
+            for (const obj of objectsNoLod) {
+                obj.draw(ctxNoLod, false);
+            }
+            
+            // Draw focus point crosshairs
+            drawFocusCrosshair(ctxLod);
+            drawFocusCrosshair(ctxNoLod);
+        }
+        
+        function drawDistanceRings(ctx) {
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            
+            for (let lod = 0; lod <= 5; lod++) {
+                const radius = LOD_CONFIG[lod].distanceMax * (1 - settings.aggressiveness * 0.7);
+                if (radius < Math.max(ctx.canvas.width, ctx.canvas.height)) {
+                    ctx.beginPath();
+                    ctx.arc(focusPoint.x, focusPoint.y, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            
+            ctx.setLineDash([]);
+        }
+        
+        function drawFocusCrosshair(ctx) {
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
+            ctx.lineWidth = 1;
+            
+            ctx.beginPath();
+            ctx.moveTo(focusPoint.x, 0);
+            ctx.lineTo(focusPoint.x, ctx.canvas.height);
+            ctx.moveTo(0, focusPoint.y);
+            ctx.lineTo(ctx.canvas.width, focusPoint.y);
+            ctx.stroke();
+        }
+        
+        function renderGraphs() {
+            // Frame time graph
+            renderFrameTimeGraph();
+            
+            // Ops graph
+            renderOpsGraph();
+            
+            // LOD distribution graph
+            renderLodGraph();
+        }
+        
+        function renderFrameTimeGraph() {
+            const w = frameTimeGraph.width;
+            const h = frameTimeGraph.height;
+            
+            frameTimeCtx.fillStyle = '#0a0a12';
+            frameTimeCtx.fillRect(0, 0, w, h);
+            
+            if (metrics.frameTimeLod.length < 2) return;
+            
+            const maxTime = Math.max(
+                ...metrics.frameTimeLod,
+                ...metrics.frameTimeNoLod,
+                16.67
+            );
+            
+            // Target line (60fps = 16.67ms)
+            const targetY = h - (16.67 / maxTime) * h;
+            frameTimeCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            frameTimeCtx.lineWidth = 1;
+            frameTimeCtx.setLineDash([5, 5]);
+            frameTimeCtx.beginPath();
+            frameTimeCtx.moveTo(0, targetY);
+            frameTimeCtx.lineTo(w, targetY);
+            frameTimeCtx.stroke();
+            frameTimeCtx.setLineDash([]);
+            
+            // LOD line
+            frameTimeCtx.strokeStyle = '#00ff88';
+            frameTimeCtx.lineWidth = 2;
+            frameTimeCtx.beginPath();
+            for (let i = 0; i < metrics.frameTimeLod.length; i++) {
+                const x = (i / 120) * w;
+                const y = h - (metrics.frameTimeLod[i] / maxTime) * h;
+                if (i === 0) frameTimeCtx.moveTo(x, y);
+                else frameTimeCtx.lineTo(x, y);
+            }
+            frameTimeCtx.stroke();
+            
+            // No LOD line
+            frameTimeCtx.strokeStyle = '#ff4466';
+            frameTimeCtx.beginPath();
+            for (let i = 0; i < metrics.frameTimeNoLod.length; i++) {
+                const x = (i / 120) * w;
+                const y = h - (metrics.frameTimeNoLod[i] / maxTime) * h;
+                if (i === 0) frameTimeCtx.moveTo(x, y);
+                else frameTimeCtx.lineTo(x, y);
+            }
+            frameTimeCtx.stroke();
+            
+            // Labels
+            frameTimeCtx.fillStyle = '#00ff88';
+            frameTimeCtx.font = '10px "Share Tech Mono"';
+            frameTimeCtx.fillText('LOD', 5, 12);
+            frameTimeCtx.fillStyle = '#ff4466';
+            frameTimeCtx.fillText('No LOD', 35, 12);
+        }
+        
+        function renderOpsGraph() {
+            const w = opsGraph.width;
+            const h = opsGraph.height;
+            
+            opsCtx.fillStyle = '#0a0a12';
+            opsCtx.fillRect(0, 0, w, h);
+            
+            if (metrics.opsHistory.length < 2) return;
+            
+            const maxOps = Math.max(...metrics.opsHistory.map(o => Math.max(o.lod, o.noLod)));
+            
+            // LOD ops (filled area)
+            opsCtx.fillStyle = 'rgba(0, 255, 136, 0.3)';
+            opsCtx.beginPath();
+            opsCtx.moveTo(0, h);
+            for (let i = 0; i < metrics.opsHistory.length; i++) {
+                const x = (i / 120) * w;
+                const y = h - (metrics.opsHistory[i].lod / maxOps) * h;
+                opsCtx.lineTo(x, y);
+            }
+            opsCtx.lineTo((metrics.opsHistory.length - 1) / 120 * w, h);
+            opsCtx.fill();
+            
+            // No LOD line
+            opsCtx.strokeStyle = '#ff4466';
+            opsCtx.lineWidth = 2;
+            opsCtx.beginPath();
+            for (let i = 0; i < metrics.opsHistory.length; i++) {
+                const x = (i / 120) * w;
+                const y = h - (metrics.opsHistory[i].noLod / maxOps) * h;
+                if (i === 0) opsCtx.moveTo(x, y);
+                else opsCtx.lineTo(x, y);
+            }
+            opsCtx.stroke();
+        }
+        
+        function renderLodGraph() {
+            const w = lodGraph.width;
+            const h = lodGraph.height;
+            
+            lodCtx.fillStyle = '#0a0a12';
+            lodCtx.fillRect(0, 0, w, h);
+            
+            if (metrics.lodHistory.length < 2) return;
+            
+            const total = settings.objectCount;
+            
+            // Stacked area chart
+            const levels = [0, 1, 2, 3, 4, 5, 'skip'];
+            const colors = [LOD_COLORS[0], LOD_COLORS[1], LOD_COLORS[2], LOD_COLORS[3], LOD_COLORS[4], LOD_COLORS[5], LOD_COLORS.skip];
+            
+            for (let l = levels.length - 1; l >= 0; l--) {
+                const level = levels[l];
+                lodCtx.fillStyle = colors[l] + '80';
+                lodCtx.beginPath();
+                lodCtx.moveTo(0, h);
+                
+                for (let i = 0; i < metrics.lodHistory.length; i++) {
+                    const x = (i / 120) * w;
+                    let cumulative = 0;
+                    for (let j = 0; j <= l; j++) {
+                        cumulative += metrics.lodHistory[i][levels[j]] || 0;
+                    }
+                    const y = h - (cumulative / total) * h;
+                    lodCtx.lineTo(x, y);
+                }
+                
+                lodCtx.lineTo((metrics.lodHistory.length - 1) / 120 * w, h);
+                lodCtx.fill();
+            }
+        }
+        
+        // ============================================================
+        // UI UPDATES
+        // ============================================================
+        
+        function updateUI() {
+            // Header stats
+            document.getElementById('totalObjects').textContent = settings.objectCount.toLocaleString();
+            
+            const fpsLodEl = document.getElementById('fpsLod');
+            fpsLodEl.textContent = metrics.fpsLod;
+            fpsLodEl.className = 'stat-value ' + (metrics.fpsLod >= 55 ? 'good' : metrics.fpsLod >= 30 ? 'warning' : 'critical');
+            
+            const fpsNoLodEl = document.getElementById('fpsNoLod');
+            fpsNoLodEl.textContent = metrics.fpsNoLod;
+            fpsNoLodEl.className = 'stat-value ' + (metrics.fpsNoLod >= 55 ? 'good' : metrics.fpsNoLod >= 30 ? 'warning' : 'critical');
+            
+            const speedup = metrics.opsNoLod > 0 ? (metrics.opsNoLod / Math.max(1, metrics.opsLod)).toFixed(1) : '1.0';
+            document.getElementById('speedup').textContent = speedup + 'x';
+            
+            // LOD distribution bars
+            const total = settings.objectCount;
+            for (let i = 0; i <= 5; i++) {
+                const count = metrics.lodDistribution[i];
+                const pct = (count / total) * 100;
+                document.getElementById(`lodBar${i}`).style.width = pct + '%';
+                document.getElementById(`lodCount${i}`).textContent = count;
+            }
+            const skipCount = metrics.lodDistribution.skip;
+            const skipPct = (skipCount / total) * 100;
+            document.getElementById('lodBarSkip').style.width = skipPct + '%';
+            document.getElementById('lodCountSkip').textContent = skipCount;
+            
+            // Savings
+            const savings = metrics.opsNoLod > 0 ? 
+                Math.round((1 - metrics.opsLod / metrics.opsNoLod) * 100) : 0;
+            document.getElementById('savingsPercent').textContent = savings + '%';
+            document.getElementById('savingsDetail').textContent = 
+                `${(metrics.opsNoLod - metrics.opsLod).toLocaleString()} ops saved`;
+        }
+        
+        // ============================================================
+        // MAIN LOOP
+        // ============================================================
+        
+        function mainLoop() {
+            simulate();
+            render();
+            renderGraphs();
+            updateUI();
+            requestAnimationFrame(mainLoop);
+        }
+        
+        // ============================================================
+        // EVENT HANDLERS
+        // ============================================================
+        
+        // Mode buttons
+        document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.mode = btn.dataset.mode;
+                
+                // Adjust UI based on mode
+                const divider = document.getElementById('divider');
+                const noLodWrapper = document.getElementById('noLodWrapper');
+                
+                if (settings.mode === 'lod-only') {
+                    divider.style.display = 'none';
+                    noLodWrapper.style.display = 'none';
+                } else {
+                    divider.style.display = 'block';
+                    noLodWrapper.style.display = 'block';
+                }
+                
+                if (settings.mode === 'stress') {
+                    document.getElementById('objectCount').value = 5000;
+                    settings.objectCount = 5000;
+                    document.getElementById('objectCountVal').textContent = '5000';
+                    initObjects();
+                } else if (settings.mode === 'quality') {
+                    document.getElementById('aggressiveness').value = 20;
+                    settings.aggressiveness = 0.2;
+                    document.getElementById('aggressivenessVal').textContent = '20%';
+                }
+                
+                setTimeout(resizeCanvases, 10);
+            });
+        });
+        
+        // Sliders
+        document.getElementById('objectCount').addEventListener('input', (e) => {
+            settings.objectCount = parseInt(e.target.value);
+            document.getElementById('objectCountVal').textContent = settings.objectCount;
+        });
+        
+        document.getElementById('objectCount').addEventListener('change', () => {
+            initObjects();
+        });
+        
+        document.getElementById('complexity').addEventListener('input', (e) => {
+            settings.complexity = parseInt(e.target.value);
+            const labels = ['Very Low', 'Low', 'Medium', 'High', 'Very High'];
+            document.getElementById('complexityVal').textContent = labels[settings.complexity - 1];
+        });
+        
+        document.getElementById('aggressiveness').addEventListener('input', (e) => {
+            settings.aggressiveness = parseInt(e.target.value) / 100;
+            document.getElementById('aggressivenessVal').textContent = e.target.value + '%';
+        });
+        
+        // Control buttons
+        document.getElementById('btnPause').addEventListener('click', (e) => {
+            paused = !paused;
+            e.target.textContent = paused ? '▶ Resume' : '⏸ Pause';
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            initObjects();
+        });
+        
+        document.getElementById('btnExplode').addEventListener('click', () => {
+            // Explode objects from center
+            for (let i = 0; i < objectsLod.length; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 5 + Math.random() * 10;
+                objectsLod[i].vx = Math.cos(angle) * speed;
+                objectsLod[i].vy = Math.sin(angle) * speed;
+                objectsNoLod[i].vx = objectsLod[i].vx;
+                objectsNoLod[i].vy = objectsLod[i].vy;
+            }
+        });
+        
+        // Canvas click to move focus
+        canvasLod.addEventListener('click', (e) => {
+            const rect = canvasLod.getBoundingClientRect();
+            focusPoint.x = e.clientX - rect.left;
+            focusPoint.y = e.clientY - rect.top;
+            updateFocusIndicators();
+        });
+        
+        canvasNoLod.addEventListener('click', (e) => {
+            const rect = canvasNoLod.getBoundingClientRect();
+            focusPoint.x = e.clientX - rect.left;
+            focusPoint.y = e.clientY - rect.top;
+            updateFocusIndicators();
+        });
+        
+        // Resize handler
+        window.addEventListener('resize', resizeCanvases);
+        
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        
+        resizeCanvases();
+        initObjects();
+        mainLoop();
+    </script>
+</body>
+</html>

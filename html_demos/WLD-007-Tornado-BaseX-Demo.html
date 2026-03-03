@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WLD-007: Tornado | Base-X Engine Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #080a0c;
+            --panel-bg: rgba(12, 16, 24, 0.95);
+            --storm-dark: #1a2a3a;
+            --storm-green: #4a6a4a;
+            --vortex-gray: #5a6a7a;
+            --debris-brown: #8a6a4a;
+            --accent-yellow: #ffcc00;
+            --accent-red: #ff4444;
+            --accent-cyan: #00d4ff;
+            --base-32: #ff4444;
+            --base-24: #ffcc00;
+            --base-16: #88aa44;
+            --text-primary: #d0e0f0;
+            --text-dim: #667788;
+            --border-glow: rgba(255, 204, 0, 0.3);
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            padding: 15px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: linear-gradient(90deg, rgba(255, 68, 68, 0.1), transparent, rgba(255, 204, 0, 0.1));
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .demo-badge {
+            background: linear-gradient(135deg, #ff4444, #ffaa00);
+            color: #000;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.75em;
+            letter-spacing: 2px;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #ffaa00;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(255, 170, 0, 0.4);
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .stat-group {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .stat-value.debris { color: var(--debris-brown); }
+        .stat-value.base { color: var(--base-24); }
+        .stat-value.wind { color: var(--accent-red); }
+        
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            background: linear-gradient(90deg, rgba(255, 170, 0, 0.15), transparent);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-glow);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: #ffaa00;
+            flex-shrink: 0;
+        }
+        
+        .panel-content {
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        /* EF Scale */
+        .ef-scale {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .ef-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .ef-btn:hover {
+            border-color: rgba(255, 170, 0, 0.5);
+        }
+        
+        .ef-btn.active {
+            border-color: #ffaa00;
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
+        }
+        
+        .ef-rating {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 1.1em;
+            width: 45px;
+        }
+        
+        .ef-0 { color: #44aa44; }
+        .ef-1 { color: #88cc44; }
+        .ef-2 { color: #cccc44; }
+        .ef-3 { color: #ffaa44; }
+        .ef-4 { color: #ff6644; }
+        .ef-5 { color: #ff4444; }
+        
+        .ef-info {
+            flex: 1;
+        }
+        
+        .ef-name {
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .ef-wind {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        /* Tool Section */
+        .tool-section {
+            margin-bottom: 20px;
+        }
+        
+        .tool-section-title {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Sliders */
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .slider-name {
+            font-size: 0.8em;
+            color: var(--text-dim);
+        }
+        
+        .slider-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85em;
+            color: #ffaa00;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 170, 0, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #ffaa00;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+        }
+        
+        /* Toggle */
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .toggle-label {
+            font-size: 0.85em;
+        }
+        
+        .toggle {
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .toggle.on {
+            background: rgba(255, 170, 0, 0.5);
+        }
+        
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        
+        .toggle.on::after {
+            transform: translateX(20px);
+        }
+        
+        /* Canvas */
+        .canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #tornadoCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Info Overlay */
+        .info-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-glow);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8em;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            color: var(--text-dim);
+        }
+        
+        /* Warning Box */
+        .warning-box {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 0, 0, 0.2);
+            border: 2px solid #ff4444;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .warning-icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .warning-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9em;
+            color: #ff4444;
+            letter-spacing: 2px;
+        }
+        
+        .warning-ef {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.5em;
+            color: #ffaa00;
+            margin-top: 5px;
+        }
+        
+        /* Right Panel Stats */
+        .tornado-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .tornado-stat {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .tornado-stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1em;
+            color: #ffaa00;
+        }
+        
+        .tornado-stat-label {
+            font-size: 0.65em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* DRO Display */
+        .dro-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .dro-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7em;
+            color: var(--accent-cyan);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .dro-meter {
+            height: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .dro-fill {
+            height: 100%;
+            transition: width 0.3s, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        
+        .dro-scale {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65em;
+            color: var(--text-dim);
+        }
+        
+        /* Vortex Diagram */
+        .vortex-diagram {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .vortex-canvas {
+            width: 100%;
+            height: 120px;
+        }
+        
+        /* Debris List */
+        .debris-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .debris-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-size: 0.8em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .debris-icon {
+            font-size: 1.2em;
+        }
+        
+        .debris-count {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--accent-yellow);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="demo-badge">WLD-007</div>
+                <h1>TORNADO</h1>
+            </div>
+            <div class="header-right">
+                <div class="stat-group">
+                    <div class="stat-label">Debris</div>
+                    <div class="stat-value debris" id="debrisCount">0</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Active Base</div>
+                    <div class="stat-value base" id="activeBase">BASE-32</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Wind Speed</div>
+                    <div class="stat-value wind" id="windSpeed">150 mph</div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Panel -->
+            <div class="panel">
+                <div class="panel-header">🌪️ TORNADO CONTROL</div>
+                <div class="panel-content">
+                    <!-- EF Scale -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Enhanced Fujita Scale</div>
+                        <div class="ef-scale">
+                            <div class="ef-btn" data-ef="0" onclick="setEFScale(0)">
+                                <span class="ef-rating ef-0">EF0</span>
+                                <div class="ef-info">
+                                    <div class="ef-name">Weak</div>
+                                    <div class="ef-wind">65-85 mph</div>
+                                </div>
+                            </div>
+                            <div class="ef-btn" data-ef="1" onclick="setEFScale(1)">
+                                <span class="ef-rating ef-1">EF1</span>
+                                <div class="ef-info">
+                                    <div class="ef-name">Moderate</div>
+                                    <div class="ef-wind">86-110 mph</div>
+                                </div>
+                            </div>
+                            <div class="ef-btn active" data-ef="2" onclick="setEFScale(2)">
+                                <span class="ef-rating ef-2">EF2</span>
+                                <div class="ef-info">
+                                    <div class="ef-name">Significant</div>
+                                    <div class="ef-wind">111-135 mph</div>
+                                </div>
+                            </div>
+                            <div class="ef-btn" data-ef="3" onclick="setEFScale(3)">
+                                <span class="ef-rating ef-3">EF3</span>
+                                <div class="ef-info">
+                                    <div class="ef-name">Severe</div>
+                                    <div class="ef-wind">136-165 mph</div>
+                                </div>
+                            </div>
+                            <div class="ef-btn" data-ef="4" onclick="setEFScale(4)">
+                                <span class="ef-rating ef-4">EF4</span>
+                                <div class="ef-info">
+                                    <div class="ef-name">Devastating</div>
+                                    <div class="ef-wind">166-200 mph</div>
+                                </div>
+                            </div>
+                            <div class="ef-btn" data-ef="5" onclick="setEFScale(5)">
+                                <span class="ef-rating ef-5">EF5</span>
+                                <div class="ef-info">
+                                    <div class="ef-name">Incredible</div>
+                                    <div class="ef-wind">200+ mph</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vortex Controls -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Vortex Properties</div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Rotation Speed</span>
+                                <span class="slider-value" id="rotationValue">150 mph</span>
+                            </div>
+                            <input type="range" id="rotationSlider" min="65" max="250" value="150" oninput="updateRotation()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Funnel Width</span>
+                                <span class="slider-value" id="widthValue">200 yd</span>
+                            </div>
+                            <input type="range" id="widthSlider" min="50" max="500" value="200" oninput="updateWidth()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Movement Speed</span>
+                                <span class="slider-value" id="moveValue">35 mph</span>
+                            </div>
+                            <input type="range" id="moveSlider" min="0" max="70" value="35" oninput="updateMove()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Debris Density</span>
+                                <span class="slider-value" id="debrisDensityValue">50%</span>
+                            </div>
+                            <input type="range" id="debrisDensitySlider" min="0" max="100" value="50" oninput="updateDebrisDensity()">
+                        </div>
+                    </div>
+                    
+                    <!-- Toggles -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Effects</div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Show Debris</span>
+                            <div class="toggle on" id="debrisToggle" onclick="toggleDebris()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Dust Cloud</span>
+                            <div class="toggle on" id="dustToggle" onclick="toggleDust()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Rain Wrap</span>
+                            <div class="toggle on" id="rainToggle" onclick="toggleRain()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Lightning</span>
+                            <div class="toggle on" id="lightningToggle" onclick="toggleLightning()"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center - Canvas -->
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="tornadoCanvas"></canvas>
+                    
+                    <div class="info-overlay">
+                        <div class="info-row">
+                            <span class="info-label">Vortex Base:</span>
+                            <span id="vortexBase" style="color: var(--base-32);">B-32</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Debris Base:</span>
+                            <span id="debrisBase" style="color: var(--base-24);">B-24</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Core Pressure:</span>
+                            <span id="corePressure" style="color: var(--accent-red);">900 mb</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Updraft:</span>
+                            <span id="updraft" style="color: var(--accent-yellow);">150 mph</span>
+                        </div>
+                    </div>
+                    
+                    <div class="warning-box" id="warningBox">
+                        <div class="warning-icon">⚠️</div>
+                        <div class="warning-text">TORNADO WARNING</div>
+                        <div class="warning-ef" id="warningEF">EF2</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel -->
+            <div class="panel">
+                <div class="panel-header">📊 STORM DATA</div>
+                <div class="panel-content">
+                    <!-- DRO Display -->
+                    <div class="dro-display">
+                        <div class="dro-title">DYNAMIC RADIX OPTIMIZER</div>
+                        <div class="dro-meter">
+                            <div class="dro-fill" id="droFill" style="width: 60%; background: linear-gradient(90deg, var(--base-24), var(--base-32));">
+                                BASE-32
+                            </div>
+                        </div>
+                        <div class="dro-scale">
+                            <span>B-16</span>
+                            <span>B-24</span>
+                            <span>B-32</span>
+                            <span>B-48</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Tornado Stats -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Vortex Statistics</div>
+                        <div class="tornado-stats">
+                            <div class="tornado-stat">
+                                <div class="tornado-stat-value" id="peakWind">150</div>
+                                <div class="tornado-stat-label">Peak MPH</div>
+                            </div>
+                            <div class="tornado-stat">
+                                <div class="tornado-stat-value" id="pathWidth">200</div>
+                                <div class="tornado-stat-label">Width YD</div>
+                            </div>
+                            <div class="tornado-stat">
+                                <div class="tornado-stat-value" id="pathLength">0.0</div>
+                                <div class="tornado-stat-label">Path MI</div>
+                            </div>
+                            <div class="tornado-stat">
+                                <div class="tornado-stat-value" id="duration">0:00</div>
+                                <div class="tornado-stat-label">Duration</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vortex Diagram -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Vortex Cross-Section</div>
+                        <div class="vortex-diagram">
+                            <canvas id="vortexCanvas" class="vortex-canvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Debris Types -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Debris Composition</div>
+                        <div class="debris-list" id="debrisList">
+                            <div class="debris-item">
+                                <span class="debris-icon">🌿</span>
+                                <span class="debris-count" id="debrisLeaves">0</span>
+                            </div>
+                            <div class="debris-item">
+                                <span class="debris-icon">🪵</span>
+                                <span class="debris-count" id="debrisWood">0</span>
+                            </div>
+                            <div class="debris-item">
+                                <span class="debris-icon">🧱</span>
+                                <span class="debris-count" id="debrisBrick">0</span>
+                            </div>
+                            <div class="debris-item">
+                                <span class="debris-icon">🚗</span>
+                                <span class="debris-count" id="debrisCar">0</span>
+                            </div>
+                            <div class="debris-item">
+                                <span class="debris-icon">🏠</span>
+                                <span class="debris-count" id="debrisRoof">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Storm Stats -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Atmospheric Conditions</div>
+                        <div style="font-size: 0.85em; line-height: 1.8;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-dim);">CAPE:</span>
+                                <span id="cape" style="color: var(--accent-red);">3500 J/kg</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-dim);">Wind Shear:</span>
+                                <span id="shear" style="color: var(--accent-yellow);">60 kts</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-dim);">Helicity:</span>
+                                <span id="helicity" style="color: var(--accent-cyan);">450 m²/s²</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- LOD Info -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">LOD Philosophy</div>
+                        <div style="font-size: 0.75em; color: var(--text-dim); line-height: 1.6;">
+                            Tornado uses <span style="color: #ffaa00;">HIGH precision</span>:
+                            <br>• Base-32 for vortex dynamics
+                            <br>• Base-24 for debris physics
+                            <br>• Complex rotational math
+                            <br>• Centripetal force calc
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ===== BASE-X ENGINE: TORNADO =====
+        
+        const canvas = document.getElementById('tornadoCanvas');
+        const ctx = canvas.getContext('2d');
+        const vortexCanvas = document.getElementById('vortexCanvas');
+        const vortexCtx = vortexCanvas.getContext('2d');
+        
+        // Tornado settings
+        let efScale = 2;
+        let rotationSpeed = 150; // mph
+        let funnelWidth = 200; // yards
+        let moveSpeed = 35; // mph
+        let debrisDensity = 0.5;
+        
+        // Toggles
+        let showDebris = true;
+        let showDust = true;
+        let showRain = true;
+        let showLightning = true;
+        
+        // Particles
+        let debris = [];
+        let dust = [];
+        let rain = [];
+        
+        // Tornado state
+        let tornadoX = 0;
+        let tornadoAngle = 0;
+        let startTime = Date.now();
+        let pathLength = 0;
+        
+        // Lightning
+        let lightningTimer = 0;
+        let lightningBolts = [];
+        
+        // Debris counts
+        let debrisCounts = {
+            leaves: 0,
+            wood: 0,
+            brick: 0,
+            car: 0,
+            roof: 0
+        };
+        
+        // EF Scale definitions
+        const EF_SCALE = [
+            { name: 'EF0', windMin: 65, windMax: 85, width: 50, color: '#44aa44' },
+            { name: 'EF1', windMin: 86, windMax: 110, width: 100, color: '#88cc44' },
+            { name: 'EF2', windMin: 111, windMax: 135, width: 200, color: '#cccc44' },
+            { name: 'EF3', windMin: 136, windMax: 165, width: 300, color: '#ffaa44' },
+            { name: 'EF4', windMin: 166, windMax: 200, width: 400, color: '#ff6644' },
+            { name: 'EF5', windMin: 201, windMax: 250, width: 500, color: '#ff4444' }
+        ];
+        
+        // DRO
+        let dro = {
+            currentBase: 32,
+            vortexBase: 32,
+            debrisBase: 24
+        };
+        
+        // Performance
+        let lastTime = performance.now();
+        
+        function init() {
+            resizeCanvas();
+            tornadoX = canvas.width * 0.3;
+            
+            window.addEventListener('resize', resizeCanvas);
+            
+            setEFScale(2);
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function resizeCanvas() {
+            const wrapper = canvas.parentElement;
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            
+            vortexCanvas.width = vortexCanvas.clientWidth;
+            vortexCanvas.height = vortexCanvas.clientHeight;
+            
+            tornadoX = canvas.width * 0.5;
+        }
+        
+        // ===== TORNADO CONTROL =====
+        
+        function setEFScale(ef) {
+            efScale = ef;
+            const scale = EF_SCALE[ef];
+            
+            rotationSpeed = (scale.windMin + scale.windMax) / 2;
+            funnelWidth = scale.width;
+            
+            document.getElementById('rotationSlider').value = rotationSpeed;
+            document.getElementById('widthSlider').value = funnelWidth;
+            
+            updateRotation();
+            updateWidth();
+            
+            document.querySelectorAll('.ef-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.ef) === ef);
+            });
+            
+            document.getElementById('warningEF').textContent = scale.name;
+            document.getElementById('warningEF').style.color = scale.color;
+        }
+        
+        function updateRotation() {
+            rotationSpeed = parseInt(document.getElementById('rotationSlider').value);
+            document.getElementById('rotationValue').textContent = rotationSpeed + ' mph';
+        }
+        
+        function updateWidth() {
+            funnelWidth = parseInt(document.getElementById('widthSlider').value);
+            document.getElementById('widthValue').textContent = funnelWidth + ' yd';
+        }
+        
+        function updateMove() {
+            moveSpeed = parseInt(document.getElementById('moveSlider').value);
+            document.getElementById('moveValue').textContent = moveSpeed + ' mph';
+        }
+        
+        function updateDebrisDensity() {
+            debrisDensity = parseInt(document.getElementById('debrisDensitySlider').value) / 100;
+            document.getElementById('debrisDensityValue').textContent = Math.round(debrisDensity * 100) + '%';
+        }
+        
+        function toggleDebris() {
+            showDebris = !showDebris;
+            document.getElementById('debrisToggle').classList.toggle('on', showDebris);
+        }
+        
+        function toggleDust() {
+            showDust = !showDust;
+            document.getElementById('dustToggle').classList.toggle('on', showDust);
+        }
+        
+        function toggleRain() {
+            showRain = !showRain;
+            document.getElementById('rainToggle').classList.toggle('on', showRain);
+        }
+        
+        function toggleLightning() {
+            showLightning = !showLightning;
+            document.getElementById('lightningToggle').classList.toggle('on', showLightning);
+        }
+        
+        // ===== VORTEX PHYSICS =====
+        
+        function getVortexForce(x, y, centerX, centerY, radius) {
+            const dx = x - centerX;
+            const dy = y - centerY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < 1) return { fx: 0, fy: 0, inVortex: false };
+            
+            // Rankine vortex model
+            const coreRadius = radius * 0.3;
+            let tangentialSpeed;
+            
+            if (dist < coreRadius) {
+                // Solid body rotation in core
+                tangentialSpeed = (rotationSpeed / 100) * (dist / coreRadius);
+            } else {
+                // Decay outside core
+                tangentialSpeed = (rotationSpeed / 100) * (coreRadius / dist);
+            }
+            
+            // Perpendicular to radius (counterclockwise)
+            const angle = Math.atan2(dy, dx);
+            const fx = -Math.sin(angle) * tangentialSpeed;
+            const fy = Math.cos(angle) * tangentialSpeed;
+            
+            // Add inward pull
+            const inwardForce = dist < radius ? 0.5 * (1 - dist / radius) : 0;
+            const inwardFx = -dx / dist * inwardForce;
+            const inwardFy = -dy / dist * inwardForce;
+            
+            // Add updraft near center
+            const updraft = dist < coreRadius ? -2 * (1 - dist / coreRadius) : 0;
+            
+            return {
+                fx: fx + inwardFx,
+                fy: fy + inwardFy + updraft,
+                inVortex: dist < radius
+            };
+        }
+        
+        // ===== PARTICLE SYSTEMS =====
+        
+        function spawnDebris(dt) {
+            if (!showDebris) return;
+            
+            const spawnRate = debrisDensity * efScale * 2 * dt;
+            const groundY = canvas.height * 0.85;
+            
+            for (let i = 0; i < spawnRate; i++) {
+                if (debris.length < 500) {
+                    // Spawn near tornado base
+                    const spawnX = tornadoX + (Math.random() - 0.5) * funnelWidth * 0.5;
+                    
+                    // Debris type based on EF scale
+                    let type, icon, size;
+                    const r = Math.random();
+                    
+                    if (efScale < 2 || r < 0.4) {
+                        type = 'leaves'; icon = '🌿'; size = 8;
+                        debrisCounts.leaves++;
+                    } else if (efScale < 3 || r < 0.6) {
+                        type = 'wood'; icon = '🪵'; size = 15;
+                        debrisCounts.wood++;
+                    } else if (efScale < 4 || r < 0.8) {
+                        type = 'brick'; icon = '🧱'; size = 12;
+                        debrisCounts.brick++;
+                    } else if (efScale < 5 || r < 0.95) {
+                        type = 'car'; icon = '🚗'; size = 25;
+                        debrisCounts.car++;
+                    } else {
+                        type = 'roof'; icon = '🏠'; size = 30;
+                        debrisCounts.roof++;
+                    }
+                    
+                    debris.push({
+                        x: spawnX,
+                        y: groundY,
+                        vx: 0,
+                        vy: 0,
+                        type,
+                        icon,
+                        size,
+                        rotation: Math.random() * Math.PI * 2,
+                        rotSpeed: (Math.random() - 0.5) * 0.3,
+                        life: 1
+                    });
+                }
+            }
+        }
+        
+        function spawnDust(dt) {
+            if (!showDust) return;
+            
+            const spawnRate = efScale * 10 * dt;
+            const groundY = canvas.height * 0.85;
+            
+            for (let i = 0; i < spawnRate; i++) {
+                if (dust.length < 1000) {
+                    dust.push({
+                        x: tornadoX + (Math.random() - 0.5) * funnelWidth,
+                        y: groundY + Math.random() * 20,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: -Math.random() * 2,
+                        size: 2 + Math.random() * 6,
+                        alpha: 0.3 + Math.random() * 0.4,
+                        life: 1
+                    });
+                }
+            }
+        }
+        
+        function spawnRain(dt) {
+            if (!showRain) return;
+            
+            const spawnRate = 30 * dt;
+            
+            for (let i = 0; i < spawnRate; i++) {
+                if (rain.length < 500) {
+                    rain.push({
+                        x: Math.random() * canvas.width,
+                        y: -10,
+                        vx: -3 + Math.random() * 2,
+                        vy: 10 + Math.random() * 5,
+                        length: 10 + Math.random() * 15
+                    });
+                }
+            }
+        }
+        
+        function updateParticles(dt) {
+            const groundY = canvas.height * 0.85;
+            const funnelRadius = funnelWidth * 0.3;
+            
+            // Update debris
+            for (let i = debris.length - 1; i >= 0; i--) {
+                const d = debris[i];
+                
+                // Apply vortex force
+                const force = getVortexForce(d.x, d.y, tornadoX, canvas.height * 0.5, funnelRadius);
+                d.vx += force.fx * dt * 2;
+                d.vy += force.fy * dt * 2;
+                
+                // Gravity
+                d.vy += 0.1 * dt;
+                
+                // Drag
+                d.vx *= 0.98;
+                d.vy *= 0.98;
+                
+                d.x += d.vx * dt * 10;
+                d.y += d.vy * dt * 10;
+                d.rotation += d.rotSpeed * dt;
+                
+                // Life decay when far from vortex
+                if (!force.inVortex) {
+                    d.life -= 0.01 * dt;
+                }
+                
+                // Ground collision
+                if (d.y > groundY) {
+                    d.y = groundY;
+                    d.vy *= -0.3;
+                    d.life -= 0.1;
+                }
+                
+                // Remove dead debris
+                if (d.life <= 0 || d.x < -100 || d.x > canvas.width + 100 || d.y < -200) {
+                    debris.splice(i, 1);
+                }
+            }
+            
+            // Update dust
+            for (let i = dust.length - 1; i >= 0; i--) {
+                const d = dust[i];
+                
+                const force = getVortexForce(d.x, d.y, tornadoX, canvas.height * 0.5, funnelRadius * 1.5);
+                d.vx += force.fx * dt * 3;
+                d.vy += force.fy * dt * 3;
+                
+                d.vx *= 0.95;
+                d.vy *= 0.95;
+                
+                d.x += d.vx * dt * 10;
+                d.y += d.vy * dt * 10;
+                d.life -= 0.005 * dt;
+                
+                if (d.life <= 0 || d.y < -50) {
+                    dust.splice(i, 1);
+                }
+            }
+            
+            // Update rain
+            for (let i = rain.length - 1; i >= 0; i--) {
+                const r = rain[i];
+                
+                // Slight vortex influence
+                const force = getVortexForce(r.x, r.y, tornadoX, canvas.height * 0.5, funnelRadius * 2);
+                r.vx += force.fx * dt * 0.5;
+                
+                r.x += r.vx * dt;
+                r.y += r.vy * dt;
+                
+                if (r.y > groundY || r.x < -50 || r.x > canvas.width + 50) {
+                    rain.splice(i, 1);
+                }
+            }
+        }
+        
+        function updateLightning(dt) {
+            if (!showLightning) return;
+            
+            lightningTimer += dt * 16;
+            
+            // Random lightning
+            if (Math.random() < 0.002 * efScale) {
+                createLightning();
+            }
+            
+            // Update existing bolts
+            for (let i = lightningBolts.length - 1; i >= 0; i--) {
+                lightningBolts[i].life -= 0.1 * dt;
+                if (lightningBolts[i].life <= 0) {
+                    lightningBolts.splice(i, 1);
+                }
+            }
+        }
+        
+        function createLightning() {
+            const startX = tornadoX + (Math.random() - 0.5) * 300;
+            const startY = 50;
+            const endX = startX + (Math.random() - 0.5) * 200;
+            const endY = canvas.height * 0.7 + Math.random() * 100;
+            
+            const segments = [];
+            let x = startX, y = startY;
+            const steps = 10 + Math.floor(Math.random() * 10);
+            
+            for (let i = 0; i < steps; i++) {
+                const t = i / steps;
+                const targetX = startX + (endX - startX) * t;
+                const targetY = startY + (endY - startY) * t;
+                
+                x = targetX + (Math.random() - 0.5) * 50;
+                y = targetY;
+                
+                segments.push({ x, y });
+            }
+            
+            lightningBolts.push({
+                segments,
+                life: 1,
+                branches: Math.random() > 0.5
+            });
+        }
+        
+        // ===== UPDATE =====
+        
+        function update(dt) {
+            // Move tornado
+            tornadoX += moveSpeed * 0.05 * dt;
+            if (tornadoX > canvas.width + 100) {
+                tornadoX = -100;
+            }
+            
+            pathLength += moveSpeed * 0.0001 * dt;
+            
+            // Rotate angle
+            tornadoAngle += rotationSpeed * 0.01 * dt;
+            
+            // Spawn particles
+            spawnDebris(dt);
+            spawnDust(dt);
+            spawnRain(dt);
+            
+            // Update particles
+            updateParticles(dt);
+            updateLightning(dt);
+            
+            // Update DRO
+            calculateDRO();
+            
+            // Update UI
+            updateUI();
+        }
+        
+        function calculateDRO() {
+            const totalParticles = debris.length + dust.length;
+            
+            if (totalParticles > 1000) {
+                dro.debrisBase = 16;
+            } else if (totalParticles > 500) {
+                dro.debrisBase = 24;
+            } else {
+                dro.debrisBase = 24;
+            }
+            
+            // Vortex always needs high precision
+            dro.vortexBase = 32;
+            dro.currentBase = Math.max(dro.vortexBase, dro.debrisBase);
+        }
+        
+        function getBaseColor(base) {
+            if (base >= 32) return 'var(--base-32)';
+            if (base >= 24) return 'var(--base-24)';
+            return 'var(--base-16)';
+        }
+        
+        function updateUI() {
+            document.getElementById('debrisCount').textContent = debris.length;
+            document.getElementById('activeBase').textContent = `BASE-${dro.currentBase}`;
+            document.getElementById('windSpeed').textContent = rotationSpeed + ' mph';
+            
+            document.getElementById('vortexBase').textContent = `B-${dro.vortexBase}`;
+            document.getElementById('debrisBase').textContent = `B-${dro.debrisBase}`;
+            document.getElementById('corePressure').textContent = (1013 - efScale * 20) + ' mb';
+            document.getElementById('updraft').textContent = Math.round(rotationSpeed * 0.8) + ' mph';
+            
+            document.getElementById('peakWind').textContent = rotationSpeed;
+            document.getElementById('pathWidth').textContent = funnelWidth;
+            document.getElementById('pathLength').textContent = pathLength.toFixed(1);
+            
+            const duration = Math.floor((Date.now() - startTime) / 1000);
+            const mins = Math.floor(duration / 60);
+            const secs = duration % 60;
+            document.getElementById('duration').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            
+            // Debris counts
+            document.getElementById('debrisLeaves').textContent = debrisCounts.leaves;
+            document.getElementById('debrisWood').textContent = debrisCounts.wood;
+            document.getElementById('debrisBrick').textContent = debrisCounts.brick;
+            document.getElementById('debrisCar').textContent = debrisCounts.car;
+            document.getElementById('debrisRoof').textContent = debrisCounts.roof;
+            
+            // Atmospheric
+            document.getElementById('cape').textContent = (2000 + efScale * 500) + ' J/kg';
+            document.getElementById('shear').textContent = (30 + efScale * 10) + ' kts';
+            document.getElementById('helicity').textContent = (200 + efScale * 80) + ' m²/s²';
+            
+            // DRO meter
+            const droFill = document.getElementById('droFill');
+            const fillPercent = ((dro.currentBase - 16) / 32) * 100;
+            droFill.style.width = Math.min(100, fillPercent) + '%';
+            droFill.style.background = `linear-gradient(90deg, var(--base-24), ${getBaseColor(dro.currentBase)})`;
+            droFill.textContent = `BASE-${dro.currentBase}`;
+        }
+        
+        // ===== RENDERING =====
+        
+        function render() {
+            // Storm sky
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#1a2530');
+            gradient.addColorStop(0.3, '#2a3a40');
+            gradient.addColorStop(0.6, '#3a4a4a');
+            gradient.addColorStop(1, '#4a5a5a');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Storm clouds
+            renderClouds();
+            
+            // Lightning
+            renderLightning();
+            
+            // Rain
+            renderRain();
+            
+            // Ground
+            renderGround();
+            
+            // Dust cloud at base
+            if (showDust) {
+                renderDust();
+            }
+            
+            // Tornado funnel
+            renderFunnel();
+            
+            // Debris
+            if (showDebris) {
+                renderDebris();
+            }
+            
+            // Vortex diagram
+            renderVortexDiagram();
+        }
+        
+        function renderClouds() {
+            // Dark storm clouds
+            ctx.fillStyle = '#2a3540';
+            for (let i = 0; i < 5; i++) {
+                const x = (i * 300 + tornadoAngle * 2) % (canvas.width + 400) - 200;
+                const y = 30 + Math.sin(i * 2) * 20;
+                
+                ctx.beginPath();
+                ctx.ellipse(x, y, 200, 80, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.ellipse(x + 100, y + 20, 150, 60, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Rotating wall cloud above tornado
+            ctx.fillStyle = '#1a2530';
+            ctx.beginPath();
+            ctx.ellipse(tornadoX, 100, funnelWidth * 0.8, 60, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function renderFunnel() {
+            const topY = 100;
+            const bottomY = canvas.height * 0.85;
+            const topWidth = funnelWidth * 0.3;
+            const bottomWidth = funnelWidth * 0.15;
+            
+            // Funnel gradient
+            const funnelGradient = ctx.createLinearGradient(tornadoX - funnelWidth/2, 0, tornadoX + funnelWidth/2, 0);
+            funnelGradient.addColorStop(0, 'rgba(60, 70, 80, 0.6)');
+            funnelGradient.addColorStop(0.3, 'rgba(80, 90, 100, 0.8)');
+            funnelGradient.addColorStop(0.5, 'rgba(100, 110, 120, 0.9)');
+            funnelGradient.addColorStop(0.7, 'rgba(80, 90, 100, 0.8)');
+            funnelGradient.addColorStop(1, 'rgba(60, 70, 80, 0.6)');
+            
+            // Draw funnel with rotation lines
+            ctx.save();
+            
+            // Main funnel shape
+            ctx.beginPath();
+            ctx.moveTo(tornadoX - topWidth, topY);
+            ctx.quadraticCurveTo(
+                tornadoX - bottomWidth * 2, (topY + bottomY) / 2,
+                tornadoX - bottomWidth, bottomY
+            );
+            ctx.lineTo(tornadoX + bottomWidth, bottomY);
+            ctx.quadraticCurveTo(
+                tornadoX + bottomWidth * 2, (topY + bottomY) / 2,
+                tornadoX + topWidth, topY
+            );
+            ctx.closePath();
+            
+            ctx.fillStyle = funnelGradient;
+            ctx.fill();
+            
+            // Rotation lines
+            ctx.strokeStyle = 'rgba(150, 160, 170, 0.3)';
+            ctx.lineWidth = 2;
+            
+            for (let i = 0; i < 8; i++) {
+                const angle = tornadoAngle + (i / 8) * Math.PI * 2;
+                const offsetX = Math.sin(angle) * 20;
+                
+                ctx.beginPath();
+                for (let y = topY; y < bottomY; y += 5) {
+                    const t = (y - topY) / (bottomY - topY);
+                    const width = topWidth * (1 - t) + bottomWidth * t;
+                    const spiralOffset = Math.sin(angle + t * 10) * width * 0.8;
+                    
+                    if (y === topY) {
+                        ctx.moveTo(tornadoX + spiralOffset, y);
+                    } else {
+                        ctx.lineTo(tornadoX + spiralOffset, y);
+                    }
+                }
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+        
+        function renderDust() {
+            dust.forEach(d => {
+                ctx.fillStyle = `rgba(139, 119, 101, ${d.alpha * d.life})`;
+                ctx.beginPath();
+                ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // Ground dust cloud
+            const dustGradient = ctx.createRadialGradient(
+                tornadoX, canvas.height * 0.85, 0,
+                tornadoX, canvas.height * 0.85, funnelWidth
+            );
+            dustGradient.addColorStop(0, 'rgba(139, 119, 101, 0.6)');
+            dustGradient.addColorStop(0.5, 'rgba(139, 119, 101, 0.3)');
+            dustGradient.addColorStop(1, 'rgba(139, 119, 101, 0)');
+            
+            ctx.fillStyle = dustGradient;
+            ctx.beginPath();
+            ctx.ellipse(tornadoX, canvas.height * 0.85, funnelWidth, 50, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function renderDebris() {
+            ctx.font = '16px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            debris.forEach(d => {
+                ctx.save();
+                ctx.translate(d.x, d.y);
+                ctx.rotate(d.rotation);
+                ctx.globalAlpha = d.life;
+                ctx.font = `${d.size}px serif`;
+                ctx.fillText(d.icon, 0, 0);
+                ctx.restore();
+            });
+            
+            ctx.globalAlpha = 1;
+        }
+        
+        function renderRain() {
+            if (!showRain) return;
+            
+            ctx.strokeStyle = 'rgba(150, 180, 200, 0.4)';
+            ctx.lineWidth = 1;
+            
+            rain.forEach(r => {
+                ctx.beginPath();
+                ctx.moveTo(r.x, r.y);
+                ctx.lineTo(r.x + r.vx, r.y - r.length);
+                ctx.stroke();
+            });
+        }
+        
+        function renderLightning() {
+            lightningBolts.forEach(bolt => {
+                ctx.strokeStyle = `rgba(255, 255, 200, ${bolt.life})`;
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#fff';
+                ctx.shadowBlur = 20;
+                
+                ctx.beginPath();
+                bolt.segments.forEach((seg, i) => {
+                    if (i === 0) ctx.moveTo(seg.x, seg.y);
+                    else ctx.lineTo(seg.x, seg.y);
+                });
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+            });
+        }
+        
+        function renderGround() {
+            const groundY = canvas.height * 0.85;
+            
+            ctx.fillStyle = '#3a4a3a';
+            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+            
+            // Damage path
+            if (pathLength > 0) {
+                ctx.fillStyle = 'rgba(80, 60, 50, 0.5)';
+                ctx.fillRect(0, groundY, tornadoX, 20);
+            }
+        }
+        
+        function renderVortexDiagram() {
+            const w = vortexCanvas.width;
+            const h = vortexCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            vortexCtx.fillStyle = '#1a2530';
+            vortexCtx.fillRect(0, 0, w, h);
+            
+            // Draw velocity profile
+            const maxR = w * 0.4;
+            const coreR = maxR * 0.3;
+            
+            // Velocity arrows
+            for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
+                for (let r = 10; r < maxR; r += 15) {
+                    const x = cx + Math.cos(angle) * r;
+                    const y = cy + Math.sin(angle) * r;
+                    
+                    // Tangential velocity direction
+                    const vAngle = angle + Math.PI / 2;
+                    let vMag = r < coreR ? r / coreR : coreR / r;
+                    vMag *= 8;
+                    
+                    const ex = x + Math.cos(vAngle) * vMag;
+                    const ey = y + Math.sin(vAngle) * vMag;
+                    
+                    vortexCtx.strokeStyle = `rgba(255, 170, 0, ${0.3 + vMag / 10})`;
+                    vortexCtx.lineWidth = 1;
+                    vortexCtx.beginPath();
+                    vortexCtx.moveTo(x, y);
+                    vortexCtx.lineTo(ex, ey);
+                    vortexCtx.stroke();
+                }
+            }
+            
+            // Core
+            vortexCtx.strokeStyle = 'rgba(255, 68, 68, 0.5)';
+            vortexCtx.lineWidth = 2;
+            vortexCtx.setLineDash([5, 5]);
+            vortexCtx.beginPath();
+            vortexCtx.arc(cx, cy, coreR, 0, Math.PI * 2);
+            vortexCtx.stroke();
+            vortexCtx.setLineDash([]);
+            
+            // Labels
+            vortexCtx.fillStyle = '#888';
+            vortexCtx.font = '10px sans-serif';
+            vortexCtx.textAlign = 'center';
+            vortexCtx.fillText('CORE', cx, cy + 4);
+        }
+        
+        // ===== GAME LOOP =====
+        
+        function gameLoop(timestamp) {
+            const dt = Math.min(32, timestamp - lastTime) / 16.67;
+            lastTime = timestamp;
+            
+            update(dt);
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

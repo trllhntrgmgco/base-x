@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASE-X ENGINE | FND-001: DRO Precision Cascade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --base-64: #00ff88;
+            --base-48: #88ff00;
+            --base-32: #ffcc00;
+            --base-24: #ff8800;
+            --base-16: #ff4400;
+            --base-8: #ff0044;
+            --base-4: #8800ff;
+            
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888;
+            --accent: #00ffcc;
+            --warning: #ff6600;
+            --critical: #ff0066;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* HEADER */
+        header {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, transparent 100%);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 255, 204, 0.2);
+            z-index: 100;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: conic-gradient(from 0deg, var(--base-64), var(--base-48), var(--base-32), var(--base-16), var(--base-8), var(--base-4), var(--base-64));
+            border-radius: 50%;
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 24px;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, var(--accent), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .demo-id {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 30px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .stat-value.warning { color: var(--warning); }
+        .stat-value.critical { color: var(--critical); }
+        
+        /* MAIN CONTAINER */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* LEFT PANEL - CONTROLS */
+        .control-panel {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-right: 1px solid rgba(0, 255, 204, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .panel-section {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 14px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+        
+        /* SCENARIO BUTTONS */
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .scenario-btn {
+            background: linear-gradient(135deg, rgba(0, 255, 204, 0.1), rgba(0, 255, 204, 0.05));
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            color: var(--text-primary);
+            padding: 12px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+        
+        .scenario-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 255, 204, 0.2), rgba(0, 255, 204, 0.1));
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        
+        .scenario-btn.active {
+            background: linear-gradient(135deg, var(--accent), rgba(0, 255, 204, 0.5));
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+        
+        /* SLIDERS */
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+        
+        .slider-label span:first-child {
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .slider-label span:last-child {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--accent);
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: var(--bg-primary);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent);
+        }
+        
+        /* BASE DISTRIBUTION */
+        .base-distribution {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .base-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+        }
+        
+        .base-label {
+            width: 50px;
+            font-weight: 600;
+        }
+        
+        .base-bar-container {
+            flex: 1;
+            height: 12px;
+            background: var(--bg-primary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .base-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+        
+        .base-count {
+            width: 40px;
+            text-align: right;
+            color: var(--text-secondary);
+        }
+        
+        .base-64 .base-label, .base-64 .base-bar { color: var(--base-64); background: var(--base-64); }
+        .base-48 .base-label, .base-48 .base-bar { color: var(--base-48); background: var(--base-48); }
+        .base-32 .base-label, .base-32 .base-bar { color: var(--base-32); background: var(--base-32); }
+        .base-24 .base-label, .base-24 .base-bar { color: var(--base-24); background: var(--base-24); }
+        .base-16 .base-label, .base-16 .base-bar { color: var(--base-16); background: var(--base-16); }
+        .base-8 .base-label, .base-8 .base-bar { color: var(--base-8); background: var(--base-8); }
+        .base-4 .base-label, .base-4 .base-bar { color: var(--base-4); background: var(--base-4); }
+        
+        /* PHYSICS LAYERS */
+        .layer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .layer-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        
+        .layer-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .layer-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .layer-base {
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+        
+        /* CANVAS AREA */
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(ellipse at center, var(--bg-tertiary) 0%, var(--bg-primary) 100%);
+        }
+        
+        #mainCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        /* CANVAS OVERLAYS */
+        .canvas-overlay {
+            position: absolute;
+            pointer-events: none;
+        }
+        
+        .focus-indicator {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        
+        .distance-rings {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        
+        .ring {
+            position: absolute;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* RIGHT PANEL - METRICS */
+        .metrics-panel {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-left: 1px solid rgba(0, 255, 204, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* PERFORMANCE GRAPH */
+        .graph-container {
+            height: 120px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            padding: 10px;
+            position: relative;
+        }
+        
+        .graph-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .graph-label {
+            position: absolute;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+        
+        /* SAVINGS METER */
+        .savings-meter {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .savings-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--accent);
+            text-shadow: 0 0 30px rgba(0, 255, 204, 0.5);
+        }
+        
+        .savings-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        .savings-bar {
+            margin-top: 15px;
+            height: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .savings-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--base-4), var(--base-16), var(--base-32), var(--base-64));
+            transition: width 0.5s ease;
+        }
+        
+        /* OPS BREAKDOWN */
+        .ops-breakdown {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .ops-item {
+            background: var(--bg-primary);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .ops-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .ops-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        /* OBJECT INSPECTOR */
+        .inspector {
+            background: var(--bg-primary);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+        }
+        
+        .inspector-title {
+            color: var(--accent);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .inspector-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .inspector-row:last-child {
+            border-bottom: none;
+        }
+        
+        .inspector-key {
+            color: var(--text-secondary);
+        }
+        
+        .inspector-value {
+            color: var(--text-primary);
+        }
+        
+        /* FOOTER */
+        footer {
+            background: var(--bg-secondary);
+            padding: 10px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(0, 255, 204, 0.1);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        .footer-controls {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .footer-btn {
+            background: transparent;
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            color: var(--text-primary);
+            padding: 6px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+            transition: all 0.2s;
+        }
+        
+        .footer-btn:hover {
+            background: rgba(0, 255, 204, 0.1);
+            border-color: var(--accent);
+        }
+        
+        .footer-btn.active {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+        
+        /* TOOLTIP */
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid var(--accent);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .tooltip.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <div>
+                <div class="logo-text">BASE-X ENGINE</div>
+                <div class="demo-id">FND-001: DRO Precision Cascade</div>
+            </div>
+        </div>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-value" id="fpsValue">60</div>
+                <div class="stat-label">FPS</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="objectCount">0</div>
+                <div class="stat-label">Objects</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="opsPerSec">0</div>
+                <div class="stat-label">M Ops/Sec</div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="main-container">
+        <!-- LEFT PANEL -->
+        <div class="control-panel">
+            <div class="panel-section">
+                <div class="section-title">Scenario</div>
+                <div class="scenario-grid">
+                    <button class="scenario-btn active" data-scenario="distance">Distance LOD</button>
+                    <button class="scenario-btn" data-scenario="importance">Importance</button>
+                    <button class="scenario-btn" data-scenario="velocity">Velocity</button>
+                    <button class="scenario-btn" data-scenario="interaction">Interaction</button>
+                    <button class="scenario-btn" data-scenario="physics">Physics Layers</button>
+                    <button class="scenario-btn" data-scenario="stress">Stress Test</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">DRO Parameters</div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Object Count</span>
+                        <span id="objectCountLabel">500</span>
+                    </div>
+                    <input type="range" id="objectCountSlider" min="100" max="5000" value="500" step="100">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Target FPS</span>
+                        <span id="targetFpsLabel">60</span>
+                    </div>
+                    <input type="range" id="targetFpsSlider" min="30" max="144" value="60" step="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>DRO Aggressiveness</span>
+                        <span id="aggressivenessLabel">50%</span>
+                    </div>
+                    <input type="range" id="aggressivenessSlider" min="0" max="100" value="50">
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Base Distribution</div>
+                <div class="base-distribution">
+                    <div class="base-row base-64">
+                        <span class="base-label">B-64</span>
+                        <div class="base-bar-container"><div class="base-bar" id="bar64"></div></div>
+                        <span class="base-count" id="count64">0</span>
+                    </div>
+                    <div class="base-row base-48">
+                        <span class="base-label">B-48</span>
+                        <div class="base-bar-container"><div class="base-bar" id="bar48"></div></div>
+                        <span class="base-count" id="count48">0</span>
+                    </div>
+                    <div class="base-row base-32">
+                        <span class="base-label">B-32</span>
+                        <div class="base-bar-container"><div class="base-bar" id="bar32"></div></div>
+                        <span class="base-count" id="count32">0</span>
+                    </div>
+                    <div class="base-row base-24">
+                        <span class="base-label">B-24</span>
+                        <div class="base-bar-container"><div class="base-bar" id="bar24"></div></div>
+                        <span class="base-count" id="count24">0</span>
+                    </div>
+                    <div class="base-row base-16">
+                        <span class="base-label">B-16</span>
+                        <div class="base-bar-container"><div class="base-bar" id="bar16"></div></div>
+                        <span class="base-count" id="count16">0</span>
+                    </div>
+                    <div class="base-row base-8">
+                        <span class="base-label">B-8</span>
+                        <div class="base-bar-container"><div class="base-bar" id="bar8"></div></div>
+                        <span class="base-count" id="count8">0</span>
+                    </div>
+                    <div class="base-row base-4">
+                        <span class="base-label">B-4</span>
+                        <div class="base-bar-container"><div class="base-bar" id="bar4"></div></div>
+                        <span class="base-count" id="count4">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Active Physics Layers</div>
+                <div class="layer-list" id="layerList">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- CANVAS -->
+        <div class="canvas-container">
+            <canvas id="mainCanvas"></canvas>
+            <div class="focus-indicator" id="focusIndicator"></div>
+            <div class="tooltip" id="tooltip"></div>
+        </div>
+        
+        <!-- RIGHT PANEL -->
+        <div class="metrics-panel">
+            <div class="panel-section">
+                <div class="section-title">Performance Graph</div>
+                <div class="graph-container">
+                    <canvas class="graph-canvas" id="perfGraph"></canvas>
+                </div>
+            </div>
+            
+            <div class="panel-section savings-meter">
+                <div class="savings-value" id="savingsValue">0%</div>
+                <div class="savings-label">Computational Savings</div>
+                <div class="savings-bar">
+                    <div class="savings-fill" id="savingsFill"></div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Operations Breakdown</div>
+                <div class="ops-breakdown">
+                    <div class="ops-item">
+                        <div class="ops-value" id="fullOps" style="color: var(--base-64)">0</div>
+                        <div class="ops-label">Full Precision</div>
+                    </div>
+                    <div class="ops-item">
+                        <div class="ops-value" id="reducedOps" style="color: var(--base-16)">0</div>
+                        <div class="ops-label">Reduced Precision</div>
+                    </div>
+                    <div class="ops-item">
+                        <div class="ops-value" id="skippedOps" style="color: var(--base-4)">0</div>
+                        <div class="ops-label">Interpolated</div>
+                    </div>
+                    <div class="ops-item">
+                        <div class="ops-value" id="totalOps" style="color: var(--accent)">0</div>
+                        <div class="ops-label">Total/Frame</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Selected Object</div>
+                <div class="inspector" id="inspector">
+                    <div class="inspector-title">Click an object to inspect</div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">DRO Decision Log</div>
+                <div class="inspector" id="droLog" style="max-height: 150px; overflow-y: auto;">
+                    <div style="color: var(--text-secondary)">DRO decisions will appear here...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div>© 2026 Troll Hunter Gaming LLC | Base-X Engine v0.1.0</div>
+        <div class="footer-controls">
+            <button class="footer-btn active" id="btnDroEnabled">DRO: ON</button>
+            <button class="footer-btn" id="btnShowBases">Show Bases</button>
+            <button class="footer-btn" id="btnShowVelocity">Show Velocity</button>
+            <button class="footer-btn" id="btnPause">Pause</button>
+            <button class="footer-btn" id="btnReset">Reset</button>
+        </div>
+    </footer>
+
+    <script>
+        // ============================================================
+        // BASE-X DRO STRESS TEST - CORE ENGINE
+        // ============================================================
+        
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const perfCanvas = document.getElementById('perfGraph');
+        const perfCtx = perfCanvas.getContext('2d');
+        
+        // Base colors
+        const BASE_COLORS = {
+            64: '#00ff88',
+            48: '#88ff00',
+            32: '#ffcc00',
+            24: '#ff8800',
+            16: '#ff4400',
+            8: '#ff0044',
+            4: '#8800ff'
+        };
+        
+        // Physics layer definitions
+        const PHYSICS_LAYERS = {
+            CONTACT: { id: 0, name: 'Contact', minBase: 48, maxBase: 64, defaultBase: 56, color: '#00ff88' },
+            RIGID_BODY: { id: 1, name: 'Rigid Body', minBase: 16, maxBase: 48, defaultBase: 32, color: '#88ff00' },
+            PARTICLE: { id: 2, name: 'Particle', minBase: 4, maxBase: 32, defaultBase: 16, color: '#ffcc00' },
+            FLUID: { id: 3, name: 'Fluid', minBase: 16, maxBase: 48, defaultBase: 32, color: '#ff8800' },
+            FIELD: { id: 4, name: 'Field', minBase: 4, maxBase: 16, defaultBase: 8, color: '#ff4400' }
+        };
+        
+        // State
+        let objects = [];
+        let focusPoint = { x: 0, y: 0 };
+        let selectedObject = null;
+        let paused = false;
+        let droEnabled = true;
+        let showBases = true;
+        let showVelocity = false;
+        
+        // Settings
+        let settings = {
+            objectCount: 500,
+            targetFps: 60,
+            aggressiveness: 0.5,
+            scenario: 'distance'
+        };
+        
+        // Metrics
+        let metrics = {
+            fps: 60,
+            frameTime: 0,
+            fpsHistory: [],
+            baseDistribution: { 64: 0, 48: 0, 32: 0, 24: 0, 16: 0, 8: 0, 4: 0 },
+            fullPrecisionOps: 0,
+            reducedPrecisionOps: 0,
+            skippedOps: 0,
+            totalOps: 0,
+            savings: 0
+        };
+        
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let lastFpsUpdate = 0;
+        let droLogEntries = [];
+        
+        // ============================================================
+        // OBJECT CLASS
+        // ============================================================
+        
+        class PhysicsObject {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.radius = 5 + Math.random() * 15;
+                this.mass = this.radius / 10;
+                this.type = type || this.randomType();
+                this.layer = this.getLayerForType();
+                this.importance = Math.random() * 10;
+                this.base = 32; // Current DRO-assigned base
+                this.framesSinceUpdate = 0;
+                this.interpolatedX = x;
+                this.interpolatedY = y;
+                this.lastPhysicsX = x;
+                this.lastPhysicsY = y;
+                this.id = Math.random().toString(36).substr(2, 9);
+            }
+            
+            randomType() {
+                const types = ['player', 'enemy', 'projectile', 'debris', 'particle', 'prop'];
+                const weights = [0.02, 0.1, 0.15, 0.3, 0.33, 0.1];
+                let r = Math.random();
+                for (let i = 0; i < types.length; i++) {
+                    r -= weights[i];
+                    if (r <= 0) return types[i];
+                }
+                return 'debris';
+            }
+            
+            getLayerForType() {
+                switch (this.type) {
+                    case 'player': return PHYSICS_LAYERS.RIGID_BODY;
+                    case 'enemy': return PHYSICS_LAYERS.RIGID_BODY;
+                    case 'projectile': return PHYSICS_LAYERS.CONTACT;
+                    case 'debris': return PHYSICS_LAYERS.PARTICLE;
+                    case 'particle': return PHYSICS_LAYERS.PARTICLE;
+                    case 'prop': return PHYSICS_LAYERS.RIGID_BODY;
+                    default: return PHYSICS_LAYERS.PARTICLE;
+                }
+            }
+            
+            getImportanceForType() {
+                switch (this.type) {
+                    case 'player': return 10;
+                    case 'enemy': return 7;
+                    case 'projectile': return 6;
+                    case 'debris': return 2;
+                    case 'particle': return 1;
+                    case 'prop': return 3;
+                    default: return 1;
+                }
+            }
+        }
+        
+        // ============================================================
+        // DYNAMIC RADIX OPTIMIZER (DRO)
+        // ============================================================
+        
+        class DynamicRadixOptimizer {
+            constructor() {
+                this.decisions = [];
+            }
+            
+            calculateBase(obj, focusPoint, scenario) {
+                if (!droEnabled) return 64; // Max precision if DRO disabled
+                
+                const layer = obj.layer;
+                let base = layer.defaultBase;
+                
+                // Distance factor
+                const dx = obj.x - focusPoint.x;
+                const dy = obj.y - focusPoint.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                switch (scenario) {
+                    case 'distance':
+                        base = this.distanceBasedLOD(distance, layer);
+                        break;
+                    case 'importance':
+                        base = this.importanceBasedLOD(obj, distance);
+                        break;
+                    case 'velocity':
+                        base = this.velocityBasedLOD(obj, distance);
+                        break;
+                    case 'interaction':
+                        base = this.interactionBasedLOD(obj, distance, focusPoint);
+                        break;
+                    case 'physics':
+                        base = this.physicsLayerLOD(obj, distance);
+                        break;
+                    case 'stress':
+                        base = this.stressTestLOD(obj, distance);
+                        break;
+                }
+                
+                // Apply aggressiveness
+                const reduction = Math.floor((64 - base) * settings.aggressiveness);
+                base = Math.max(4, base - reduction * 0.3);
+                
+                // Clamp to layer limits
+                base = Math.max(layer.minBase, Math.min(layer.maxBase, base));
+                
+                // Quantize to valid bases
+                base = this.quantizeBase(base);
+                
+                return base;
+            }
+            
+            distanceBasedLOD(distance, layer) {
+                if (distance < 50) return 64;
+                if (distance < 100) return 48;
+                if (distance < 200) return 32;
+                if (distance < 350) return 24;
+                if (distance < 500) return 16;
+                if (distance < 700) return 8;
+                return 4;
+            }
+            
+            importanceBasedLOD(obj, distance) {
+                const importance = obj.getImportanceForType();
+                let base = 16 + importance * 4; // 20-56 based on importance
+                
+                // Distance still matters, but less
+                if (distance > 400) base -= 8;
+                if (distance > 600) base -= 8;
+                
+                return base;
+            }
+            
+            velocityBasedLOD(obj, distance) {
+                const speed = Math.sqrt(obj.vx * obj.vx + obj.vy * obj.vy);
+                let base = 24;
+                
+                // Faster objects need more precision (errors compound)
+                if (speed > 5) base += 16;
+                else if (speed > 3) base += 8;
+                else if (speed > 1) base += 4;
+                
+                // Distance reduction
+                if (distance > 300) base -= 8;
+                if (distance > 500) base -= 8;
+                
+                return base;
+            }
+            
+            interactionBasedLOD(obj, distance, focus) {
+                // Objects near focus get max precision
+                if (distance < 80) return 64;
+                if (distance < 150) return 48;
+                
+                // Everything else drops fast
+                return Math.max(8, 32 - Math.floor(distance / 50) * 4);
+            }
+            
+            physicsLayerLOD(obj, distance) {
+                const layer = obj.layer;
+                let base = layer.defaultBase;
+                
+                // Each layer has different distance sensitivity
+                if (layer === PHYSICS_LAYERS.CONTACT) {
+                    // Contact always needs high precision
+                    base = distance < 200 ? 64 : 48;
+                } else if (layer === PHYSICS_LAYERS.RIGID_BODY) {
+                    base = distance < 150 ? 48 : (distance < 400 ? 32 : 16);
+                } else if (layer === PHYSICS_LAYERS.PARTICLE) {
+                    // Particles drop fast
+                    base = distance < 100 ? 24 : (distance < 300 ? 16 : 8);
+                } else if (layer === PHYSICS_LAYERS.FIELD) {
+                    // Fields are always coarse
+                    base = 8;
+                }
+                
+                return base;
+            }
+            
+            stressTestLOD(obj, distance) {
+                // Aggressive LOD for maximum performance
+                if (distance < 30) return 64;
+                if (distance < 80) return 48;
+                if (distance < 150) return 32;
+                if (distance < 250) return 24;
+                if (distance < 400) return 16;
+                if (distance < 600) return 8;
+                return 4;
+            }
+            
+            quantizeBase(base) {
+                const validBases = [4, 8, 16, 24, 32, 48, 64];
+                let closest = validBases[0];
+                let minDiff = Math.abs(base - closest);
+                
+                for (const b of validBases) {
+                    const diff = Math.abs(base - b);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = b;
+                    }
+                }
+                
+                return closest;
+            }
+            
+            getUpdateFrequency(base) {
+                // Lower base = less frequent updates
+                if (base >= 48) return 1;  // Every frame
+                if (base >= 32) return 2;  // Every 2 frames
+                if (base >= 16) return 4;  // Every 4 frames
+                if (base >= 8) return 8;   // Every 8 frames
+                return 16;                  // Every 16 frames
+            }
+            
+            shouldUpdate(obj, frameCount) {
+                const freq = this.getUpdateFrequency(obj.base);
+                return frameCount % freq === 0;
+            }
+        }
+        
+        const dro = new DynamicRadixOptimizer();
+        
+        // ============================================================
+        // SIMULATION
+        // ============================================================
+        
+        function initObjects() {
+            objects = [];
+            const count = settings.objectCount;
+            
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 50 + Math.random() * Math.min(canvas.width, canvas.height) * 0.45;
+                const x = canvas.width / 2 + Math.cos(angle) * dist;
+                const y = canvas.height / 2 + Math.sin(angle) * dist;
+                
+                objects.push(new PhysicsObject(x, y));
+            }
+            
+            // Add a "player" at center
+            const player = new PhysicsObject(canvas.width / 2, canvas.height / 2, 'player');
+            player.radius = 20;
+            player.importance = 10;
+            player.vx = 0;
+            player.vy = 0;
+            objects.unshift(player);
+            
+            focusPoint = { x: canvas.width / 2, y: canvas.height / 2 };
+            updateFocusIndicator();
+        }
+        
+        function updatePhysics() {
+            if (paused) return;
+            
+            // Reset metrics
+            metrics.fullPrecisionOps = 0;
+            metrics.reducedPrecisionOps = 0;
+            metrics.skippedOps = 0;
+            metrics.baseDistribution = { 64: 0, 48: 0, 32: 0, 24: 0, 16: 0, 8: 0, 4: 0 };
+            
+            frameCount++;
+            
+            for (const obj of objects) {
+                // DRO calculates optimal base
+                obj.base = dro.calculateBase(obj, focusPoint, settings.scenario);
+                metrics.baseDistribution[obj.base]++;
+                
+                // Check if we should run physics this frame
+                if (dro.shouldUpdate(obj, frameCount)) {
+                    // Store last position for interpolation
+                    obj.lastPhysicsX = obj.x;
+                    obj.lastPhysicsY = obj.y;
+                    
+                    // Run physics at assigned precision
+                    runPhysicsAtBase(obj, obj.base);
+                    
+                    if (obj.base >= 48) {
+                        metrics.fullPrecisionOps++;
+                    } else {
+                        metrics.reducedPrecisionOps++;
+                    }
+                } else {
+                    // Interpolate position
+                    const freq = dro.getUpdateFrequency(obj.base);
+                    const t = (frameCount % freq) / freq;
+                    obj.interpolatedX = obj.lastPhysicsX + (obj.x - obj.lastPhysicsX) * t;
+                    obj.interpolatedY = obj.lastPhysicsY + (obj.y - obj.lastPhysicsY) * t;
+                    
+                    metrics.skippedOps++;
+                }
+            }
+            
+            metrics.totalOps = objects.length;
+            
+            // Calculate savings
+            const maxOps = objects.length * 64; // If everything was Base-64
+            const actualOps = metrics.fullPrecisionOps * 64 + 
+                             metrics.reducedPrecisionOps * 24 + 
+                             metrics.skippedOps * 4;
+            metrics.savings = Math.round((1 - actualOps / maxOps) * 100);
+        }
+        
+        function runPhysicsAtBase(obj, base) {
+            // Simulate different precision levels
+            // In real engine, this would use actual BaseXVector math
+            
+            const precision = base / 64; // 0.0625 to 1.0
+            const dt = 1 / 60;
+            
+            // Apply velocity
+            obj.x += obj.vx * dt * 60;
+            obj.y += obj.vy * dt * 60;
+            
+            // Add some noise inversely proportional to precision
+            // This simulates precision loss at lower bases
+            if (base < 32) {
+                const noise = (1 - precision) * 0.5;
+                obj.x += (Math.random() - 0.5) * noise;
+                obj.y += (Math.random() - 0.5) * noise;
+            }
+            
+            // Boundary wrapping
+            if (obj.x < 0) obj.x = canvas.width;
+            if (obj.x > canvas.width) obj.x = 0;
+            if (obj.y < 0) obj.y = canvas.height;
+            if (obj.y > canvas.height) obj.y = 0;
+            
+            // Update interpolated position
+            obj.interpolatedX = obj.x;
+            obj.interpolatedY = obj.y;
+            
+            // Slight random velocity changes
+            obj.vx += (Math.random() - 0.5) * 0.1;
+            obj.vy += (Math.random() - 0.5) * 0.1;
+            
+            // Damping
+            obj.vx *= 0.999;
+            obj.vy *= 0.999;
+            
+            // Speed limit
+            const speed = Math.sqrt(obj.vx * obj.vx + obj.vy * obj.vy);
+            if (speed > 5) {
+                obj.vx = (obj.vx / speed) * 5;
+                obj.vy = (obj.vy / speed) * 5;
+            }
+        }
+        
+        // ============================================================
+        // RENDERING
+        // ============================================================
+        
+        function render() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw distance rings
+            drawDistanceRings();
+            
+            // Draw objects
+            for (const obj of objects) {
+                drawObject(obj);
+            }
+            
+            // Highlight selected
+            if (selectedObject) {
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(selectedObject.interpolatedX, selectedObject.interpolatedY, 
+                       selectedObject.radius + 8, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+        
+        function drawDistanceRings() {
+            const rings = [50, 100, 200, 350, 500, 700];
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            
+            for (const r of rings) {
+                ctx.beginPath();
+                ctx.arc(focusPoint.x, focusPoint.y, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            ctx.setLineDash([]);
+        }
+        
+        function drawObject(obj) {
+            const x = obj.interpolatedX;
+            const y = obj.interpolatedY;
+            const r = obj.radius;
+            
+            // Get color based on mode
+            let color;
+            if (showBases) {
+                color = BASE_COLORS[obj.base] || '#ffffff';
+            } else {
+                color = obj.layer.color;
+            }
+            
+            // Draw glow
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, r * 2);
+            gradient.addColorStop(0, color + '40');
+            gradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x, y, r * 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw object
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.3 + (obj.base / 64) * 0.7; // More opaque = higher precision
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            
+            // Draw border
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Draw velocity vector
+            if (showVelocity) {
+                const speed = Math.sqrt(obj.vx * obj.vx + obj.vy * obj.vy);
+                if (speed > 0.5) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + obj.vx * 10, y + obj.vy * 10);
+                    ctx.stroke();
+                }
+            }
+            
+            // Type indicator for special objects
+            if (obj.type === 'player') {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 10px Share Tech Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText('P', x, y + 4);
+            } else if (obj.type === 'enemy') {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 8px Share Tech Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText('E', x, y + 3);
+            }
+        }
+        
+        // ============================================================
+        // UI UPDATES
+        // ============================================================
+        
+        function updateUI() {
+            // FPS
+            const now = performance.now();
+            frameCount++;
+            
+            if (now - lastFpsUpdate > 500) {
+                metrics.fps = Math.round(frameCount / ((now - lastFpsUpdate) / 1000));
+                frameCount = 0;
+                lastFpsUpdate = now;
+                
+                // Store history
+                metrics.fpsHistory.push(metrics.fps);
+                if (metrics.fpsHistory.length > 100) metrics.fpsHistory.shift();
+            }
+            
+            // Header stats
+            document.getElementById('fpsValue').textContent = metrics.fps;
+            document.getElementById('fpsValue').className = 'stat-value' + 
+                (metrics.fps < settings.targetFps * 0.8 ? ' critical' : 
+                 metrics.fps < settings.targetFps * 0.95 ? ' warning' : '');
+            
+            document.getElementById('objectCount').textContent = objects.length;
+            document.getElementById('opsPerSec').textContent = 
+                (metrics.totalOps * metrics.fps / 1000000).toFixed(2);
+            
+            // Base distribution
+            const total = objects.length || 1;
+            for (const base of [64, 48, 32, 24, 16, 8, 4]) {
+                const count = metrics.baseDistribution[base] || 0;
+                const pct = (count / total) * 100;
+                document.getElementById(`bar${base}`).style.width = `${pct}%`;
+                document.getElementById(`count${base}`).textContent = count;
+            }
+            
+            // Savings
+            document.getElementById('savingsValue').textContent = metrics.savings + '%';
+            document.getElementById('savingsFill').style.width = metrics.savings + '%';
+            
+            // Ops breakdown
+            document.getElementById('fullOps').textContent = metrics.fullPrecisionOps;
+            document.getElementById('reducedOps').textContent = metrics.reducedPrecisionOps;
+            document.getElementById('skippedOps').textContent = metrics.skippedOps;
+            document.getElementById('totalOps').textContent = metrics.totalOps;
+            
+            // Performance graph
+            drawPerfGraph();
+            
+            // Physics layers
+            updateLayerList();
+        }
+        
+        function drawPerfGraph() {
+            const w = perfCanvas.width;
+            const h = perfCanvas.height;
+            
+            perfCtx.fillStyle = '#0a0a0f';
+            perfCtx.fillRect(0, 0, w, h);
+            
+            // Target line
+            const targetY = h - (settings.targetFps / 144) * h;
+            perfCtx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
+            perfCtx.lineWidth = 1;
+            perfCtx.setLineDash([5, 5]);
+            perfCtx.beginPath();
+            perfCtx.moveTo(0, targetY);
+            perfCtx.lineTo(w, targetY);
+            perfCtx.stroke();
+            perfCtx.setLineDash([]);
+            
+            // FPS line
+            if (metrics.fpsHistory.length > 1) {
+                perfCtx.strokeStyle = '#00ff88';
+                perfCtx.lineWidth = 2;
+                perfCtx.beginPath();
+                
+                for (let i = 0; i < metrics.fpsHistory.length; i++) {
+                    const x = (i / 100) * w;
+                    const y = h - (metrics.fpsHistory[i] / 144) * h;
+                    
+                    if (i === 0) perfCtx.moveTo(x, y);
+                    else perfCtx.lineTo(x, y);
+                }
+                
+                perfCtx.stroke();
+            }
+        }
+        
+        function updateLayerList() {
+            const list = document.getElementById('layerList');
+            list.innerHTML = '';
+            
+            // Count objects per layer
+            const layerCounts = {};
+            const layerBases = {};
+            
+            for (const obj of objects) {
+                const layerId = obj.layer.id;
+                layerCounts[layerId] = (layerCounts[layerId] || 0) + 1;
+                layerBases[layerId] = layerBases[layerId] || [];
+                layerBases[layerId].push(obj.base);
+            }
+            
+            for (const [name, layer] of Object.entries(PHYSICS_LAYERS)) {
+                const count = layerCounts[layer.id] || 0;
+                const bases = layerBases[layer.id] || [];
+                const avgBase = bases.length > 0 ? 
+                    Math.round(bases.reduce((a, b) => a + b, 0) / bases.length) : 0;
+                
+                const item = document.createElement('div');
+                item.className = 'layer-item';
+                item.innerHTML = `
+                    <div class="layer-name">
+                        <div class="layer-indicator" style="background: ${layer.color}"></div>
+                        <span>${layer.name}</span>
+                        <span style="color: var(--text-secondary); font-size: 10px;">(${count})</span>
+                    </div>
+                    <div class="layer-base" style="background: ${BASE_COLORS[dro.quantizeBase(avgBase)] || '#888'}; color: #000;">
+                        B-${avgBase}
+                    </div>
+                `;
+                list.appendChild(item);
+            }
+        }
+        
+        function updateInspector(obj) {
+            if (!obj) {
+                document.getElementById('inspector').innerHTML = 
+                    '<div class="inspector-title">Click an object to inspect</div>';
+                return;
+            }
+            
+            const speed = Math.sqrt(obj.vx * obj.vx + obj.vy * obj.vy);
+            const dx = obj.x - focusPoint.x;
+            const dy = obj.y - focusPoint.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            document.getElementById('inspector').innerHTML = `
+                <div class="inspector-title" style="color: ${BASE_COLORS[obj.base]}">${obj.type.toUpperCase()} [${obj.id}]</div>
+                <div class="inspector-row">
+                    <span class="inspector-key">Position</span>
+                    <span class="inspector-value">${obj.x.toFixed(1)}, ${obj.y.toFixed(1)}</span>
+                </div>
+                <div class="inspector-row">
+                    <span class="inspector-key">Velocity</span>
+                    <span class="inspector-value">${speed.toFixed(2)} u/s</span>
+                </div>
+                <div class="inspector-row">
+                    <span class="inspector-key">Distance</span>
+                    <span class="inspector-value">${distance.toFixed(1)} u</span>
+                </div>
+                <div class="inspector-row">
+                    <span class="inspector-key">Layer</span>
+                    <span class="inspector-value" style="color: ${obj.layer.color}">${obj.layer.name}</span>
+                </div>
+                <div class="inspector-row">
+                    <span class="inspector-key">Importance</span>
+                    <span class="inspector-value">${obj.getImportanceForType()}/10</span>
+                </div>
+                <div class="inspector-row">
+                    <span class="inspector-key">DRO Base</span>
+                    <span class="inspector-value" style="color: ${BASE_COLORS[obj.base]}">Base-${obj.base}</span>
+                </div>
+                <div class="inspector-row">
+                    <span class="inspector-key">Update Freq</span>
+                    <span class="inspector-value">1/${dro.getUpdateFrequency(obj.base)} frames</span>
+                </div>
+            `;
+        }
+        
+        function addDroLogEntry(message) {
+            droLogEntries.unshift({ time: Date.now(), message });
+            if (droLogEntries.length > 20) droLogEntries.pop();
+            
+            const log = document.getElementById('droLog');
+            log.innerHTML = droLogEntries.map(e => 
+                `<div style="padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: var(--accent)">[${new Date(e.time).toLocaleTimeString()}]</span> ${e.message}
+                </div>`
+            ).join('');
+        }
+        
+        function updateFocusIndicator() {
+            const indicator = document.getElementById('focusIndicator');
+            indicator.style.left = focusPoint.x + 'px';
+            indicator.style.top = focusPoint.y + 'px';
+        }
+        
+        // ============================================================
+        // EVENT HANDLERS
+        // ============================================================
+        
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            perfCanvas.width = perfCanvas.parentElement.clientWidth - 20;
+            perfCanvas.height = perfCanvas.parentElement.clientHeight - 20;
+            
+            if (objects.length === 0) {
+                initObjects();
+            } else {
+                focusPoint = { x: canvas.width / 2, y: canvas.height / 2 };
+                updateFocusIndicator();
+            }
+        }
+        
+        // Scenario buttons
+        document.querySelectorAll('.scenario-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.scenario = btn.dataset.scenario;
+                addDroLogEntry(`Scenario changed to: ${settings.scenario}`);
+            });
+        });
+        
+        // Sliders
+        document.getElementById('objectCountSlider').addEventListener('input', (e) => {
+            settings.objectCount = parseInt(e.target.value);
+            document.getElementById('objectCountLabel').textContent = settings.objectCount;
+        });
+        
+        document.getElementById('objectCountSlider').addEventListener('change', () => {
+            initObjects();
+            addDroLogEntry(`Object count: ${settings.objectCount}`);
+        });
+        
+        document.getElementById('targetFpsSlider').addEventListener('input', (e) => {
+            settings.targetFps = parseInt(e.target.value);
+            document.getElementById('targetFpsLabel').textContent = settings.targetFps;
+        });
+        
+        document.getElementById('aggressivenessSlider').addEventListener('input', (e) => {
+            settings.aggressiveness = parseInt(e.target.value) / 100;
+            document.getElementById('aggressivenessLabel').textContent = e.target.value + '%';
+        });
+        
+        // Footer buttons
+        document.getElementById('btnDroEnabled').addEventListener('click', (e) => {
+            droEnabled = !droEnabled;
+            e.target.textContent = droEnabled ? 'DRO: ON' : 'DRO: OFF';
+            e.target.classList.toggle('active', droEnabled);
+            addDroLogEntry(`DRO ${droEnabled ? 'enabled' : 'disabled'}`);
+        });
+        
+        document.getElementById('btnShowBases').addEventListener('click', (e) => {
+            showBases = !showBases;
+            e.target.classList.toggle('active', showBases);
+        });
+        
+        document.getElementById('btnShowVelocity').addEventListener('click', (e) => {
+            showVelocity = !showVelocity;
+            e.target.classList.toggle('active', showVelocity);
+        });
+        
+        document.getElementById('btnPause').addEventListener('click', (e) => {
+            paused = !paused;
+            e.target.textContent = paused ? 'Resume' : 'Pause';
+            e.target.classList.toggle('active', paused);
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            initObjects();
+            metrics.fpsHistory = [];
+            droLogEntries = [];
+            addDroLogEntry('Simulation reset');
+        });
+        
+        // Canvas interaction
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Check if clicked on an object
+            selectedObject = null;
+            for (const obj of objects) {
+                const dx = obj.interpolatedX - x;
+                const dy = obj.interpolatedY - y;
+                if (Math.sqrt(dx * dx + dy * dy) < obj.radius + 5) {
+                    selectedObject = obj;
+                    break;
+                }
+            }
+            
+            if (selectedObject) {
+                updateInspector(selectedObject);
+            } else {
+                // Move focus point
+                focusPoint = { x, y };
+                updateFocusIndicator();
+                updateInspector(null);
+                addDroLogEntry(`Focus moved to (${x.toFixed(0)}, ${y.toFixed(0)})`);
+            }
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Tooltip on hover
+            const tooltip = document.getElementById('tooltip');
+            let hoveredObj = null;
+            
+            for (const obj of objects) {
+                const dx = obj.interpolatedX - x;
+                const dy = obj.interpolatedY - y;
+                if (Math.sqrt(dx * dx + dy * dy) < obj.radius + 5) {
+                    hoveredObj = obj;
+                    break;
+                }
+            }
+            
+            if (hoveredObj) {
+                tooltip.innerHTML = `
+                    <div style="color: ${BASE_COLORS[hoveredObj.base]}">${hoveredObj.type}</div>
+                    <div>Base-${hoveredObj.base} | ${hoveredObj.layer.name}</div>
+                `;
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+                tooltip.classList.add('visible');
+            } else {
+                tooltip.classList.remove('visible');
+            }
+        });
+        
+        // ============================================================
+        // MAIN LOOP
+        // ============================================================
+        
+        function gameLoop() {
+            updatePhysics();
+            render();
+            updateUI();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Initialize
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        addDroLogEntry('Base-X DRO Stress Test initialized');
+        addDroLogEntry(`Scenario: ${settings.scenario}`);
+        gameLoop();
+    </script>
+</body>
+</html>

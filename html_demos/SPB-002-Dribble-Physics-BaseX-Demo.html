@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPB-002: Dribble Physics | Base-X Engine Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --base-64: #00ff88;
+            --base-48: #00ddff;
+            --base-32: #ffdd00;
+            --base-16: #ff8800;
+            --base-8: #ff4444;
+            --base-4: #884444;
+            --court-wood: #c4956a;
+            --court-dark: #8b6914;
+            --panel-bg: rgba(10, 15, 30, 0.95);
+            --accent: #ff6b00;
+            --glow: 0 0 20px rgba(255, 107, 0, 0.5);
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0f0f1f 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            z-index: 0;
+        }
+        
+        .demo-id {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9em;
+            color: var(--accent);
+            letter-spacing: 4px;
+            margin-bottom: 5px;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5em;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ff6b00, #ffaa00, #ff6b00);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+            position: relative;
+            z-index: 1;
+            display: inline-block;
+            padding: 0 30px;
+            background-color: #0a0a1a;
+        }
+        
+        @keyframes shimmer {
+            to { background-position: 200% center; }
+        }
+        
+        .subtitle {
+            font-size: 1.1em;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255, 107, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .panel-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            color: var(--accent);
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 107, 0, 0.3);
+        }
+        
+        /* Canvas Area */
+        .canvas-container {
+            position: relative;
+            background: #111;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 107, 0, 0.4);
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 500px;
+            cursor: crosshair;
+        }
+        
+        /* DRO Display */
+        .dro-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 18px;
+            border-radius: 6px;
+            border: 1px solid var(--accent);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8em;
+        }
+        
+        .dro-label {
+            color: #888;
+            font-size: 0.75em;
+            letter-spacing: 1px;
+        }
+        
+        .dro-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--base-64);
+            text-shadow: 0 0 10px currentColor;
+        }
+        
+        /* LOD Indicator */
+        .lod-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 18px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .lod-bar {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        
+        .lod-segment {
+            width: 20px;
+            height: 8px;
+            border-radius: 2px;
+            opacity: 0.3;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        
+        .lod-segment.active {
+            opacity: 1;
+            transform: scaleY(1.3);
+        }
+        
+        /* Physics Info */
+        .physics-readout {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85em;
+        }
+        
+        .physics-item {
+            text-align: center;
+        }
+        
+        .physics-label {
+            color: #666;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .physics-value {
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        
+        /* Controls Panel */
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        
+        .control-label span:last-child {
+            color: var(--accent);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: linear-gradient(90deg, var(--base-4), var(--base-64));
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--glow);
+        }
+        
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid var(--accent);
+            background: rgba(255, 107, 0, 0.1);
+            color: var(--accent);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 107, 0, 0.3);
+            box-shadow: var(--glow);
+        }
+        
+        .btn.active {
+            background: var(--accent);
+            color: #000;
+        }
+        
+        /* Stats Panel */
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            color: #888;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', monospace;
+            font-weight: 600;
+        }
+        
+        /* Base Legend */
+        .base-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8em;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        
+        /* DRO Decision Log */
+        .decision-log {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.75em;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-entry.upgrade {
+            color: var(--base-64);
+        }
+        
+        .log-entry.downgrade {
+            color: var(--base-8);
+        }
+        
+        /* Precision Comparison */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .comparison-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .comparison-box h4 {
+            font-size: 0.75em;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .comparison-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+        
+        /* Phase indicators */
+        .phase-indicator {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9em;
+            border: 1px solid;
+            transition: all 0.3s;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #555;
+            font-size: 0.85em;
+            border-top: 1px solid rgba(255, 107, 0, 0.2);
+            margin-top: 20px;
+        }
+        
+        .footer span {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="demo-id">BASE-X ENGINE DEMO</div>
+            <h1>SPB-002: DRIBBLE PHYSICS</h1>
+            <div class="subtitle">Ball-Hand-Floor Interaction with LOD-Aware DRO Optimization</div>
+        </div>
+        
+        <div class="main-grid">
+            <!-- Left Panel: Controls -->
+            <div class="panel">
+                <div class="panel-title">⚙ DRO CONTROLS</div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Camera Distance</span>
+                        <span id="distanceValue">5.0m</span>
+                    </div>
+                    <input type="range" id="cameraDistance" min="1" max="20" step="0.5" value="5">
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Dribble Speed</span>
+                        <span id="speedValue">1.0x</span>
+                    </div>
+                    <input type="range" id="dribbleSpeed" min="0.5" max="3" step="0.1" value="1">
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Force LOD Override</span>
+                        <span id="lodOverrideValue">AUTO</span>
+                    </div>
+                    <input type="range" id="lodOverride" min="0" max="5" step="1" value="0">
+                </div>
+                
+                <div class="panel-title" style="margin-top: 20px;">🎮 DRIBBLE MODE</div>
+                
+                <button class="btn active" id="modeStandard">Standard Dribble</button>
+                <button class="btn" id="modeCrossover">Crossover</button>
+                <button class="btn" id="modeBehindBack">Behind the Back</button>
+                <button class="btn" id="modeSpinMove">Spin Move</button>
+                
+                <div class="panel-title" style="margin-top: 20px;">🔬 PRECISION TEST</div>
+                
+                <button class="btn" id="btnCompare">Run Base Comparison</button>
+                <button class="btn" id="btnStress">Stress Test (10 Balls)</button>
+                
+                <div class="comparison-grid" id="comparisonResults" style="display: none;">
+                    <div class="comparison-box">
+                        <h4>Base-64 Error</h4>
+                        <div class="comparison-value" style="color: var(--base-64);" id="error64">—</div>
+                    </div>
+                    <div class="comparison-box">
+                        <h4>Base-16 Error</h4>
+                        <div class="comparison-value" style="color: var(--base-16);" id="error16">—</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center: Canvas -->
+            <div class="canvas-container">
+                <canvas id="gameCanvas"></canvas>
+                
+                <div class="dro-display">
+                    <div class="dro-label">ACTIVE BASE</div>
+                    <div class="dro-value" id="currentBase">64</div>
+                </div>
+                
+                <div class="lod-indicator">
+                    <div class="dro-label">LOD LEVEL</div>
+                    <div class="lod-bar">
+                        <div class="lod-segment active" style="background: var(--base-64);"></div>
+                        <div class="lod-segment" style="background: var(--base-48);"></div>
+                        <div class="lod-segment" style="background: var(--base-32);"></div>
+                        <div class="lod-segment" style="background: var(--base-16);"></div>
+                        <div class="lod-segment" style="background: var(--base-8);"></div>
+                    </div>
+                </div>
+                
+                <div class="phase-indicator" id="phaseIndicator" style="border-color: var(--base-64); color: var(--base-64);">
+                    CONTACT PHASE — BASE-64
+                </div>
+                
+                <div class="physics-readout">
+                    <div class="physics-item">
+                        <div class="physics-label">Ball Velocity</div>
+                        <div class="physics-value" id="ballVelocity">0.00 m/s</div>
+                    </div>
+                    <div class="physics-item">
+                        <div class="physics-label">Bounce Height</div>
+                        <div class="physics-value" id="bounceHeight">0.00 m</div>
+                    </div>
+                    <div class="physics-item">
+                        <div class="physics-label">Hand Force</div>
+                        <div class="physics-value" id="handForce">0.0 N</div>
+                    </div>
+                    <div class="physics-item">
+                        <div class="physics-label">Spin Rate</div>
+                        <div class="physics-value" id="spinRate">0 RPM</div>
+                    </div>
+                    <div class="physics-item">
+                        <div class="physics-label">Ops/Frame</div>
+                        <div class="physics-value" id="opsFrame">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Stats -->
+            <div class="panel">
+                <div class="panel-title">📊 DRO METRICS</div>
+                
+                <div class="stat-row">
+                    <span class="stat-label">Frame Time</span>
+                    <span class="stat-value" id="frameTime">16.67ms</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Physics Steps</span>
+                    <span class="stat-value" id="physicsSteps">1</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Precision Savings</span>
+                    <span class="stat-value" id="precisionSavings">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Contact Events</span>
+                    <span class="stat-value" id="contactEvents">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Base Transitions</span>
+                    <span class="stat-value" id="baseTransitions">0</span>
+                </div>
+                
+                <div class="panel-title" style="margin-top: 20px;">🎯 LOD FACTORS</div>
+                
+                <div class="stat-row">
+                    <span class="stat-label">Distance Factor</span>
+                    <span class="stat-value" id="distanceFactor">1.00</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Velocity Factor</span>
+                    <span class="stat-value" id="velocityFactor">1.00</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Interaction Factor</span>
+                    <span class="stat-value" id="interactionFactor">1.00</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Phase Factor</span>
+                    <span class="stat-value" id="phaseFactor">1.00</span>
+                </div>
+                
+                <div class="base-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--base-64);"></div>
+                        <span>Base-64 (Contact)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--base-48);"></div>
+                        <span>Base-48 (Near)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--base-32);"></div>
+                        <span>Base-32 (Mid)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--base-16);"></div>
+                        <span>Base-16 (Far)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--base-8);"></div>
+                        <span>Base-8 (Background)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--base-4);"></div>
+                        <span>Base-4 (Minimal)</span>
+                    </div>
+                </div>
+                
+                <div class="panel-title" style="margin-top: 20px;">📜 DRO DECISIONS</div>
+                <div class="decision-log" id="decisionLog">
+                    <div class="log-entry">System initialized...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <strong>SPB-002: Dribble Physics</strong> | Base-X Game Engine Demo Suite | 
+            <span>Troll Hunter Gaming LLC</span> | Patent Pending Technology
+        </div>
+    </div>
+    
+    <script>
+        // ============================================
+        // BASE-X DRIBBLE PHYSICS ENGINE
+        // SPB-002 Demo with LOD-Aware DRO
+        // ============================================
+        
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // High DPI support
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = 500 * dpr;
+            canvas.style.height = '500px';
+            ctx.scale(dpr, dpr);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // ============================================
+        // BASE-X MATHEMATICS CORE
+        // ============================================
+        
+        class BaseXMath {
+            constructor(base = 64) {
+                this.base = base;
+                this.precision = this.calculatePrecision(base);
+            }
+            
+            calculatePrecision(base) {
+                // Higher base = more precision
+                // Base-64: ~10^-15 precision
+                // Base-4: ~10^-3 precision
+                return Math.pow(10, -Math.floor(base / 4.5));
+            }
+            
+            // Base-X addition with precision awareness
+            add(a, b) {
+                const result = a + b;
+                return this.quantize(result);
+            }
+            
+            // Base-X multiplication
+            multiply(a, b) {
+                const result = a * b;
+                return this.quantize(result);
+            }
+            
+            // Quantize to current base precision
+            quantize(value) {
+                const factor = Math.pow(this.base, 6);
+                return Math.round(value * factor) / factor;
+            }
+            
+            // Square root with base precision
+            sqrt(value) {
+                if (value < 0) return 0;
+                return this.quantize(Math.sqrt(value));
+            }
+            
+            // Operations counter for this base
+            getOpsMultiplier() {
+                // Lower bases = fewer operations needed
+                return Math.ceil(this.base / 8);
+            }
+            
+            setBase(newBase) {
+                this.base = newBase;
+                this.precision = this.calculatePrecision(newBase);
+            }
+        }
+        
+        // ============================================
+        // DYNAMIC RADIX OPTIMIZER (DRO)
+        // ============================================
+        
+        class DynamicRadixOptimizer {
+            constructor() {
+                this.currentBase = 64;
+                this.transitionCount = 0;
+                this.lastDecision = null;
+                this.decisionHistory = [];
+                
+                // LOD thresholds for basketball
+                this.lodThresholds = {
+                    contact: { distance: 2, base: 64 },      // Ball touching hand/floor
+                    near: { distance: 5, base: 48 },         // Close action
+                    mid: { distance: 10, base: 32 },         // Normal play
+                    far: { distance: 15, base: 16 },         // Wide shot
+                    background: { distance: 20, base: 8 }    // Crowd/background
+                };
+                
+                // Phase-based precision requirements
+                this.phaseRequirements = {
+                    'CONTACT_FLOOR': 64,    // Ball hitting floor - maximum precision
+                    'CONTACT_HAND': 64,     // Ball hitting hand - maximum precision
+                    'RISING': 48,           // Ball going up - high precision
+                    'APEX': 32,             // Ball at peak - medium precision
+                    'FALLING': 48,          // Ball coming down - high precision
+                    'FREE_FLIGHT': 32       // Ball in air - medium precision
+                };
+            }
+            
+            // Main DRO decision function
+            calculateOptimalBase(state) {
+                const factors = this.calculateFactors(state);
+                
+                // Weighted combination of factors
+                const weights = {
+                    distance: 0.25,
+                    velocity: 0.20,
+                    interaction: 0.30,
+                    phase: 0.25
+                };
+                
+                // Calculate base requirement from each factor
+                const distanceBase = this.getDistanceBase(factors.distance);
+                const velocityBase = this.getVelocityBase(factors.velocity);
+                const interactionBase = factors.interaction ? 64 : 32;
+                const phaseBase = this.phaseRequirements[state.phase] || 32;
+                
+                // Take maximum required base (physics correctness demands highest)
+                let optimalBase = Math.max(
+                    distanceBase * weights.distance,
+                    velocityBase * weights.velocity,
+                    interactionBase * weights.interaction,
+                    phaseBase * weights.phase
+                );
+                
+                // During contact, ALWAYS use Base-64
+                if (state.phase === 'CONTACT_FLOOR' || state.phase === 'CONTACT_HAND') {
+                    optimalBase = 64;
+                }
+                
+                // Snap to valid base levels
+                optimalBase = this.snapToValidBase(optimalBase);
+                
+                // Log transition
+                if (optimalBase !== this.currentBase) {
+                    this.transitionCount++;
+                    const direction = optimalBase > this.currentBase ? 'upgrade' : 'downgrade';
+                    this.logDecision(state.phase, this.currentBase, optimalBase, direction);
+                }
+                
+                this.currentBase = optimalBase;
+                this.lastDecision = {
+                    factors,
+                    base: optimalBase,
+                    timestamp: performance.now()
+                };
+                
+                return optimalBase;
+            }
+            
+            calculateFactors(state) {
+                return {
+                    distance: Math.min(state.cameraDistance / 20, 1),
+                    velocity: Math.min(Math.abs(state.velocity) / 15, 1),
+                    interaction: state.isContact,
+                    phase: state.phase
+                };
+            }
+            
+            getDistanceBase(distanceFactor) {
+                if (distanceFactor < 0.1) return 64;
+                if (distanceFactor < 0.25) return 48;
+                if (distanceFactor < 0.5) return 32;
+                if (distanceFactor < 0.75) return 16;
+                return 8;
+            }
+            
+            getVelocityBase(velocityFactor) {
+                // Higher velocity = need higher precision to avoid tunneling
+                if (velocityFactor > 0.8) return 64;
+                if (velocityFactor > 0.5) return 48;
+                if (velocityFactor > 0.25) return 32;
+                return 16;
+            }
+            
+            snapToValidBase(base) {
+                const validBases = [4, 8, 16, 32, 48, 64];
+                let closest = validBases[0];
+                let minDiff = Math.abs(base - closest);
+                
+                for (const valid of validBases) {
+                    const diff = Math.abs(base - valid);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = valid;
+                    }
+                }
+                
+                return closest;
+            }
+            
+            logDecision(phase, oldBase, newBase, direction) {
+                const entry = {
+                    time: new Date().toLocaleTimeString(),
+                    phase,
+                    oldBase,
+                    newBase,
+                    direction
+                };
+                this.decisionHistory.unshift(entry);
+                if (this.decisionHistory.length > 50) {
+                    this.decisionHistory.pop();
+                }
+            }
+            
+            getBaseColor(base) {
+                if (base >= 64) return '#00ff88';
+                if (base >= 48) return '#00ddff';
+                if (base >= 32) return '#ffdd00';
+                if (base >= 16) return '#ff8800';
+                if (base >= 8) return '#ff4444';
+                return '#884444';
+            }
+            
+            getLODLevel(base) {
+                if (base >= 64) return 0;
+                if (base >= 48) return 1;
+                if (base >= 32) return 2;
+                if (base >= 16) return 3;
+                if (base >= 8) return 4;
+                return 5;
+            }
+        }
+        
+        // ============================================
+        // BASKETBALL PHYSICS
+        // ============================================
+        
+        class BasketballPhysics {
+            constructor(baseXMath, dro) {
+                this.math = baseXMath;
+                this.dro = dro;
+                
+                // Ball properties (NBA regulation)
+                this.ball = {
+                    x: 400,
+                    y: 150,
+                    vx: 0,
+                    vy: 0,
+                    radius: 12,
+                    mass: 0.624,  // kg
+                    spin: 0,      // radians/sec
+                    phase: 'FALLING'
+                };
+                
+                // Hand properties
+                this.hand = {
+                    x: 400,
+                    y: 100,
+                    width: 40,
+                    height: 15,
+                    force: 0
+                };
+                
+                // Physics constants
+                this.gravity = 9.81;
+                this.floorY = 450;
+                this.restitution = 0.85;  // Bounce coefficient
+                this.airResistance = 0.001;
+                this.spinDecay = 0.98;
+                
+                // Dribble pattern
+                this.dribbleMode = 'standard';
+                this.dribblePhase = 0;
+                this.dribbleSpeed = 1;
+                
+                // Stats
+                this.contactEvents = 0;
+                this.totalOps = 0;
+            }
+            
+            update(dt, cameraDistance, lodOverride = 0) {
+                // Determine current state for DRO
+                const isContact = this.checkContact();
+                const state = {
+                    cameraDistance,
+                    velocity: Math.sqrt(this.ball.vx * this.ball.vx + this.ball.vy * this.ball.vy),
+                    isContact,
+                    phase: this.ball.phase
+                };
+                
+                // Get optimal base from DRO (or use override)
+                let optimalBase;
+                if (lodOverride > 0) {
+                    const overrideBases = [64, 48, 32, 16, 8, 4];
+                    optimalBase = overrideBases[lodOverride - 1] || 64;
+                } else {
+                    optimalBase = this.dro.calculateOptimalBase(state);
+                }
+                
+                this.math.setBase(optimalBase);
+                
+                // Physics substeps based on base
+                const substeps = Math.max(1, Math.floor(optimalBase / 16));
+                const subDt = dt / substeps;
+                
+                for (let i = 0; i < substeps; i++) {
+                    this.physicsStep(subDt);
+                }
+                
+                // Update hand position for dribble pattern
+                this.updateDribblePattern(dt);
+                
+                // Count operations
+                this.totalOps += substeps * this.math.getOpsMultiplier();
+                
+                return {
+                    base: optimalBase,
+                    substeps,
+                    ops: substeps * this.math.getOpsMultiplier()
+                };
+            }
+            
+            physicsStep(dt) {
+                const ball = this.ball;
+                
+                // Apply gravity (Base-X calculation)
+                ball.vy = this.math.add(ball.vy, this.math.multiply(this.gravity, dt));
+                
+                // Apply air resistance
+                ball.vx = this.math.multiply(ball.vx, 1 - this.airResistance);
+                ball.vy = this.math.multiply(ball.vy, 1 - this.airResistance);
+                
+                // Update position
+                ball.x = this.math.add(ball.x, this.math.multiply(ball.vx, dt * 60));
+                ball.y = this.math.add(ball.y, this.math.multiply(ball.vy, dt * 60));
+                
+                // Update spin
+                ball.spin = this.math.multiply(ball.spin, this.spinDecay);
+                
+                // Determine phase
+                if (ball.vy < -0.5) {
+                    ball.phase = 'RISING';
+                } else if (ball.vy > 0.5) {
+                    ball.phase = 'FALLING';
+                } else {
+                    ball.phase = 'APEX';
+                }
+                
+                // Floor collision
+                if (ball.y + ball.radius >= this.floorY) {
+                    ball.phase = 'CONTACT_FLOOR';
+                    ball.y = this.floorY - ball.radius;
+                    
+                    // Bounce with energy loss
+                    ball.vy = this.math.multiply(-ball.vy, this.restitution);
+                    
+                    // Add spin from horizontal velocity
+                    ball.spin = this.math.add(ball.spin, this.math.multiply(ball.vx, 0.1));
+                    
+                    this.contactEvents++;
+                }
+                
+                // Hand collision (dribble push)
+                if (this.checkHandCollision()) {
+                    ball.phase = 'CONTACT_HAND';
+                    this.applyDribbleForce();
+                    this.contactEvents++;
+                }
+                
+                // Boundary constraints
+                const canvasWidth = canvas.width / (window.devicePixelRatio || 1);
+                if (ball.x < ball.radius) {
+                    ball.x = ball.radius;
+                    ball.vx = -ball.vx * 0.8;
+                }
+                if (ball.x > canvasWidth - ball.radius) {
+                    ball.x = canvasWidth - ball.radius;
+                    ball.vx = -ball.vx * 0.8;
+                }
+            }
+            
+            checkContact() {
+                return this.ball.y + this.ball.radius >= this.floorY - 5 || this.checkHandCollision();
+            }
+            
+            checkHandCollision() {
+                const ball = this.ball;
+                const hand = this.hand;
+                
+                // Simple AABB check for hand-ball collision
+                return ball.y - ball.radius <= hand.y + hand.height &&
+                       ball.y + ball.radius >= hand.y &&
+                       ball.x >= hand.x - hand.width / 2 &&
+                       ball.x <= hand.x + hand.width / 2 &&
+                       ball.vy < 0;  // Ball must be rising toward hand
+            }
+            
+            applyDribbleForce() {
+                const ball = this.ball;
+                
+                // Push ball down with controlled force
+                const baseForce = 8 * this.dribbleSpeed;
+                
+                switch (this.dribbleMode) {
+                    case 'crossover':
+                        ball.vy = baseForce;
+                        ball.vx = Math.sin(this.dribblePhase * 2) * 3;
+                        ball.spin = ball.vx * 2;
+                        break;
+                    case 'behindback':
+                        ball.vy = baseForce * 0.9;
+                        ball.vx = Math.cos(this.dribblePhase) * 4;
+                        ball.spin = -ball.vx * 3;
+                        break;
+                    case 'spinmove':
+                        ball.vy = baseForce * 1.1;
+                        ball.vx = Math.sin(this.dribblePhase * 3) * 2;
+                        ball.spin = 15;
+                        break;
+                    default:
+                        ball.vy = baseForce;
+                        ball.vx *= 0.9;
+                        ball.spin = ball.vx;
+                }
+                
+                this.hand.force = baseForce * this.ball.mass;
+            }
+            
+            updateDribblePattern(dt) {
+                this.dribblePhase += dt * this.dribbleSpeed * 2;
+                
+                const canvasWidth = canvas.width / (window.devicePixelRatio || 1);
+                const centerX = canvasWidth / 2;
+                
+                switch (this.dribbleMode) {
+                    case 'crossover':
+                        this.hand.x = centerX + Math.sin(this.dribblePhase) * 80;
+                        break;
+                    case 'behindback':
+                        this.hand.x = centerX + Math.sin(this.dribblePhase * 0.5) * 120;
+                        break;
+                    case 'spinmove':
+                        this.hand.x = centerX + Math.sin(this.dribblePhase * 1.5) * 60;
+                        this.hand.y = 100 + Math.cos(this.dribblePhase * 1.5) * 20;
+                        break;
+                    default:
+                        this.hand.x = centerX + Math.sin(this.dribblePhase * 0.3) * 20;
+                }
+            }
+            
+            setDribbleMode(mode) {
+                this.dribbleMode = mode;
+            }
+            
+            setDribbleSpeed(speed) {
+                this.dribbleSpeed = speed;
+            }
+        }
+        
+        // ============================================
+        // RENDERER
+        // ============================================
+        
+        class DribbleRenderer {
+            constructor(ctx, physics, dro) {
+                this.ctx = ctx;
+                this.physics = physics;
+                this.dro = dro;
+            }
+            
+            render() {
+                const ctx = this.ctx;
+                const canvasWidth = canvas.width / (window.devicePixelRatio || 1);
+                const canvasHeight = 500;
+                
+                // Clear
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                
+                // Draw court floor
+                this.drawCourt(canvasWidth, canvasHeight);
+                
+                // Draw precision grid (shows Base-X quantization)
+                this.drawPrecisionGrid(canvasWidth, canvasHeight);
+                
+                // Draw hand
+                this.drawHand();
+                
+                // Draw ball with LOD-aware detail
+                this.drawBall();
+                
+                // Draw trajectory prediction
+                this.drawTrajectory();
+                
+                // Draw contact indicators
+                this.drawContactIndicators();
+            }
+            
+            drawCourt(w, h) {
+                const ctx = this.ctx;
+                const floorY = this.physics.floorY;
+                
+                // Court floor gradient
+                const gradient = ctx.createLinearGradient(0, floorY, 0, h);
+                gradient.addColorStop(0, '#c4956a');
+                gradient.addColorStop(0.3, '#a67c52');
+                gradient.addColorStop(1, '#8b6914');
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, floorY, w, h - floorY);
+                
+                // Court lines
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([10, 10]);
+                
+                // Center line
+                ctx.beginPath();
+                ctx.moveTo(w / 2, floorY);
+                ctx.lineTo(w / 2, h);
+                ctx.stroke();
+                
+                ctx.setLineDash([]);
+                
+                // Floor reflection
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.fillRect(0, floorY, w, 20);
+            }
+            
+            drawPrecisionGrid(w, h) {
+                const ctx = this.ctx;
+                const base = this.dro.currentBase;
+                
+                // Grid density based on current base
+                const gridSize = Math.max(10, 80 - base);
+                const alpha = 0.1 + (base / 64) * 0.1;
+                
+                ctx.strokeStyle = `rgba(255, 107, 0, ${alpha})`;
+                ctx.lineWidth = 0.5;
+                
+                for (let x = 0; x < w; x += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, this.physics.floorY);
+                    ctx.stroke();
+                }
+                
+                for (let y = 0; y < this.physics.floorY; y += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(w, y);
+                    ctx.stroke();
+                }
+            }
+            
+            drawHand() {
+                const ctx = this.ctx;
+                const hand = this.physics.hand;
+                
+                // Hand shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(hand.x - hand.width / 2 + 3, hand.y + 3, hand.width, hand.height);
+                
+                // Hand
+                const handGradient = ctx.createLinearGradient(
+                    hand.x - hand.width / 2, hand.y,
+                    hand.x - hand.width / 2, hand.y + hand.height
+                );
+                handGradient.addColorStop(0, '#e8c4a0');
+                handGradient.addColorStop(1, '#c4956a');
+                
+                ctx.fillStyle = handGradient;
+                ctx.beginPath();
+                ctx.roundRect(hand.x - hand.width / 2, hand.y, hand.width, hand.height, 5);
+                ctx.fill();
+                
+                // Fingers
+                const fingerWidth = 6;
+                const fingerHeight = 12;
+                for (let i = 0; i < 4; i++) {
+                    const fx = hand.x - hand.width / 2 + 5 + i * 9;
+                    ctx.fillStyle = '#d4a574';
+                    ctx.beginPath();
+                    ctx.roundRect(fx, hand.y + hand.height - 2, fingerWidth, fingerHeight, 2);
+                    ctx.fill();
+                }
+            }
+            
+            drawBall() {
+                const ctx = this.ctx;
+                const ball = this.physics.ball;
+                const base = this.dro.currentBase;
+                const baseColor = this.dro.getBaseColor(base);
+                
+                // Ball shadow on floor
+                const shadowY = this.physics.floorY + 5;
+                const shadowScale = 1 - (this.physics.floorY - ball.y) / 400;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(ball.x, shadowY, ball.radius * shadowScale, ball.radius * 0.3 * shadowScale, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Ball glow based on precision
+                const glowRadius = ball.radius + 10;
+                const glow = ctx.createRadialGradient(ball.x, ball.y, ball.radius, ball.x, ball.y, glowRadius);
+                glow.addColorStop(0, `${baseColor}40`);
+                glow.addColorStop(1, 'transparent');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, glowRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Ball body
+                const ballGradient = ctx.createRadialGradient(
+                    ball.x - 4, ball.y - 4, 0,
+                    ball.x, ball.y, ball.radius
+                );
+                ballGradient.addColorStop(0, '#ff8844');
+                ballGradient.addColorStop(0.5, '#ee5500');
+                ballGradient.addColorStop(1, '#aa3300');
+                
+                ctx.fillStyle = ballGradient;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Ball lines (detail based on LOD)
+                if (base >= 32) {
+                    ctx.strokeStyle = '#882200';
+                    ctx.lineWidth = base >= 48 ? 2 : 1;
+                    
+                    // Horizontal line
+                    ctx.beginPath();
+                    ctx.arc(ball.x, ball.y, ball.radius - 1, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    // Curved lines with spin
+                    ctx.save();
+                    ctx.translate(ball.x, ball.y);
+                    ctx.rotate(ball.spin * 0.1);
+                    
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, ball.radius - 1, ball.radius * 0.3, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    if (base >= 48) {
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, ball.radius * 0.3, ball.radius - 1, 0, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                    
+                    ctx.restore();
+                }
+                
+                // Highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(ball.x - 3, ball.y - 3, 4, 3, -0.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Precision indicator ring
+                ctx.strokeStyle = baseColor;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius + 5, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            drawTrajectory() {
+                const ctx = this.ctx;
+                const ball = this.physics.ball;
+                const base = this.dro.currentBase;
+                
+                // Only show trajectory at higher LOD
+                if (base < 32) return;
+                
+                ctx.strokeStyle = 'rgba(255, 107, 0, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 5]);
+                
+                ctx.beginPath();
+                
+                let px = ball.x;
+                let py = ball.y;
+                let pvx = ball.vx;
+                let pvy = ball.vy;
+                
+                ctx.moveTo(px, py);
+                
+                for (let i = 0; i < 30; i++) {
+                    pvy += this.physics.gravity * 0.016;
+                    px += pvx;
+                    py += pvy;
+                    
+                    if (py > this.physics.floorY) break;
+                    
+                    ctx.lineTo(px, py);
+                }
+                
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            drawContactIndicators() {
+                const ctx = this.ctx;
+                const ball = this.physics.ball;
+                
+                if (ball.phase === 'CONTACT_FLOOR') {
+                    // Floor impact ripple
+                    ctx.strokeStyle = 'rgba(255, 200, 100, 0.5)';
+                    ctx.lineWidth = 2;
+                    
+                    for (let i = 1; i <= 3; i++) {
+                        ctx.beginPath();
+                        ctx.ellipse(ball.x, this.physics.floorY, i * 15, i * 5, 0, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+                
+                if (ball.phase === 'CONTACT_HAND') {
+                    // Hand contact spark
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    for (let i = 0; i < 5; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = Math.random() * 20;
+                        ctx.beginPath();
+                        ctx.arc(
+                            ball.x + Math.cos(angle) * dist,
+                            ball.y + Math.sin(angle) * dist,
+                            2, 0, Math.PI * 2
+                        );
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+        
+        // ============================================
+        // UI CONTROLLER
+        // ============================================
+        
+        class UIController {
+            constructor(physics, dro) {
+                this.physics = physics;
+                this.dro = dro;
+                this.cameraDistance = 5;
+                this.lodOverride = 0;
+                this.frameTime = 16.67;
+                this.lastFrameTime = performance.now();
+                
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                // Sliders
+                document.getElementById('cameraDistance').addEventListener('input', (e) => {
+                    this.cameraDistance = parseFloat(e.target.value);
+                    document.getElementById('distanceValue').textContent = this.cameraDistance.toFixed(1) + 'm';
+                });
+                
+                document.getElementById('dribbleSpeed').addEventListener('input', (e) => {
+                    const speed = parseFloat(e.target.value);
+                    this.physics.setDribbleSpeed(speed);
+                    document.getElementById('speedValue').textContent = speed.toFixed(1) + 'x';
+                });
+                
+                document.getElementById('lodOverride').addEventListener('input', (e) => {
+                    this.lodOverride = parseInt(e.target.value);
+                    const labels = ['AUTO', 'LOD-0 (B64)', 'LOD-1 (B48)', 'LOD-2 (B32)', 'LOD-3 (B16)', 'LOD-4 (B8)'];
+                    document.getElementById('lodOverrideValue').textContent = labels[this.lodOverride];
+                });
+                
+                // Mode buttons
+                const modes = ['Standard', 'Crossover', 'BehindBack', 'SpinMove'];
+                modes.forEach(mode => {
+                    document.getElementById('mode' + mode).addEventListener('click', (e) => {
+                        modes.forEach(m => document.getElementById('mode' + m).classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.physics.setDribbleMode(mode.toLowerCase());
+                    });
+                });
+                
+                // Test buttons
+                document.getElementById('btnCompare').addEventListener('click', () => this.runComparison());
+                document.getElementById('btnStress').addEventListener('click', () => this.runStressTest());
+            }
+            
+            update(physicsResult) {
+                const now = performance.now();
+                this.frameTime = now - this.lastFrameTime;
+                this.lastFrameTime = now;
+                
+                // Update displays
+                document.getElementById('currentBase').textContent = physicsResult.base;
+                document.getElementById('currentBase').style.color = this.dro.getBaseColor(physicsResult.base);
+                
+                // LOD bar
+                const lodLevel = this.dro.getLODLevel(physicsResult.base);
+                const segments = document.querySelectorAll('.lod-segment');
+                segments.forEach((seg, i) => {
+                    seg.classList.toggle('active', i <= lodLevel);
+                });
+                
+                // Phase indicator
+                const phaseEl = document.getElementById('phaseIndicator');
+                const baseColor = this.dro.getBaseColor(physicsResult.base);
+                phaseEl.textContent = `${this.physics.ball.phase} — BASE-${physicsResult.base}`;
+                phaseEl.style.borderColor = baseColor;
+                phaseEl.style.color = baseColor;
+                
+                // Physics readouts
+                const vel = Math.sqrt(this.physics.ball.vx ** 2 + this.physics.ball.vy ** 2);
+                document.getElementById('ballVelocity').textContent = vel.toFixed(2) + ' m/s';
+                document.getElementById('bounceHeight').textContent = 
+                    ((this.physics.floorY - this.physics.ball.y) / 100).toFixed(2) + ' m';
+                document.getElementById('handForce').textContent = this.physics.hand.force.toFixed(1) + ' N';
+                document.getElementById('spinRate').textContent = Math.abs(this.physics.ball.spin * 60).toFixed(0) + ' RPM';
+                document.getElementById('opsFrame').textContent = physicsResult.ops;
+                
+                // Stats
+                document.getElementById('frameTime').textContent = this.frameTime.toFixed(2) + 'ms';
+                document.getElementById('physicsSteps').textContent = physicsResult.substeps;
+                
+                const maxOps = 8 * 8;  // Base-64 substeps * multiplier
+                const currentOps = physicsResult.ops;
+                const savings = ((maxOps - currentOps) / maxOps * 100).toFixed(0);
+                document.getElementById('precisionSavings').textContent = savings + '%';
+                
+                document.getElementById('contactEvents').textContent = this.physics.contactEvents;
+                document.getElementById('baseTransitions').textContent = this.dro.transitionCount;
+                
+                // LOD factors
+                if (this.dro.lastDecision) {
+                    const f = this.dro.lastDecision.factors;
+                    document.getElementById('distanceFactor').textContent = f.distance.toFixed(2);
+                    document.getElementById('velocityFactor').textContent = f.velocity.toFixed(2);
+                    document.getElementById('interactionFactor').textContent = f.interaction ? '1.00' : '0.00';
+                    document.getElementById('phaseFactor').textContent = f.phase;
+                }
+                
+                // Decision log
+                this.updateDecisionLog();
+            }
+            
+            updateDecisionLog() {
+                const log = document.getElementById('decisionLog');
+                const entries = this.dro.decisionHistory.slice(0, 10);
+                
+                log.innerHTML = entries.map(entry => 
+                    `<div class="log-entry ${entry.direction}">
+                        [${entry.time}] ${entry.phase}: B${entry.oldBase} → B${entry.newBase}
+                    </div>`
+                ).join('') || '<div class="log-entry">Waiting for transitions...</div>';
+            }
+            
+            runComparison() {
+                // Compare precision at different bases
+                const results = document.getElementById('comparisonResults');
+                results.style.display = 'grid';
+                
+                // Simulate same bounce at different bases
+                const math64 = new BaseXMath(64);
+                const math16 = new BaseXMath(16);
+                
+                let y64 = 100, vy64 = 0;
+                let y16 = 100, vy16 = 0;
+                
+                for (let i = 0; i < 100; i++) {
+                    vy64 = math64.add(vy64, math64.multiply(9.81, 0.016));
+                    y64 = math64.add(y64, vy64);
+                    
+                    vy16 = math16.add(vy16, math16.multiply(9.81, 0.016));
+                    y16 = math16.add(y16, vy16);
+                }
+                
+                const error64 = Math.abs(y64 - 178.58).toFixed(6);
+                const error16 = Math.abs(y16 - 178.58).toFixed(4);
+                
+                document.getElementById('error64').textContent = '±' + error64;
+                document.getElementById('error16').textContent = '±' + error16;
+            }
+            
+            runStressTest() {
+                alert('Stress test: 10 simultaneous balls with DRO optimization.\nThis would spawn multiple ball instances each running through the DRO system independently, demonstrating computational scaling.');
+            }
+        }
+        
+        // ============================================
+        // MAIN APPLICATION
+        // ============================================
+        
+        const baseXMath = new BaseXMath(64);
+        const dro = new DynamicRadixOptimizer();
+        const physics = new BasketballPhysics(baseXMath, dro);
+        const renderer = new DribbleRenderer(ctx, physics, dro);
+        const ui = new UIController(physics, dro);
+        
+        let lastTime = 0;
+        
+        function gameLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+            lastTime = timestamp;
+            
+            // Update physics with DRO
+            const physicsResult = physics.update(dt, ui.cameraDistance, ui.lodOverride);
+            
+            // Render
+            renderer.render();
+            
+            // Update UI
+            ui.update(physicsResult);
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Start
+        requestAnimationFrame(gameLoop);
+        
+        // Log initial state
+        dro.logDecision('INIT', 0, 64, 'upgrade');
+    </script>
+</body>
+</html>

@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASE-X ENGINE | SPC-001: Solar System Navigator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-void: #020206;
+            --bg-panel: rgba(5, 8, 15, 0.95);
+            --star-white: #f0f4ff;
+            --sun-yellow: #ffdd44;
+            --earth-blue: #4488ff;
+            --mars-red: #dd6644;
+            --accent-cyan: #00ddee;
+            --accent-gold: #ffaa33;
+            --text-primary: #d0d8e8;
+            --text-dim: #556688;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg-void);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            height: 50px;
+            background: linear-gradient(180deg, rgba(0, 221, 238, 0.08), transparent);
+            border-bottom: 1px solid rgba(0, 221, 238, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-badge {
+            background: linear-gradient(135deg, var(--accent-cyan), #0066aa);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 10px;
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        
+        .logo-sub {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-left: 10px;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+        
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .control-panel {
+            width: 260px;
+            background: var(--bg-panel);
+            border-right: 1px solid rgba(0, 221, 238, 0.1);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .panel-section {
+            margin-bottom: 18px;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 221, 238, 0.2);
+        }
+        
+        .destination-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .dest-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 11px;
+            text-align: left;
+        }
+        
+        .dest-btn:hover {
+            background: rgba(0, 221, 238, 0.1);
+        }
+        
+        .dest-btn.active {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 221, 238, 0.15);
+        }
+        
+        .dest-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .dest-info {
+            flex: 1;
+        }
+        
+        .dest-name {
+            font-weight: 600;
+            font-size: 11px;
+        }
+        
+        .dest-dist {
+            font-size: 9px;
+            color: var(--text-dim);
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        .scale-indicator {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+        }
+        
+        .scale-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-bottom: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .scale-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00ddee, #ffaa33, #ff4466);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8px;
+            color: var(--text-dim);
+        }
+        
+        .scale-current {
+            text-align: center;
+            margin-top: 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            color: var(--accent-gold);
+        }
+        
+        .coord-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+        }
+        
+        .coord-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .coord-row:last-child { border-bottom: none; }
+        .coord-label { color: var(--text-dim); }
+        .coord-value { color: var(--accent-cyan); }
+        
+        .sdc-display {
+            background: rgba(0, 50, 80, 0.3);
+            border: 1px solid rgba(0, 221, 238, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .sdc-title {
+            font-size: 9px;
+            color: var(--text-dim);
+            margin-bottom: 5px;
+        }
+        
+        .sdc-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--accent-cyan);
+            word-break: break-all;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .zoom-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(0, 221, 238, 0.1);
+            border: 1px solid rgba(0, 221, 238, 0.3);
+            border-radius: 5px;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .zoom-btn:hover {
+            background: rgba(0, 221, 238, 0.2);
+        }
+        
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #spaceCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: grab;
+        }
+        
+        #spaceCanvas:active {
+            cursor: grabbing;
+        }
+        
+        .hud-overlay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(0, 221, 238, 0.3);
+            border-radius: 8px;
+            padding: 12px 15px;
+        }
+        
+        .hud-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+        }
+        
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            font-size: 10px;
+            padding: 3px 0;
+        }
+        
+        .hud-key { color: var(--text-dim); }
+        .hud-val { font-family: 'Share Tech Mono', monospace; color: var(--text-primary); }
+        
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        
+        .crosshair-h, .crosshair-v {
+            position: absolute;
+            background: rgba(0, 221, 238, 0.4);
+        }
+        
+        .crosshair-h {
+            width: 30px;
+            height: 1px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .crosshair-v {
+            width: 1px;
+            height: 30px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .hint-box {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+        
+        .hint-box kbd {
+            background: rgba(0, 221, 238, 0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: var(--accent-cyan);
+        }
+        
+        .info-panel {
+            width: 220px;
+            background: var(--bg-panel);
+            border-left: 1px solid rgba(0, 221, 238, 0.1);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .body-info {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .body-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+        
+        .body-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .body-type {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+        }
+        
+        .body-stats {
+            text-align: left;
+            font-size: 10px;
+        }
+        
+        .body-stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .precision-demo {
+            background: rgba(0, 50, 80, 0.2);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 10px;
+        }
+        
+        .precision-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+        }
+        
+        .precision-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+        }
+        
+        .precision-row .good { color: #00ff88; }
+        .precision-row .bad { color: #ff4466; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-badge">SPC-001</div>
+            <div class="logo-text">SOLAR SYSTEM NAVIGATOR</div>
+            <div class="logo-sub">SDC Coordinate Scaling Demo</div>
+        </div>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-value" id="scaleDisplay">1 : 1</div>
+                <div class="stat-label">View Scale</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="distanceDisplay">0 km</div>
+                <div class="stat-label">From Sun</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="precisionDisplay">1 μm</div>
+                <div class="stat-label">Precision</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="baseDisplay">64</div>
+                <div class="stat-label">Active Base</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="control-panel">
+            <div class="panel-section">
+                <div class="section-title">Destinations</div>
+                <div class="destination-list">
+                    <button class="dest-btn active" data-dest="sun">
+                        <span class="dest-icon">☀️</span>
+                        <div class="dest-info">
+                            <div class="dest-name">Sun</div>
+                            <div class="dest-dist">0 AU</div>
+                        </div>
+                    </button>
+                    <button class="dest-btn" data-dest="mercury">
+                        <span class="dest-icon">⚫</span>
+                        <div class="dest-info">
+                            <div class="dest-name">Mercury</div>
+                            <div class="dest-dist">0.39 AU</div>
+                        </div>
+                    </button>
+                    <button class="dest-btn" data-dest="venus">
+                        <span class="dest-icon">🟡</span>
+                        <div class="dest-info">
+                            <div class="dest-name">Venus</div>
+                            <div class="dest-dist">0.72 AU</div>
+                        </div>
+                    </button>
+                    <button class="dest-btn" data-dest="earth">
+                        <span class="dest-icon">🌍</span>
+                        <div class="dest-info">
+                            <div class="dest-name">Earth</div>
+                            <div class="dest-dist">1.0 AU</div>
+                        </div>
+                    </button>
+                    <button class="dest-btn" data-dest="mars">
+                        <span class="dest-icon">🔴</span>
+                        <div class="dest-info">
+                            <div class="dest-name">Mars</div>
+                            <div class="dest-dist">1.52 AU</div>
+                        </div>
+                    </button>
+                    <button class="dest-btn" data-dest="jupiter">
+                        <span class="dest-icon">🟤</span>
+                        <div class="dest-info">
+                            <div class="dest-name">Jupiter</div>
+                            <div class="dest-dist">5.2 AU</div>
+                        </div>
+                    </button>
+                    <button class="dest-btn" data-dest="saturn">
+                        <span class="dest-icon">🪐</span>
+                        <div class="dest-info">
+                            <div class="dest-name">Saturn</div>
+                            <div class="dest-dist">9.5 AU</div>
+                        </div>
+                    </button>
+                    <button class="dest-btn" data-dest="neptune">
+                        <span class="dest-icon">🔵</span>
+                        <div class="dest-info">
+                            <div class="dest-name">Neptune</div>
+                            <div class="dest-dist">30 AU</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Scale Range</div>
+                <div class="scale-indicator">
+                    <div class="scale-bar">
+                        <div class="scale-fill" id="scaleFill" style="width: 50%"></div>
+                    </div>
+                    <div class="scale-labels">
+                        <span>1m</span>
+                        <span>1km</span>
+                        <span>1AU</span>
+                        <span>100AU</span>
+                    </div>
+                    <div class="scale-current" id="scaleUnit">Viewing: Planetary</div>
+                </div>
+                <div class="zoom-controls">
+                    <button class="zoom-btn" id="zoomOut">−</button>
+                    <button class="zoom-btn" id="zoomIn">+</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">SDC Coordinates</div>
+                <div class="sdc-display">
+                    <div class="sdc-title">Current Position (SDC-14)</div>
+                    <div class="sdc-value" id="sdcCoord">0.0.0.0.0.0.0.0.0.0.0.0.0.0</div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Camera Position</div>
+                <div class="coord-display">
+                    <div class="coord-row">
+                        <span class="coord-label">X</span>
+                        <span class="coord-value" id="camX">0</span>
+                    </div>
+                    <div class="coord-row">
+                        <span class="coord-label">Y</span>
+                        <span class="coord-value" id="camY">0</span>
+                    </div>
+                    <div class="coord-row">
+                        <span class="coord-label">Zoom</span>
+                        <span class="coord-value" id="camZoom">1.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-area">
+            <canvas id="spaceCanvas"></canvas>
+            
+            <div class="hud-overlay">
+                <div class="hud-title">Navigation HUD</div>
+                <div class="hud-row">
+                    <span class="hud-key">Target</span>
+                    <span class="hud-val" id="hudTarget">Sun</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-key">Distance</span>
+                    <span class="hud-val" id="hudDistance">0 km</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-key">Scale</span>
+                    <span class="hud-val" id="hudScale">1m/px</span>
+                </div>
+            </div>
+            
+            <div class="crosshair">
+                <div class="crosshair-h"></div>
+                <div class="crosshair-v"></div>
+            </div>
+            
+            <div class="hint-box">
+                <kbd>Scroll</kbd> Zoom | 
+                <kbd>Drag</kbd> Pan | 
+                <kbd>1-8</kbd> Jump to planet
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="panel-section">
+                <div class="section-title">Selected Body</div>
+                <div class="body-info">
+                    <div class="body-icon" id="bodyIcon">☀️</div>
+                    <div class="body-name" id="bodyName">Sun</div>
+                    <div class="body-type" id="bodyType">G-type Main Sequence Star</div>
+                    <div class="body-stats">
+                        <div class="body-stat-row">
+                            <span>Radius</span>
+                            <span id="bodyRadius">696,340 km</span>
+                        </div>
+                        <div class="body-stat-row">
+                            <span>Mass</span>
+                            <span id="bodyMass">1.989×10³⁰ kg</span>
+                        </div>
+                        <div class="body-stat-row">
+                            <span>Distance</span>
+                            <span id="bodyDistance">0 AU</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision at Scale</div>
+                <div class="precision-demo">
+                    <div class="precision-title">Current View Precision</div>
+                    <div class="precision-row">
+                        <span>Minimum Unit</span>
+                        <span class="good" id="minUnit">1 μm</span>
+                    </div>
+                    <div class="precision-row">
+                        <span>32-bit Float</span>
+                        <span class="bad" id="float32">±1.2 km error</span>
+                    </div>
+                    <div class="precision-row">
+                        <span>64-bit Float</span>
+                        <span id="float64">±0.1 mm error</span>
+                    </div>
+                    <div class="precision-row">
+                        <span>SDC-14</span>
+                        <span class="good" id="sdcPrec">±1 μm always</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Why SDC?</div>
+                <div class="precision-demo">
+                    <div style="font-size: 9px; line-height: 1.5; color: var(--text-dim);">
+                        Standard floating-point breaks down at large distances. 
+                        At Neptune's orbit, 32-bit floats have <strong>kilometer-level errors</strong>.
+                        <br><br>
+                        SDC maintains <strong>micrometer precision</strong> across the entire solar system
+                        using hierarchical coordinate cells.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('spaceCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Constants
+        const AU = 149597870.7; // km
+        const SUN_RADIUS = 696340; // km
+        
+        // Celestial bodies
+        const BODIES = {
+            sun: {
+                name: 'Sun',
+                icon: '☀️',
+                type: 'G-type Main Sequence Star',
+                distance: 0,
+                radius: 696340,
+                mass: '1.989×10³⁰ kg',
+                color: '#ffdd44',
+                glowColor: '#ffaa00'
+            },
+            mercury: {
+                name: 'Mercury',
+                icon: '⚫',
+                type: 'Terrestrial Planet',
+                distance: 0.39 * AU,
+                radius: 2439.7,
+                mass: '3.285×10²³ kg',
+                color: '#888888',
+                glowColor: '#666666'
+            },
+            venus: {
+                name: 'Venus',
+                icon: '🟡',
+                type: 'Terrestrial Planet',
+                distance: 0.72 * AU,
+                radius: 6051.8,
+                mass: '4.867×10²⁴ kg',
+                color: '#ddaa55',
+                glowColor: '#cc9944'
+            },
+            earth: {
+                name: 'Earth',
+                icon: '🌍',
+                type: 'Terrestrial Planet',
+                distance: 1.0 * AU,
+                radius: 6371,
+                mass: '5.972×10²⁴ kg',
+                color: '#4488ff',
+                glowColor: '#2266dd'
+            },
+            mars: {
+                name: 'Mars',
+                icon: '🔴',
+                type: 'Terrestrial Planet',
+                distance: 1.52 * AU,
+                radius: 3389.5,
+                mass: '6.39×10²³ kg',
+                color: '#dd6644',
+                glowColor: '#cc5533'
+            },
+            jupiter: {
+                name: 'Jupiter',
+                icon: '🟤',
+                type: 'Gas Giant',
+                distance: 5.2 * AU,
+                radius: 69911,
+                mass: '1.898×10²⁷ kg',
+                color: '#ddaa88',
+                glowColor: '#cc9977'
+            },
+            saturn: {
+                name: 'Saturn',
+                icon: '🪐',
+                type: 'Gas Giant (Ringed)',
+                distance: 9.5 * AU,
+                radius: 58232,
+                mass: '5.683×10²⁶ kg',
+                color: '#ddcc88',
+                glowColor: '#ccbb77',
+                rings: true
+            },
+            neptune: {
+                name: 'Neptune',
+                icon: '🔵',
+                type: 'Ice Giant',
+                distance: 30 * AU,
+                radius: 24622,
+                mass: '1.024×10²⁶ kg',
+                color: '#4466dd',
+                glowColor: '#3355cc'
+            }
+        };
+        
+        // State
+        let camera = {
+            x: 0,
+            y: 0,
+            zoom: 1e-6, // km per pixel at base zoom
+            targetZoom: 1e-6,
+            minZoom: 1e-9,  // Can see surface detail
+            maxZoom: 1e-2   // Can see whole solar system
+        };
+        
+        let selectedBody = 'sun';
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let time = 0;
+        
+        // Initialize
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        
+        // Navigation
+        function goToBody(bodyId) {
+            const body = BODIES[bodyId];
+            selectedBody = bodyId;
+            
+            // Position camera at body
+            camera.x = body.distance;
+            camera.y = 0;
+            
+            // Set appropriate zoom to see the body
+            camera.targetZoom = body.radius * 3 / (canvas.width / 2);
+            
+            // Update UI
+            document.querySelectorAll('.dest-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.dest === bodyId);
+            });
+            
+            updateBodyInfo(body);
+        }
+        
+        function updateBodyInfo(body) {
+            document.getElementById('bodyIcon').textContent = body.icon;
+            document.getElementById('bodyName').textContent = body.name;
+            document.getElementById('bodyType').textContent = body.type;
+            document.getElementById('bodyRadius').textContent = formatNumber(body.radius) + ' km';
+            document.getElementById('bodyMass').textContent = body.mass;
+            document.getElementById('bodyDistance').textContent = (body.distance / AU).toFixed(2) + ' AU';
+            document.getElementById('hudTarget').textContent = body.name;
+        }
+        
+        // SDC Coordinate generation
+        function positionToSDC(x, y, zoom) {
+            // 14-component SDC coordinate
+            // Each component represents a different scale level
+            const scales = [
+                1e15,  // Light years
+                1e12,  // 1000 AU
+                1e9,   // AU
+                1e6,   // Million km
+                1e3,   // 1000 km
+                1,     // km
+                1e-3,  // meter
+                1e-6,  // mm
+                1e-9,  // μm
+                1e-12, // nm
+                1e-15, // pm
+                1e-18, // fm
+                1e-21, // am
+                1e-24  // zm
+            ];
+            
+            let remaining = Math.abs(x);
+            const components = [];
+            
+            for (const scale of scales) {
+                const value = Math.floor(remaining / scale) % 1000;
+                components.push(value.toString().padStart(1, '0'));
+                remaining = remaining % scale;
+            }
+            
+            return components.slice(0, 14).join('.');
+        }
+        
+        // Format large numbers
+        function formatNumber(n) {
+            if (n >= 1e9) return (n / 1e9).toFixed(2) + ' B';
+            if (n >= 1e6) return (n / 1e6).toFixed(2) + ' M';
+            if (n >= 1e3) return (n / 1e3).toFixed(2) + ' K';
+            return n.toFixed(2);
+        }
+        
+        function formatDistance(km) {
+            if (km >= AU * 0.1) return (km / AU).toFixed(2) + ' AU';
+            if (km >= 1e6) return (km / 1e6).toFixed(2) + ' M km';
+            if (km >= 1e3) return (km / 1e3).toFixed(2) + ' K km';
+            if (km >= 1) return km.toFixed(2) + ' km';
+            if (km >= 1e-3) return (km * 1e3).toFixed(2) + ' m';
+            if (km >= 1e-6) return (km * 1e6).toFixed(2) + ' mm';
+            return (km * 1e9).toFixed(2) + ' μm';
+        }
+        
+        function formatScale(kmPerPixel) {
+            if (kmPerPixel >= 1e6) return (kmPerPixel / 1e6).toFixed(1) + ' M km/px';
+            if (kmPerPixel >= 1e3) return (kmPerPixel / 1e3).toFixed(1) + ' K km/px';
+            if (kmPerPixel >= 1) return kmPerPixel.toFixed(1) + ' km/px';
+            if (kmPerPixel >= 1e-3) return (kmPerPixel * 1e3).toFixed(1) + ' m/px';
+            if (kmPerPixel >= 1e-6) return (kmPerPixel * 1e6).toFixed(1) + ' mm/px';
+            return (kmPerPixel * 1e9).toFixed(1) + ' μm/px';
+        }
+        
+        // Update loop
+        function update() {
+            time += 0.016;
+            
+            // Smooth zoom
+            camera.zoom += (camera.targetZoom - camera.zoom) * 0.1;
+            
+            // Update displays
+            const distFromSun = Math.sqrt(camera.x * camera.x + camera.y * camera.y);
+            document.getElementById('distanceDisplay').textContent = formatDistance(distFromSun);
+            document.getElementById('scaleDisplay').textContent = formatScale(camera.zoom);
+            document.getElementById('hudDistance').textContent = formatDistance(distFromSun);
+            document.getElementById('hudScale').textContent = formatScale(camera.zoom);
+            
+            document.getElementById('camX').textContent = formatDistance(camera.x);
+            document.getElementById('camY').textContent = formatDistance(camera.y);
+            document.getElementById('camZoom').textContent = camera.zoom.toExponential(2);
+            
+            // SDC coordinate
+            document.getElementById('sdcCoord').textContent = positionToSDC(camera.x, camera.y, camera.zoom);
+            
+            // Scale bar
+            const scalePercent = Math.log10(camera.zoom / camera.minZoom) / 
+                                 Math.log10(camera.maxZoom / camera.minZoom) * 100;
+            document.getElementById('scaleFill').style.width = scalePercent + '%';
+            
+            // Scale unit label
+            let scaleLabel = 'Surface Detail';
+            if (camera.zoom > 1e-4) scaleLabel = 'Planetary';
+            if (camera.zoom > 1e-2) scaleLabel = 'Orbital';
+            if (camera.zoom > 1) scaleLabel = 'System Wide';
+            document.getElementById('scaleUnit').textContent = 'Viewing: ' + scaleLabel;
+            
+            // Precision display
+            const minUnit = camera.zoom * 0.001; // Minimum visible unit
+            document.getElementById('minUnit').textContent = formatDistance(minUnit);
+            
+            // Float precision errors at current distance
+            const float32Error = distFromSun * 1.19e-7; // ~7 significant digits
+            const float64Error = distFromSun * 2.22e-16; // ~16 significant digits
+            document.getElementById('float32').textContent = '±' + formatDistance(float32Error);
+            document.getElementById('float64').textContent = '±' + formatDistance(float64Error);
+            
+            // Base selection based on scale
+            let base = 64;
+            if (camera.zoom > 1e-3) base = 48;
+            if (camera.zoom > 1e-1) base = 32;
+            if (camera.zoom > 1) base = 24;
+            document.getElementById('baseDisplay').textContent = base;
+            document.getElementById('precisionDisplay').textContent = 
+                base >= 48 ? '1 μm' : base >= 32 ? '1 mm' : '1 m';
+        }
+        
+        // Render
+        function render() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            // Background
+            ctx.fillStyle = '#020206';
+            ctx.fillRect(0, 0, w, h);
+            
+            // Stars
+            ctx.fillStyle = '#ffffff';
+            for (let i = 0; i < 200; i++) {
+                const x = ((i * 7919) % w);
+                const y = ((i * 7727) % h);
+                const size = ((i * 13) % 3) * 0.5 + 0.5;
+                const alpha = 0.3 + ((i * 17) % 70) / 100;
+                ctx.globalAlpha = alpha;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            
+            // Draw orbital paths (when zoomed out enough)
+            if (camera.zoom > 1e-4) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.lineWidth = 1;
+                
+                for (const [id, body] of Object.entries(BODIES)) {
+                    if (body.distance === 0) continue;
+                    
+                    const orbitRadius = body.distance / camera.zoom;
+                    const sunScreenX = cx + (0 - camera.x) / camera.zoom;
+                    const sunScreenY = cy + (0 - camera.y) / camera.zoom;
+                    
+                    if (orbitRadius < w * 2 && orbitRadius > 5) {
+                        ctx.beginPath();
+                        ctx.arc(sunScreenX, sunScreenY, orbitRadius, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            // Draw bodies
+            for (const [id, body] of Object.entries(BODIES)) {
+                const screenX = cx + (body.distance - camera.x) / camera.zoom;
+                const screenY = cy + (0 - camera.y) / camera.zoom;
+                
+                // Skip if off screen
+                if (screenX < -100 || screenX > w + 100 || 
+                    screenY < -100 || screenY > h + 100) continue;
+                
+                // Calculate visual radius
+                let visualRadius = body.radius / camera.zoom;
+                visualRadius = Math.max(3, Math.min(visualRadius, 500));
+                
+                // Glow
+                const gradient = ctx.createRadialGradient(
+                    screenX, screenY, 0,
+                    screenX, screenY, visualRadius * 2
+                );
+                gradient.addColorStop(0, body.glowColor + '40');
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, visualRadius * 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Body
+                ctx.fillStyle = body.color;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, visualRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Rings for Saturn
+                if (body.rings && visualRadius > 10) {
+                    ctx.strokeStyle = '#ccbb7780';
+                    ctx.lineWidth = visualRadius * 0.3;
+                    ctx.beginPath();
+                    ctx.ellipse(screenX, screenY, visualRadius * 2, visualRadius * 0.5, 
+                               Math.PI * 0.1, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                // Label
+                if (visualRadius < 100) {
+                    ctx.fillStyle = '#ffffff80';
+                    ctx.font = '10px "Share Tech Mono"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(body.name, screenX, screenY + visualRadius + 15);
+                }
+                
+                // Selection indicator
+                if (id === selectedBody) {
+                    ctx.strokeStyle = '#00ddee';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, visualRadius + 10, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            }
+            
+            // Scale reference
+            const scaleBarWidth = 100;
+            const scaleBarDist = scaleBarWidth * camera.zoom;
+            
+            ctx.strokeStyle = '#ffffff40';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(w - 130, h - 30);
+            ctx.lineTo(w - 30, h - 30);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ffffff60';
+            ctx.font = '10px "Share Tech Mono"';
+            ctx.textAlign = 'center';
+            ctx.fillText(formatDistance(scaleBarDist), w - 80, h - 15);
+            
+            ctx.textAlign = 'left';
+        }
+        
+        // Main loop
+        function mainLoop() {
+            update();
+            render();
+            requestAnimationFrame(mainLoop);
+        }
+        
+        // Event handlers
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 1.2 : 0.8;
+            camera.targetZoom = Math.max(camera.minZoom, 
+                                Math.min(camera.maxZoom, camera.targetZoom * zoomFactor));
+        });
+        
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStart = { x: e.clientX, y: e.clientY };
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const dx = e.clientX - dragStart.x;
+                const dy = e.clientY - dragStart.y;
+                camera.x -= dx * camera.zoom;
+                camera.y -= dy * camera.zoom;
+                dragStart = { x: e.clientX, y: e.clientY };
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => isDragging = false);
+        
+        // Destination buttons
+        document.querySelectorAll('.dest-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                goToBody(btn.dataset.dest);
+            });
+        });
+        
+        // Zoom buttons
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            camera.targetZoom = Math.max(camera.minZoom, camera.targetZoom * 0.5);
+        });
+        
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            camera.targetZoom = Math.min(camera.maxZoom, camera.targetZoom * 2);
+        });
+        
+        // Keyboard
+        document.addEventListener('keydown', (e) => {
+            const keys = ['1', '2', '3', '4', '5', '6', '7', '8'];
+            const bodies = ['sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'neptune'];
+            
+            const idx = keys.indexOf(e.key);
+            if (idx >= 0) {
+                goToBody(bodies[idx]);
+            }
+            
+            if (e.key === '+' || e.key === '=') {
+                camera.targetZoom = Math.max(camera.minZoom, camera.targetZoom * 0.5);
+            }
+            if (e.key === '-') {
+                camera.targetZoom = Math.min(camera.maxZoom, camera.targetZoom * 2);
+            }
+        });
+        
+        // Initialize
+        window.addEventListener('resize', resize);
+        resize();
+        goToBody('sun');
+        mainLoop();
+    </script>
+</body>
+</html>

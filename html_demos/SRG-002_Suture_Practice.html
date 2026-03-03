@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASE-X ENGINE | SRG-002: Suture Practice</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #080a0c;
+            --bg-panel: rgba(10, 15, 20, 0.95);
+            --surgical-teal: #00aa99;
+            --tissue-pink: #cc8888;
+            --suture-blue: #3366cc;
+            --blood-red: #aa2233;
+            --precision-high: #00dd88;
+            --precision-low: #ff4455;
+            --warning: #ddaa00;
+            --text-primary: #e0e4e8;
+            --text-dim: #667788;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            height: 50px;
+            background: linear-gradient(180deg, rgba(0, 170, 153, 0.1), transparent);
+            border-bottom: 1px solid rgba(0, 170, 153, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-badge {
+            background: linear-gradient(135deg, var(--surgical-teal), #006655);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 10px;
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        
+        .logo-sub {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-left: 10px;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .stat-value.good { color: var(--precision-high); }
+        .stat-value.warn { color: var(--warning); }
+        .stat-value.bad { color: var(--precision-low); }
+        
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .control-panel {
+            width: 260px;
+            background: var(--bg-panel);
+            border-right: 1px solid rgba(0, 170, 153, 0.2);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .panel-section {
+            margin-bottom: 18px;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--surgical-teal);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 170, 153, 0.3);
+        }
+        
+        .technique-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .technique-btn {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 11px;
+            text-align: left;
+        }
+        
+        .technique-btn:hover { background: rgba(0, 170, 153, 0.1); }
+        .technique-btn.active {
+            border-color: var(--surgical-teal);
+            background: rgba(0, 170, 153, 0.15);
+        }
+        
+        .technique-title { font-weight: 600; }
+        .technique-desc { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+        
+        .base-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        
+        .base-btn {
+            padding: 8px 5px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            text-align: center;
+            transition: all 0.15s;
+        }
+        
+        .base-btn:hover { background: rgba(255, 255, 255, 0.06); }
+        .base-btn.active {
+            border-color: var(--precision-high);
+            background: rgba(0, 221, 136, 0.15);
+            color: var(--precision-high);
+        }
+        
+        .base-btn.required { border-color: var(--surgical-teal); }
+        
+        .slider-group {
+            margin-bottom: 12px;
+        }
+        
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 10px;
+        }
+        
+        .slider-label { color: var(--text-dim); }
+        .slider-value { font-family: 'Share Tech Mono', monospace; color: var(--surgical-teal); }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--surgical-teal);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .suture-info {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .suture-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            font-size: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .suture-row:last-child { border-bottom: none; }
+        .suture-key { color: var(--text-dim); }
+        .suture-val { font-family: 'Share Tech Mono', monospace; color: var(--surgical-teal); }
+        
+        .action-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        
+        .action-btn {
+            padding: 10px;
+            background: rgba(0, 170, 153, 0.15);
+            border: 1px solid rgba(0, 170, 153, 0.4);
+            border-radius: 5px;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .action-btn:hover { background: rgba(0, 170, 153, 0.25); }
+        .action-btn.full { grid-column: span 2; }
+        
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .canvas-row {
+            flex: 1;
+            display: flex;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .canvas-wrapper canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+        }
+        
+        .canvas-label {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            z-index: 10;
+        }
+        
+        .canvas-label.high { color: var(--precision-high); border: 1px solid var(--precision-high); }
+        .canvas-label.low { color: var(--precision-low); border: 1px solid var(--precision-low); }
+        
+        .tension-meter {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 25px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+        
+        .tension-fill {
+            position: absolute;
+            bottom: 0;
+            left: 3px;
+            right: 3px;
+            background: linear-gradient(to top, var(--precision-high), var(--warning), var(--precision-low));
+            border-radius: 2px;
+            transition: height 0.1s;
+        }
+        
+        .tension-label {
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: var(--text-dim);
+        }
+        
+        .score-display {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .score-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            color: var(--precision-high);
+        }
+        
+        .score-label {
+            font-size: 9px;
+            color: var(--text-dim);
+        }
+        
+        .info-panel {
+            width: 240px;
+            background: var(--bg-panel);
+            border-left: 1px solid rgba(0, 170, 153, 0.2);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .metrics-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .metric-row:last-child { border-bottom: none; }
+        .metric-key { color: var(--text-dim); }
+        .metric-val { font-family: 'Share Tech Mono', monospace; }
+        .metric-val.good { color: var(--precision-high); }
+        .metric-val.warn { color: var(--warning); }
+        .metric-val.bad { color: var(--precision-low); }
+        
+        .suture-log {
+            max-height: 120px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 9px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-entry.good { color: var(--precision-high); }
+        .log-entry.warn { color: var(--warning); }
+        .log-entry.bad { color: var(--precision-low); }
+        
+        .instructions {
+            background: rgba(0, 100, 120, 0.15);
+            border: 1px solid rgba(0, 170, 153, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 9px;
+            line-height: 1.5;
+        }
+        
+        .instructions-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            color: var(--surgical-teal);
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-badge">SRG-002</div>
+            <div class="logo-text">SUTURE PRACTICE</div>
+            <div class="logo-sub">Surgical Precision | Needle Tracking</div>
+        </div>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-value good" id="scoreDisplay">0</div>
+                <div class="stat-label">Score</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="stitchCount">0/6</div>
+                <div class="stat-label">Stitches</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value good" id="tensionStatus">Optimal</div>
+                <div class="stat-label">Tension</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value good" id="accuracy">100%</div>
+                <div class="stat-label">Accuracy</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="control-panel">
+            <div class="panel-section">
+                <div class="section-title">Suture Technique</div>
+                <div class="technique-list">
+                    <button class="technique-btn active" data-tech="simple">
+                        <div class="technique-title">Simple Interrupted</div>
+                        <div class="technique-desc">Basic wound closure, individual knots</div>
+                    </button>
+                    <button class="technique-btn" data-tech="continuous">
+                        <div class="technique-title">Continuous Running</div>
+                        <div class="technique-desc">Single thread, faster closure</div>
+                    </button>
+                    <button class="technique-btn" data-tech="mattress">
+                        <div class="technique-title">Horizontal Mattress</div>
+                        <div class="technique-desc">Eversion, high tension wounds</div>
+                    </button>
+                    <button class="technique-btn" data-tech="subcuticular">
+                        <div class="technique-title">Subcuticular</div>
+                        <div class="technique-desc">Hidden, cosmetic closure</div>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Base</div>
+                <div class="base-grid">
+                    <button class="base-btn" data-base="16">B-16</button>
+                    <button class="base-btn" data-base="24">B-24</button>
+                    <button class="base-btn" data-base="32">B-32</button>
+                    <button class="base-btn required" data-base="48">B-48</button>
+                    <button class="base-btn required" data-base="56">B-56</button>
+                    <button class="base-btn required active" data-base="64">B-64</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Suture Parameters</div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Needle Curve</span>
+                        <span class="slider-value" id="curveVal">3/8 Circle</span>
+                    </div>
+                    <input type="range" id="curveSlider" min="0" max="3" value="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Thread Gauge</span>
+                        <span class="slider-value" id="gaugeVal">3-0</span>
+                    </div>
+                    <input type="range" id="gaugeSlider" min="0" max="5" value="2">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Bite Depth</span>
+                        <span class="slider-value" id="depthVal">4 mm</span>
+                    </div>
+                    <input type="range" id="depthSlider" min="2" max="8" value="4">
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Suture Material</div>
+                <div class="suture-info">
+                    <div class="suture-row">
+                        <span class="suture-key">Material</span>
+                        <span class="suture-val">Nylon (Non-absorbable)</span>
+                    </div>
+                    <div class="suture-row">
+                        <span class="suture-key">Color</span>
+                        <span class="suture-val" style="color: #3366cc">Blue</span>
+                    </div>
+                    <div class="suture-row">
+                        <span class="suture-key">Tensile Strength</span>
+                        <span class="suture-val">High</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Actions</div>
+                <div class="action-btns">
+                    <button class="action-btn" id="btnUndo">Undo Stitch</button>
+                    <button class="action-btn" id="btnTieKnot">Tie Knot</button>
+                    <button class="action-btn" id="btnCut">Cut Thread</button>
+                    <button class="action-btn" id="btnReset">New Wound</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-area">
+            <div class="canvas-row">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasHigh"></canvas>
+                    <div class="canvas-label high">HIGH PRECISION (Base-64) — 0.001mm tracking</div>
+                    <div class="tension-meter">
+                        <div class="tension-fill" id="tensionFillHigh" style="height: 30%"></div>
+                        <div class="tension-label">Tension</div>
+                    </div>
+                    <div class="score-display">
+                        <div class="score-value" id="scoreHigh">0</div>
+                        <div class="score-label">Technique Score</div>
+                    </div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="canvasLow"></canvas>
+                    <div class="canvas-label low">LOW PRECISION (Base-16) — 2mm tracking</div>
+                    <div class="tension-meter">
+                        <div class="tension-fill" id="tensionFillLow" style="height: 30%"></div>
+                        <div class="tension-label">Tension</div>
+                    </div>
+                    <div class="score-display">
+                        <div class="score-value" id="scoreLow">0</div>
+                        <div class="score-label">Technique Score</div>
+                    </div>
+                </div>
+            </div>
+            <div class="canvas-row" style="flex: 0.5">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasDetail"></canvas>
+                    <div class="canvas-label" style="color: var(--surgical-teal); border: 1px solid var(--surgical-teal);">
+                        NEEDLE PATH ANALYSIS — Entry/Exit Precision
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="panel-section">
+                <div class="section-title">Stitch Metrics</div>
+                <div class="metrics-box">
+                    <div class="metric-row">
+                        <span class="metric-key">Spacing</span>
+                        <span class="metric-val good" id="spacingVal">5.0 mm</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Depth Consistency</span>
+                        <span class="metric-val good" id="depthConsist">±0.1 mm</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Edge Eversion</span>
+                        <span class="metric-val good" id="eversionVal">Good</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Knot Security</span>
+                        <span class="metric-val" id="knotVal">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Requirements</div>
+                <div class="metrics-box">
+                    <div class="metric-row">
+                        <span class="metric-key">Needle Entry</span>
+                        <span class="metric-val good">±0.1 mm</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Depth Control</span>
+                        <span class="metric-val good">±0.2 mm</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Thread Tension</span>
+                        <span class="metric-val good">±0.05 N</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Knot Position</span>
+                        <span class="metric-val good">±0.5 mm</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Procedure Log</div>
+                <div class="suture-log" id="sutureLog">
+                    <div class="log-entry">Ready for suturing</div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Instructions</div>
+                <div class="instructions">
+                    <div class="instructions-title">How to Suture</div>
+                    1. Click on LEFT side of wound (entry point)
+                    <br>2. Click on RIGHT side (exit point)
+                    <br>3. Thread automatically follows needle path
+                    <br>4. Click "Tie Knot" after each stitch
+                    <br>5. Repeat for complete closure
+                    <br><br>
+                    <strong>Goal:</strong> Even spacing, consistent depth, proper tension
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvasHigh = document.getElementById('canvasHigh');
+        const ctxHigh = canvasHigh.getContext('2d');
+        const canvasLow = document.getElementById('canvasLow');
+        const ctxLow = canvasLow.getContext('2d');
+        const canvasDetail = document.getElementById('canvasDetail');
+        const ctxDetail = canvasDetail.getContext('2d');
+        
+        // Precision (mm)
+        const BASE_PRECISION = {
+            16: 2.0,
+            24: 0.5,
+            32: 0.1,
+            48: 0.01,
+            56: 0.005,
+            64: 0.001
+        };
+        
+        // Needle curves
+        const NEEDLE_CURVES = ['1/4 Circle', '3/8 Circle', '1/2 Circle', '5/8 Circle'];
+        const THREAD_GAUGES = ['5-0', '4-0', '3-0', '2-0', '0', '1'];
+        
+        // Techniques
+        const TECHNIQUES = {
+            simple: { name: 'Simple Interrupted', spacing: 5, depth: 4 },
+            continuous: { name: 'Continuous Running', spacing: 4, depth: 3 },
+            mattress: { name: 'Horizontal Mattress', spacing: 8, depth: 6 },
+            subcuticular: { name: 'Subcuticular', spacing: 3, depth: 2 }
+        };
+        
+        // State
+        let settings = {
+            technique: 'simple',
+            baseHigh: 64,
+            baseLow: 16,
+            needleCurve: 1,
+            threadGauge: 2,
+            biteDepth: 4
+        };
+        
+        let simHigh = createSimState();
+        let simLow = createSimState();
+        let sutureLog = [];
+        
+        function createSimState() {
+            return {
+                stitches: [],
+                currentStitch: null,
+                pendingEntry: null,
+                tension: 0.3,
+                score: 0,
+                totalScore: 0
+            };
+        }
+        
+        // Wound parameters
+        const WOUND = {
+            x: 0, // Set on resize
+            y: 0,
+            length: 200,
+            width: 15,
+            targetStitches: 6
+        };
+        
+        function resize() {
+            [canvasHigh, canvasLow].forEach(c => {
+                c.width = c.parentElement.clientWidth;
+                c.height = c.parentElement.clientHeight;
+            });
+            canvasDetail.width = canvasDetail.parentElement.clientWidth;
+            canvasDetail.height = canvasDetail.parentElement.clientHeight;
+            
+            // Center wound
+            WOUND.x = canvasHigh.width / 2;
+            WOUND.y = canvasHigh.height / 2;
+        }
+        
+        function addLog(type, message) {
+            sutureLog.unshift({ type, message });
+            if (sutureLog.length > 20) sutureLog.pop();
+            
+            const log = document.getElementById('sutureLog');
+            log.innerHTML = sutureLog.slice(0, 8).map(e =>
+                `<div class="log-entry ${e.type}">${e.message}</div>`
+            ).join('');
+        }
+        
+        function calculateStitchScore(stitch, precision) {
+            const tech = TECHNIQUES[settings.technique];
+            let score = 100;
+            
+            // Spacing score (compared to ideal)
+            if (stitch.index > 0) {
+                const idealY = WOUND.y - WOUND.length/2 + (stitch.index + 0.5) * (WOUND.length / WOUND.targetStitches);
+                const spacingError = Math.abs(stitch.entryY - idealY);
+                score -= Math.min(30, spacingError * 2);
+            }
+            
+            // Depth consistency
+            const depthError = Math.abs(stitch.depth - settings.biteDepth);
+            score -= Math.min(20, depthError * 5);
+            
+            // Symmetry (entry/exit equidistant from wound edge)
+            const entryDist = WOUND.x - WOUND.width/2 - stitch.entryX;
+            const exitDist = stitch.exitX - (WOUND.x + WOUND.width/2);
+            const symmetryError = Math.abs(entryDist - exitDist);
+            score -= Math.min(20, symmetryError);
+            
+            // Precision penalty
+            const precisionPenalty = precision * 10;
+            score -= Math.min(30, precisionPenalty);
+            
+            return Math.max(0, Math.round(score));
+        }
+        
+        function handleClick(canvas, sim, precision, e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Add precision error
+            const errorX = (Math.random() - 0.5) * precision * 10;
+            const errorY = (Math.random() - 0.5) * precision * 10;
+            const px = x + errorX;
+            const py = y + errorY;
+            
+            // Check if clicking on left side of wound (entry)
+            const leftEdge = WOUND.x - WOUND.width/2;
+            const rightEdge = WOUND.x + WOUND.width/2;
+            
+            if (!sim.pendingEntry) {
+                // First click - entry point (should be left of wound)
+                if (px < WOUND.x - 5) {
+                    sim.pendingEntry = { x: px, y: py };
+                    addLog('good', `Entry at (${px.toFixed(1)}, ${py.toFixed(1)})`);
+                }
+            } else {
+                // Second click - exit point (should be right of wound)
+                if (px > WOUND.x + 5) {
+                    const stitch = {
+                        entryX: sim.pendingEntry.x,
+                        entryY: sim.pendingEntry.y,
+                        exitX: px,
+                        exitY: py,
+                        depth: settings.biteDepth + (Math.random() - 0.5) * precision * 5,
+                        knotTied: false,
+                        index: sim.stitches.length
+                    };
+                    
+                    stitch.score = calculateStitchScore(stitch, precision);
+                    sim.stitches.push(stitch);
+                    sim.pendingEntry = null;
+                    sim.tension = 0.3 + Math.random() * 0.2;
+                    sim.totalScore += stitch.score;
+                    
+                    addLog(stitch.score >= 80 ? 'good' : stitch.score >= 50 ? 'warn' : 'bad',
+                           `Stitch ${sim.stitches.length}: Score ${stitch.score}`);
+                    
+                    updateUI();
+                }
+            }
+        }
+        
+        function tieKnot(sim) {
+            const lastStitch = sim.stitches[sim.stitches.length - 1];
+            if (lastStitch && !lastStitch.knotTied) {
+                lastStitch.knotTied = true;
+                sim.tension = 0.5 + Math.random() * 0.2;
+                addLog('good', 'Knot secured');
+                updateUI();
+            }
+        }
+        
+        function undoStitch(sim) {
+            if (sim.stitches.length > 0) {
+                const removed = sim.stitches.pop();
+                sim.totalScore -= removed.score;
+                addLog('warn', 'Stitch removed');
+                updateUI();
+            }
+            sim.pendingEntry = null;
+        }
+        
+        function updateUI() {
+            const stitchCount = Math.max(simHigh.stitches.length, simLow.stitches.length);
+            document.getElementById('stitchCount').textContent = `${stitchCount}/${WOUND.targetStitches}`;
+            
+            const avgScore = simHigh.stitches.length > 0 ? 
+                Math.round(simHigh.totalScore / simHigh.stitches.length) : 0;
+            document.getElementById('scoreDisplay').textContent = avgScore;
+            document.getElementById('scoreDisplay').className = 'stat-value ' + 
+                (avgScore >= 80 ? 'good' : avgScore >= 50 ? 'warn' : 'bad');
+            
+            document.getElementById('scoreHigh').textContent = 
+                simHigh.stitches.length > 0 ? Math.round(simHigh.totalScore / simHigh.stitches.length) : 0;
+            document.getElementById('scoreLow').textContent = 
+                simLow.stitches.length > 0 ? Math.round(simLow.totalScore / simLow.stitches.length) : 0;
+            
+            // Tension
+            document.getElementById('tensionFillHigh').style.height = (simHigh.tension * 100) + '%';
+            document.getElementById('tensionFillLow').style.height = (simLow.tension * 100) + '%';
+            
+            const tensionStatus = simHigh.tension < 0.3 ? 'Loose' : 
+                                  simHigh.tension > 0.7 ? 'Tight' : 'Optimal';
+            document.getElementById('tensionStatus').textContent = tensionStatus;
+            document.getElementById('tensionStatus').className = 'stat-value ' +
+                (tensionStatus === 'Optimal' ? 'good' : tensionStatus === 'Loose' ? 'warn' : 'bad');
+            
+            // Accuracy
+            const accuracy = simHigh.stitches.length > 0 ? avgScore : 100;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+            document.getElementById('accuracy').className = 'stat-value ' +
+                (accuracy >= 80 ? 'good' : accuracy >= 50 ? 'warn' : 'bad');
+            
+            // Metrics
+            if (simHigh.stitches.length > 1) {
+                const spacings = [];
+                for (let i = 1; i < simHigh.stitches.length; i++) {
+                    spacings.push(Math.abs(simHigh.stitches[i].entryY - simHigh.stitches[i-1].entryY));
+                }
+                const avgSpacing = spacings.reduce((a,b) => a+b, 0) / spacings.length;
+                document.getElementById('spacingVal').textContent = avgSpacing.toFixed(1) + ' mm';
+                
+                const depths = simHigh.stitches.map(s => s.depth);
+                const avgDepth = depths.reduce((a,b) => a+b, 0) / depths.length;
+                const depthVar = Math.max(...depths) - Math.min(...depths);
+                document.getElementById('depthConsist').textContent = '±' + (depthVar/2).toFixed(1) + ' mm';
+            }
+            
+            // Knot status
+            const lastStitch = simHigh.stitches[simHigh.stitches.length - 1];
+            document.getElementById('knotVal').textContent = lastStitch?.knotTied ? 'Secure' : 'Pending';
+        }
+        
+        function render() {
+            renderSuture(ctxHigh, canvasHigh, simHigh, BASE_PRECISION[settings.baseHigh], 'high');
+            renderSuture(ctxLow, canvasLow, simLow, BASE_PRECISION[settings.baseLow], 'low');
+            renderDetail();
+        }
+        
+        function renderSuture(ctx, canvas, sim, precision, type) {
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            // Background (surgical drape)
+            ctx.fillStyle = '#1a3040';
+            ctx.fillRect(0, 0, w, h);
+            
+            // Drape pattern
+            ctx.strokeStyle = 'rgba(0, 100, 120, 0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < w; i += 20) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, h);
+                ctx.stroke();
+            }
+            
+            // Skin area
+            const skinGrad = ctx.createRadialGradient(WOUND.x, WOUND.y, 0, WOUND.x, WOUND.y, 200);
+            skinGrad.addColorStop(0, '#ddbbaa');
+            skinGrad.addColorStop(0.5, '#ccaa99');
+            skinGrad.addColorStop(1, '#bb9988');
+            
+            ctx.fillStyle = skinGrad;
+            ctx.beginPath();
+            ctx.ellipse(WOUND.x, WOUND.y, 180, 150, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Wound
+            ctx.fillStyle = '#882233';
+            ctx.beginPath();
+            ctx.moveTo(WOUND.x - WOUND.width/2, WOUND.y - WOUND.length/2);
+            ctx.lineTo(WOUND.x + WOUND.width/2, WOUND.y - WOUND.length/2);
+            ctx.lineTo(WOUND.x + WOUND.width/2 + 3, WOUND.y);
+            ctx.lineTo(WOUND.x + WOUND.width/2, WOUND.y + WOUND.length/2);
+            ctx.lineTo(WOUND.x - WOUND.width/2, WOUND.y + WOUND.length/2);
+            ctx.lineTo(WOUND.x - WOUND.width/2 - 3, WOUND.y);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Wound depth shadow
+            ctx.fillStyle = '#551122';
+            ctx.fillRect(WOUND.x - 3, WOUND.y - WOUND.length/2 + 5, 6, WOUND.length - 10);
+            
+            // Wound edges
+            ctx.strokeStyle = '#aa6666';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(WOUND.x - WOUND.width/2, WOUND.y - WOUND.length/2);
+            ctx.lineTo(WOUND.x - WOUND.width/2, WOUND.y + WOUND.length/2);
+            ctx.moveTo(WOUND.x + WOUND.width/2, WOUND.y - WOUND.length/2);
+            ctx.lineTo(WOUND.x + WOUND.width/2, WOUND.y + WOUND.length/2);
+            ctx.stroke();
+            
+            // Target stitch positions (guides)
+            ctx.strokeStyle = 'rgba(0, 200, 150, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            for (let i = 0; i < WOUND.targetStitches; i++) {
+                const y = WOUND.y - WOUND.length/2 + (i + 0.5) * (WOUND.length / WOUND.targetStitches);
+                ctx.beginPath();
+                ctx.moveTo(WOUND.x - 60, y);
+                ctx.lineTo(WOUND.x + 60, y);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            
+            // Draw stitches
+            for (const stitch of sim.stitches) {
+                // Thread
+                ctx.strokeStyle = '#3366cc';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                // Entry to wound edge
+                ctx.moveTo(stitch.entryX, stitch.entryY);
+                
+                // Under the wound (curved path)
+                const midY = (stitch.entryY + stitch.exitY) / 2;
+                ctx.quadraticCurveTo(
+                    WOUND.x, midY + stitch.depth * 3,
+                    stitch.exitX, stitch.exitY
+                );
+                ctx.stroke();
+                
+                // Entry point
+                ctx.fillStyle = '#3366cc';
+                ctx.beginPath();
+                ctx.arc(stitch.entryX, stitch.entryY, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Exit point
+                ctx.beginPath();
+                ctx.arc(stitch.exitX, stitch.exitY, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Knot
+                if (stitch.knotTied) {
+                    ctx.fillStyle = '#2255aa';
+                    ctx.beginPath();
+                    ctx.arc(stitch.exitX + 8, stitch.exitY, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Thread tails
+                    ctx.strokeStyle = '#3366cc';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(stitch.exitX + 8, stitch.exitY);
+                    ctx.lineTo(stitch.exitX + 20, stitch.exitY - 8);
+                    ctx.moveTo(stitch.exitX + 8, stitch.exitY);
+                    ctx.lineTo(stitch.exitX + 18, stitch.exitY + 10);
+                    ctx.stroke();
+                }
+            }
+            
+            // Pending entry point
+            if (sim.pendingEntry) {
+                ctx.strokeStyle = '#00ff88';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(sim.pendingEntry.x, sim.pendingEntry.y, 8, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#00ff8880';
+                ctx.beginPath();
+                ctx.arc(sim.pendingEntry.x, sim.pendingEntry.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Precision grid (subtle)
+            const gridSize = Math.max(10, precision * 50);
+            ctx.strokeStyle = type === 'high' ? 'rgba(0, 221, 136, 0.05)' : 'rgba(255, 68, 85, 0.05)';
+            ctx.lineWidth = 1;
+            
+            for (let x = WOUND.x - 80; x < WOUND.x + 80; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, WOUND.y - 120);
+                ctx.lineTo(x, WOUND.y + 120);
+                ctx.stroke();
+            }
+            
+            // Precision label
+            ctx.fillStyle = type === 'high' ? '#00dd8880' : '#ff445580';
+            ctx.font = '10px "Share Tech Mono"';
+            ctx.fillText(`Precision: ±${precision}mm`, 50, h - 50);
+        }
+        
+        function renderDetail() {
+            const w = canvasDetail.width;
+            const h = canvasDetail.height;
+            
+            ctxDetail.fillStyle = '#0a0c10';
+            ctxDetail.fillRect(0, 0, w, h);
+            
+            // Compare needle paths
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            // Labels
+            ctxDetail.fillStyle = '#00dd88';
+            ctxDetail.font = 'bold 11px "Share Tech Mono"';
+            ctxDetail.fillText('High Precision (Base-64)', 50, 25);
+            
+            ctxDetail.fillStyle = '#ff4455';
+            ctxDetail.fillText('Low Precision (Base-16)', w/2 + 50, 25);
+            
+            // Draw ideal path
+            const drawNeedlePath = (startX, stitches, precision, color) => {
+                ctxDetail.strokeStyle = color;
+                ctxDetail.lineWidth = 2;
+                
+                // Ideal path (dotted)
+                ctxDetail.setLineDash([3, 3]);
+                ctxDetail.strokeStyle = '#ffffff40';
+                ctxDetail.beginPath();
+                ctxDetail.moveTo(startX, cy - 40);
+                ctxDetail.quadraticCurveTo(startX + 50, cy + 20, startX + 100, cy - 40);
+                ctxDetail.stroke();
+                ctxDetail.setLineDash([]);
+                
+                // Actual paths
+                ctxDetail.strokeStyle = color;
+                for (let i = 0; i < Math.min(3, stitches.length); i++) {
+                    const stitch = stitches[i];
+                    const offsetY = i * 25 - 25;
+                    
+                    // Add jitter based on precision
+                    const jitter = () => (Math.random() - 0.5) * precision * 20;
+                    
+                    ctxDetail.beginPath();
+                    ctxDetail.moveTo(startX + jitter(), cy - 40 + offsetY + jitter());
+                    ctxDetail.quadraticCurveTo(
+                        startX + 50 + jitter(), cy + 20 + offsetY + jitter(),
+                        startX + 100 + jitter(), cy - 40 + offsetY + jitter()
+                    );
+                    ctxDetail.stroke();
+                    
+                    // Entry/exit points
+                    ctxDetail.fillStyle = color;
+                    ctxDetail.beginPath();
+                    ctxDetail.arc(startX + jitter(), cy - 40 + offsetY, 4, 0, Math.PI * 2);
+                    ctxDetail.fill();
+                    ctxDetail.beginPath();
+                    ctxDetail.arc(startX + 100 + jitter(), cy - 40 + offsetY, 4, 0, Math.PI * 2);
+                    ctxDetail.fill();
+                }
+            };
+            
+            drawNeedlePath(80, simHigh.stitches, BASE_PRECISION[settings.baseHigh], '#00dd88');
+            drawNeedlePath(w/2 + 80, simLow.stitches, BASE_PRECISION[settings.baseLow], '#ff4455');
+            
+            // Stats comparison
+            ctxDetail.fillStyle = '#888';
+            ctxDetail.font = '10px "Share Tech Mono"';
+            
+            const highAvg = simHigh.stitches.length > 0 ? 
+                Math.round(simHigh.totalScore / simHigh.stitches.length) : '--';
+            const lowAvg = simLow.stitches.length > 0 ?
+                Math.round(simLow.totalScore / simLow.stitches.length) : '--';
+            
+            ctxDetail.fillStyle = '#00dd88';
+            ctxDetail.fillText(`Avg Score: ${highAvg}`, 50, h - 15);
+            
+            ctxDetail.fillStyle = '#ff4455';
+            ctxDetail.fillText(`Avg Score: ${lowAvg}`, w/2 + 50, h - 15);
+        }
+        
+        function mainLoop() {
+            render();
+            requestAnimationFrame(mainLoop);
+        }
+        
+        // Event handlers
+        canvasHigh.addEventListener('click', (e) => handleClick(canvasHigh, simHigh, BASE_PRECISION[settings.baseHigh], e));
+        canvasLow.addEventListener('click', (e) => handleClick(canvasLow, simLow, BASE_PRECISION[settings.baseLow], e));
+        
+        document.querySelectorAll('.technique-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.technique-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.technique = btn.dataset.tech;
+            });
+        });
+        
+        document.querySelectorAll('.base-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.base-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.baseHigh = parseInt(btn.dataset.base);
+            });
+        });
+        
+        document.getElementById('curveSlider').addEventListener('input', (e) => {
+            settings.needleCurve = parseInt(e.target.value);
+            document.getElementById('curveVal').textContent = NEEDLE_CURVES[settings.needleCurve];
+        });
+        
+        document.getElementById('gaugeSlider').addEventListener('input', (e) => {
+            settings.threadGauge = parseInt(e.target.value);
+            document.getElementById('gaugeVal').textContent = THREAD_GAUGES[settings.threadGauge];
+        });
+        
+        document.getElementById('depthSlider').addEventListener('input', (e) => {
+            settings.biteDepth = parseInt(e.target.value);
+            document.getElementById('depthVal').textContent = settings.biteDepth + ' mm';
+        });
+        
+        document.getElementById('btnUndo').addEventListener('click', () => {
+            undoStitch(simHigh);
+            undoStitch(simLow);
+        });
+        
+        document.getElementById('btnTieKnot').addEventListener('click', () => {
+            tieKnot(simHigh);
+            tieKnot(simLow);
+        });
+        
+        document.getElementById('btnCut').addEventListener('click', () => {
+            addLog('good', 'Thread cut');
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            simHigh = createSimState();
+            simLow = createSimState();
+            sutureLog = [];
+            document.getElementById('sutureLog').innerHTML = '<div class="log-entry">New wound ready</div>';
+            updateUI();
+        });
+        
+        // Initialize
+        window.addEventListener('resize', resize);
+        resize();
+        updateUI();
+        mainLoop();
+    </script>
+</body>
+</html>

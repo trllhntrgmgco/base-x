@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASE-X ENGINE | NEC-002: Melee Combat Precision</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #080406;
+            --bg-panel: rgba(15, 10, 12, 0.95);
+            --blood-red: #cc1133;
+            --bone-white: #e8e0d8;
+            --flesh: #cc9977;
+            --precision-high: #00ff88;
+            --precision-low: #ff3355;
+            --accent-gold: #ffaa33;
+            --text-primary: #e0d8d4;
+            --text-dim: #776666;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            height: 50px;
+            background: linear-gradient(180deg, rgba(204, 17, 51, 0.15), transparent);
+            border-bottom: 1px solid rgba(204, 17, 51, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-badge {
+            background: linear-gradient(135deg, var(--blood-red), #881122);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 10px;
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--blood-red);
+        }
+        
+        .logo-sub {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-left: 10px;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .stat-value.damage { color: var(--blood-red); }
+        .stat-value.good { color: var(--precision-high); }
+        .stat-value.bad { color: var(--precision-low); }
+        
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .control-panel {
+            width: 260px;
+            background: var(--bg-panel);
+            border-right: 1px solid rgba(204, 17, 51, 0.2);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .panel-section {
+            margin-bottom: 18px;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--blood-red);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(204, 17, 51, 0.3);
+        }
+        
+        .weapon-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .weapon-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 11px;
+            text-align: left;
+        }
+        
+        .weapon-btn:hover {
+            background: rgba(204, 17, 51, 0.1);
+        }
+        
+        .weapon-btn.active {
+            border-color: var(--blood-red);
+            background: rgba(204, 17, 51, 0.15);
+        }
+        
+        .weapon-icon {
+            font-size: 20px;
+            width: 28px;
+            text-align: center;
+        }
+        
+        .weapon-info {
+            flex: 1;
+        }
+        
+        .weapon-name {
+            font-weight: 600;
+        }
+        
+        .weapon-stats {
+            font-size: 9px;
+            color: var(--text-dim);
+        }
+        
+        .base-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        
+        .base-btn {
+            padding: 8px 5px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            text-align: center;
+            transition: all 0.15s;
+        }
+        
+        .base-btn:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+        
+        .base-btn.active {
+            border-color: var(--precision-high);
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--precision-high);
+        }
+        
+        .slider-group {
+            margin-bottom: 12px;
+        }
+        
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 10px;
+        }
+        
+        .slider-label { color: var(--text-dim); }
+        .slider-value { font-family: 'Share Tech Mono', monospace; color: var(--accent-gold); }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--blood-red);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .hitzone-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .hitzone-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            font-size: 10px;
+        }
+        
+        .hitzone-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        
+        .hitzone-name { flex: 1; color: var(--text-dim); }
+        .hitzone-mult { font-family: 'Share Tech Mono', monospace; color: var(--accent-gold); }
+        
+        .action-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        
+        .action-btn {
+            padding: 8px;
+            background: rgba(204, 17, 51, 0.15);
+            border: 1px solid rgba(204, 17, 51, 0.4);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .action-btn:hover {
+            background: rgba(204, 17, 51, 0.25);
+        }
+        
+        .action-btn.full { grid-column: span 2; }
+        
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .canvas-row {
+            flex: 1;
+            display: flex;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .canvas-wrapper canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .canvas-label {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            z-index: 10;
+        }
+        
+        .canvas-label.high { color: var(--precision-high); border: 1px solid var(--precision-high); }
+        .canvas-label.low { color: var(--precision-low); border: 1px solid var(--precision-low); }
+        
+        .hit-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 900;
+            opacity: 0;
+            pointer-events: none;
+            text-shadow: 0 0 20px currentColor;
+            transition: opacity 0.1s;
+        }
+        
+        .hit-indicator.show { opacity: 1; }
+        .hit-indicator.crit { color: var(--accent-gold); }
+        .hit-indicator.hit { color: var(--blood-red); }
+        .hit-indicator.miss { color: var(--text-dim); }
+        .hit-indicator.ghost { color: var(--precision-low); }
+        
+        .damage-popup {
+            position: absolute;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            pointer-events: none;
+            transition: all 0.5s ease-out;
+        }
+        
+        .info-panel {
+            width: 220px;
+            background: var(--bg-panel);
+            border-left: 1px solid rgba(204, 17, 51, 0.2);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .combat-log {
+            max-height: 180px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 8px;
+            font-size: 9px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-entry.crit { color: var(--accent-gold); }
+        .log-entry.hit { color: var(--blood-red); }
+        .log-entry.miss { color: var(--text-dim); }
+        .log-entry.ghost { color: #ff6688; }
+        
+        .metrics-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 10px;
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .metric-row:last-child { border-bottom: none; }
+        .metric-key { color: var(--text-dim); }
+        .metric-val { font-family: 'Share Tech Mono', monospace; }
+        .metric-val.good { color: var(--precision-high); }
+        .metric-val.bad { color: var(--precision-low); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-badge">NEC-002</div>
+            <div class="logo-text">MELEE COMBAT PRECISION</div>
+            <div class="logo-sub">Necrotopia | Bone-Level Hit Detection</div>
+        </div>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-value damage" id="totalDamage">0</div>
+                <div class="stat-label">Total Damage</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value good" id="hitRate">100%</div>
+                <div class="stat-label">Hit Accuracy</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value good" id="ghostHits">0</div>
+                <div class="stat-label">Ghost Hits</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="critRate">0%</div>
+                <div class="stat-label">Crit Rate</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="control-panel">
+            <div class="panel-section">
+                <div class="section-title">Weapon</div>
+                <div class="weapon-selector">
+                    <button class="weapon-btn active" data-weapon="sword">
+                        <span class="weapon-icon">⚔️</span>
+                        <div class="weapon-info">
+                            <div class="weapon-name">Longsword</div>
+                            <div class="weapon-stats">Speed: Med | Range: Long</div>
+                        </div>
+                    </button>
+                    <button class="weapon-btn" data-weapon="axe">
+                        <span class="weapon-icon">🪓</span>
+                        <div class="weapon-info">
+                            <div class="weapon-name">Battle Axe</div>
+                            <div class="weapon-stats">Speed: Slow | Damage: High</div>
+                        </div>
+                    </button>
+                    <button class="weapon-btn" data-weapon="dagger">
+                        <span class="weapon-icon">🗡️</span>
+                        <div class="weapon-info">
+                            <div class="weapon-name">Dagger</div>
+                            <div class="weapon-stats">Speed: Fast | Range: Short</div>
+                        </div>
+                    </button>
+                    <button class="weapon-btn" data-weapon="mace">
+                        <span class="weapon-icon">🔨</span>
+                        <div class="weapon-info">
+                            <div class="weapon-name">War Mace</div>
+                            <div class="weapon-stats">Speed: Med | Blunt Dmg</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Base</div>
+                <div class="base-grid">
+                    <button class="base-btn" data-base="16">B-16</button>
+                    <button class="base-btn" data-base="24">B-24</button>
+                    <button class="base-btn" data-base="32">B-32</button>
+                    <button class="base-btn" data-base="40">B-40</button>
+                    <button class="base-btn active" data-base="48">B-48</button>
+                    <button class="base-btn" data-base="64">B-64</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Attack Settings</div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Swing Speed</span>
+                        <span class="slider-value" id="swingSpeedVal">Normal</span>
+                    </div>
+                    <input type="range" id="swingSpeed" min="0" max="4" value="2">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Target Movement</span>
+                        <span class="slider-value" id="targetMoveVal">Idle</span>
+                    </div>
+                    <input type="range" id="targetMove" min="0" max="4" value="0">
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Hit Zones (Damage Mult)</div>
+                <div class="hitzone-list">
+                    <div class="hitzone-row">
+                        <div class="hitzone-color" style="background: #ff3333"></div>
+                        <span class="hitzone-name">Head (Critical)</span>
+                        <span class="hitzone-mult">3.0x</span>
+                    </div>
+                    <div class="hitzone-row">
+                        <div class="hitzone-color" style="background: #ff6644"></div>
+                        <span class="hitzone-name">Neck</span>
+                        <span class="hitzone-mult">2.5x</span>
+                    </div>
+                    <div class="hitzone-row">
+                        <div class="hitzone-color" style="background: #ff8855"></div>
+                        <span class="hitzone-name">Torso</span>
+                        <span class="hitzone-mult">1.0x</span>
+                    </div>
+                    <div class="hitzone-row">
+                        <div class="hitzone-color" style="background: #ffaa66"></div>
+                        <span class="hitzone-name">Arms</span>
+                        <span class="hitzone-mult">0.7x</span>
+                    </div>
+                    <div class="hitzone-row">
+                        <div class="hitzone-color" style="background: #ffcc77"></div>
+                        <span class="hitzone-name">Legs</span>
+                        <span class="hitzone-mult">0.8x</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Actions</div>
+                <div class="action-btns">
+                    <button class="action-btn" id="btnSwing">Swing</button>
+                    <button class="action-btn" id="btnCombo">Combo (3x)</button>
+                    <button class="action-btn" id="btnFlurry">Flurry (10x)</button>
+                    <button class="action-btn" id="btnReset">Reset Stats</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-area">
+            <div class="canvas-row">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasHigh"></canvas>
+                    <div class="canvas-label high">HIGH PRECISION (Base-48)</div>
+                    <div class="hit-indicator" id="hitHigh"></div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="canvasLow"></canvas>
+                    <div class="canvas-label low">LOW PRECISION (Base-16)</div>
+                    <div class="hit-indicator" id="hitLow"></div>
+                </div>
+            </div>
+            <div class="canvas-row">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasDetail"></canvas>
+                    <div class="canvas-label" style="color: var(--accent-gold); border: 1px solid var(--accent-gold);">
+                        COLLISION DETAIL — Bone Hitboxes
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="panel-section">
+                <div class="section-title">Combat Log</div>
+                <div class="combat-log" id="combatLog">
+                    <div class="log-entry">Combat system ready</div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Hit Statistics</div>
+                <div class="metrics-box">
+                    <div class="metric-row">
+                        <span class="metric-key">Total Swings</span>
+                        <span class="metric-val" id="totalSwings">0</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Clean Hits</span>
+                        <span class="metric-val good" id="cleanHits">0</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Misses</span>
+                        <span class="metric-val" id="misses">0</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Ghost Hits</span>
+                        <span class="metric-val bad" id="ghostHitCount">0</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Criticals</span>
+                        <span class="metric-val" style="color: var(--accent-gold)" id="critCount">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Impact</div>
+                <div class="metrics-box">
+                    <div class="metric-row">
+                        <span class="metric-key">Hit Detection</span>
+                        <span class="metric-val" id="hitDetection">0.1 mm</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Bone Accuracy</span>
+                        <span class="metric-val good" id="boneAccuracy">Exact</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Zone Precision</span>
+                        <span class="metric-val good" id="zonePrecision">Perfect</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvasHigh = document.getElementById('canvasHigh');
+        const ctxHigh = canvasHigh.getContext('2d');
+        const canvasLow = document.getElementById('canvasLow');
+        const ctxLow = canvasLow.getContext('2d');
+        const canvasDetail = document.getElementById('canvasDetail');
+        const ctxDetail = canvasDetail.getContext('2d');
+        
+        // Precision values (mm)
+        const BASE_PRECISION = {
+            16: 5.0,
+            24: 2.0,
+            32: 0.5,
+            40: 0.2,
+            48: 0.1,
+            64: 0.01
+        };
+        
+        // Weapons
+        const WEAPONS = {
+            sword: { name: 'Longsword', damage: 25, speed: 1.0, range: 120, width: 8 },
+            axe: { name: 'Battle Axe', damage: 40, speed: 0.6, range: 100, width: 20 },
+            dagger: { name: 'Dagger', damage: 15, speed: 1.8, range: 60, width: 5 },
+            mace: { name: 'War Mace', damage: 30, speed: 0.8, range: 90, width: 25 }
+        };
+        
+        // Skeleton definition
+        const SKELETON = {
+            head: { x: 0, y: -85, radius: 18, mult: 3.0, color: '#ff3333' },
+            neck: { x: 0, y: -65, radius: 8, mult: 2.5, color: '#ff6644' },
+            torso: { x: 0, y: -30, radius: 25, mult: 1.0, color: '#ff8855' },
+            pelvis: { x: 0, y: 10, radius: 20, mult: 0.9, color: '#ff9966' },
+            leftArm: { x: -35, y: -45, radius: 12, mult: 0.7, color: '#ffaa66' },
+            rightArm: { x: 35, y: -45, radius: 12, mult: 0.7, color: '#ffaa66' },
+            leftHand: { x: -50, y: -20, radius: 8, mult: 0.5, color: '#ffbb77' },
+            rightHand: { x: 50, y: -20, radius: 8, mult: 0.5, color: '#ffbb77' },
+            leftLeg: { x: -15, y: 50, radius: 14, mult: 0.8, color: '#ffcc77' },
+            rightLeg: { x: 15, y: 50, radius: 14, mult: 0.8, color: '#ffcc77' },
+            leftFoot: { x: -18, y: 85, radius: 10, mult: 0.4, color: '#ffdd88' },
+            rightFoot: { x: 18, y: 85, radius: 10, mult: 0.4, color: '#ffdd88' }
+        };
+        
+        // State
+        let settings = {
+            weapon: 'sword',
+            baseHigh: 48,
+            baseLow: 16,
+            swingSpeed: 2,
+            targetMove: 0
+        };
+        
+        let stats = {
+            totalSwings: 0,
+            cleanHits: 0,
+            misses: 0,
+            ghostHits: 0,
+            criticals: 0,
+            totalDamage: 0
+        };
+        
+        let combatLog = [];
+        let time = 0;
+        
+        // Combat simulation state
+        let simHigh = { swinging: false, angle: 0, hits: [], target: { x: 0, y: 0 } };
+        let simLow = { swinging: false, angle: 0, hits: [], target: { x: 0, y: 0 } };
+        let lastHitZone = null;
+        
+        // Initialize
+        function resize() {
+            [canvasHigh, canvasLow].forEach(c => {
+                c.width = c.parentElement.clientWidth;
+                c.height = c.parentElement.clientHeight;
+            });
+            canvasDetail.width = canvasDetail.parentElement.clientWidth;
+            canvasDetail.height = canvasDetail.parentElement.clientHeight;
+        }
+        
+        function swing() {
+            stats.totalSwings++;
+            
+            const weapon = WEAPONS[settings.weapon];
+            const speedMult = [0.5, 0.75, 1.0, 1.5, 2.0][settings.swingSpeed];
+            
+            // Start swing animation
+            simHigh.swinging = true;
+            simHigh.angle = -Math.PI / 2;
+            simHigh.hits = [];
+            
+            simLow.swinging = true;
+            simLow.angle = -Math.PI / 2;
+            simLow.hits = [];
+            
+            // Process swing over time
+            const swingDuration = 500 / speedMult;
+            const startTime = performance.now();
+            
+            const processSwing = () => {
+                const elapsed = performance.now() - startTime;
+                const progress = Math.min(1, elapsed / swingDuration);
+                
+                // Swing arc from -90° to +90°
+                const angle = -Math.PI / 2 + progress * Math.PI;
+                
+                simHigh.angle = angle;
+                simLow.angle = angle;
+                
+                // Check collisions at this frame
+                checkCollisions(simHigh, BASE_PRECISION[settings.baseHigh], 'high');
+                checkCollisions(simLow, BASE_PRECISION[settings.baseLow], 'low');
+                
+                if (progress < 1) {
+                    requestAnimationFrame(processSwing);
+                } else {
+                    // Swing complete
+                    simHigh.swinging = false;
+                    simLow.swinging = false;
+                    
+                    // Evaluate results
+                    evaluateSwing();
+                }
+            };
+            
+            processSwing();
+        }
+        
+        function checkCollisions(sim, precision, type) {
+            const weapon = WEAPONS[settings.weapon];
+            const cx = canvasHigh.width / 2;
+            const cy = canvasHigh.height / 2 + 20;
+            
+            // Weapon tip position
+            const tipX = cx - 80 + Math.cos(sim.angle) * weapon.range;
+            const tipY = cy + Math.sin(sim.angle) * weapon.range;
+            
+            // Add precision error
+            const errorX = (Math.random() - 0.5) * precision * 2;
+            const errorY = (Math.random() - 0.5) * precision * 2;
+            
+            const checkX = tipX + errorX;
+            const checkY = tipY + errorY;
+            
+            // Check against each bone
+            for (const [boneName, bone] of Object.entries(SKELETON)) {
+                const boneX = cx + bone.x + sim.target.x;
+                const boneY = cy + bone.y + sim.target.y;
+                
+                // Quantize positions to precision
+                const qCheckX = Math.round(checkX / precision) * precision;
+                const qCheckY = Math.round(checkY / precision) * precision;
+                const qBoneX = Math.round(boneX / precision) * precision;
+                const qBoneY = Math.round(boneY / precision) * precision;
+                
+                const dist = Math.sqrt(
+                    Math.pow(qCheckX - qBoneX, 2) + 
+                    Math.pow(qCheckY - qBoneY, 2)
+                );
+                
+                const hitRadius = bone.radius + weapon.width / 2;
+                
+                // Check if already hit this bone
+                if (sim.hits.includes(boneName)) continue;
+                
+                if (dist < hitRadius) {
+                    sim.hits.push(boneName);
+                    
+                    // Calculate damage
+                    const baseDamage = weapon.damage * bone.mult;
+                    const damage = Math.round(baseDamage);
+                    
+                    // Record hit
+                    const hitData = {
+                        bone: boneName,
+                        damage: damage,
+                        x: boneX,
+                        y: boneY,
+                        mult: bone.mult,
+                        precision: precision
+                    };
+                    
+                    if (type === 'high') {
+                        showHitIndicator('hitHigh', bone.mult >= 2.5 ? 'crit' : 'hit', damage);
+                        if (bone.mult >= 2.5) stats.criticals++;
+                        stats.cleanHits++;
+                        stats.totalDamage += damage;
+                        lastHitZone = hitData;
+                        addLog(bone.mult >= 2.5 ? 'crit' : 'hit', 
+                               `${boneName.toUpperCase()} hit! ${damage} damage (${bone.mult}x)`);
+                    }
+                    
+                    return; // Only one hit per swing frame
+                }
+                
+                // Check for ghost hit (low precision false positive)
+                if (type === 'low' && precision > 1) {
+                    const trueDist = Math.sqrt(
+                        Math.pow(checkX - boneX, 2) + 
+                        Math.pow(checkY - boneY, 2)
+                    );
+                    
+                    // Ghost hit: precision says hit but true distance says miss
+                    if (dist < hitRadius && trueDist >= hitRadius + precision) {
+                        stats.ghostHits++;
+                        showHitIndicator('hitLow', 'ghost', 0);
+                        addLog('ghost', `GHOST HIT on ${boneName} (precision error)`);
+                    }
+                }
+            }
+        }
+        
+        function evaluateSwing() {
+            // Check if high precision hit but low precision missed
+            if (simHigh.hits.length > 0 && simLow.hits.length === 0) {
+                addLog('miss', 'Low precision MISSED (would have hit with Base-48)');
+            }
+            
+            // Check for ghost hits on low precision
+            if (simLow.hits.length > simHigh.hits.length) {
+                const ghostCount = simLow.hits.length - simHigh.hits.length;
+                addLog('ghost', `${ghostCount} ghost hit(s) from low precision`);
+            }
+            
+            if (simHigh.hits.length === 0) {
+                stats.misses++;
+                showHitIndicator('hitHigh', 'miss', 0);
+                addLog('miss', 'Swing missed');
+            }
+            
+            updateStats();
+        }
+        
+        function showHitIndicator(id, type, damage) {
+            const el = document.getElementById(id);
+            el.className = `hit-indicator show ${type}`;
+            
+            switch (type) {
+                case 'crit':
+                    el.textContent = `CRITICAL! ${damage}`;
+                    break;
+                case 'hit':
+                    el.textContent = `HIT! ${damage}`;
+                    break;
+                case 'miss':
+                    el.textContent = 'MISS';
+                    break;
+                case 'ghost':
+                    el.textContent = 'GHOST HIT!';
+                    break;
+            }
+            
+            setTimeout(() => el.classList.remove('show'), 400);
+        }
+        
+        function addLog(type, message) {
+            combatLog.unshift({ type, message });
+            if (combatLog.length > 50) combatLog.pop();
+            
+            const log = document.getElementById('combatLog');
+            log.innerHTML = combatLog.slice(0, 12).map(e =>
+                `<div class="log-entry ${e.type}">${e.message}</div>`
+            ).join('');
+        }
+        
+        function updateStats() {
+            document.getElementById('totalDamage').textContent = stats.totalDamage;
+            document.getElementById('totalSwings').textContent = stats.totalSwings;
+            document.getElementById('cleanHits').textContent = stats.cleanHits;
+            document.getElementById('misses').textContent = stats.misses;
+            document.getElementById('ghostHitCount').textContent = stats.ghostHits;
+            document.getElementById('ghostHits').textContent = stats.ghostHits;
+            document.getElementById('ghostHits').className = 
+                'stat-value ' + (stats.ghostHits === 0 ? 'good' : 'bad');
+            document.getElementById('critCount').textContent = stats.criticals;
+            
+            const hitRate = stats.totalSwings > 0 ? 
+                Math.round((stats.cleanHits / stats.totalSwings) * 100) : 100;
+            document.getElementById('hitRate').textContent = hitRate + '%';
+            document.getElementById('hitRate').className = 
+                'stat-value ' + (hitRate >= 80 ? 'good' : hitRate >= 50 ? '' : 'bad');
+            
+            const critRate = stats.cleanHits > 0 ?
+                Math.round((stats.criticals / stats.cleanHits) * 100) : 0;
+            document.getElementById('critRate').textContent = critRate + '%';
+            
+            // Precision metrics
+            const precision = BASE_PRECISION[settings.baseHigh];
+            document.getElementById('hitDetection').textContent = precision + ' mm';
+            document.getElementById('boneAccuracy').textContent = 
+                precision <= 0.1 ? 'Exact' : precision <= 0.5 ? 'Good' : 'Poor';
+            document.getElementById('boneAccuracy').className = 
+                'metric-val ' + (precision <= 0.1 ? 'good' : precision <= 0.5 ? '' : 'bad');
+            document.getElementById('zonePrecision').textContent =
+                precision <= 0.2 ? 'Perfect' : precision <= 1 ? 'Adequate' : 'Imprecise';
+        }
+        
+        function update() {
+            time += 0.016;
+            
+            // Target movement
+            const moveMult = [0, 1, 2, 4, 8][settings.targetMove];
+            simHigh.target.x = Math.sin(time * moveMult) * 20;
+            simHigh.target.y = Math.cos(time * moveMult * 0.7) * 15;
+            simLow.target.x = simHigh.target.x;
+            simLow.target.y = simHigh.target.y;
+        }
+        
+        function render() {
+            renderCombat(ctxHigh, canvasHigh, simHigh, BASE_PRECISION[settings.baseHigh]);
+            renderCombat(ctxLow, canvasLow, simLow, BASE_PRECISION[settings.baseLow]);
+            renderDetail();
+        }
+        
+        function renderCombat(ctx, canvas, sim, precision) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2 + 20;
+            
+            // Background
+            ctx.fillStyle = '#0a0608';
+            ctx.fillRect(0, 0, w, h);
+            
+            // Grid
+            ctx.strokeStyle = 'rgba(204, 17, 51, 0.05)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < w; x += 30) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+                ctx.stroke();
+            }
+            for (let y = 0; y < h; y += 30) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+            
+            // Draw skeleton
+            for (const [name, bone] of Object.entries(SKELETON)) {
+                const bx = cx + bone.x + sim.target.x;
+                const by = cy + bone.y + sim.target.y;
+                
+                // Hit zone
+                ctx.fillStyle = bone.color + '40';
+                ctx.beginPath();
+                ctx.arc(bx, by, bone.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Bone outline
+                ctx.strokeStyle = bone.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Highlight if recently hit
+                if (sim.hits.includes(name)) {
+                    ctx.fillStyle = '#ffffff80';
+                    ctx.beginPath();
+                    ctx.arc(bx, by, bone.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // Draw skeleton connections
+            ctx.strokeStyle = '#88776680';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            
+            const connections = [
+                ['head', 'neck'],
+                ['neck', 'torso'],
+                ['torso', 'pelvis'],
+                ['torso', 'leftArm'],
+                ['torso', 'rightArm'],
+                ['leftArm', 'leftHand'],
+                ['rightArm', 'rightHand'],
+                ['pelvis', 'leftLeg'],
+                ['pelvis', 'rightLeg'],
+                ['leftLeg', 'leftFoot'],
+                ['rightLeg', 'rightFoot']
+            ];
+            
+            for (const [a, b] of connections) {
+                const boneA = SKELETON[a];
+                const boneB = SKELETON[b];
+                ctx.beginPath();
+                ctx.moveTo(cx + boneA.x + sim.target.x, cy + boneA.y + sim.target.y);
+                ctx.lineTo(cx + boneB.x + sim.target.x, cy + boneB.y + sim.target.y);
+                ctx.stroke();
+            }
+            
+            // Draw weapon
+            if (sim.swinging || sim.angle !== 0) {
+                const weapon = WEAPONS[settings.weapon];
+                const weaponX = cx - 80;
+                const weaponY = cy;
+                
+                // Weapon arc trail
+                ctx.strokeStyle = 'rgba(200, 180, 160, 0.3)';
+                ctx.lineWidth = weapon.width;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.arc(weaponX, weaponY, weapon.range, -Math.PI / 2, sim.angle);
+                ctx.stroke();
+                
+                // Weapon
+                const tipX = weaponX + Math.cos(sim.angle) * weapon.range;
+                const tipY = weaponY + Math.sin(sim.angle) * weapon.range;
+                
+                ctx.strokeStyle = '#c0b0a0';
+                ctx.lineWidth = weapon.width;
+                ctx.beginPath();
+                ctx.moveTo(weaponX, weaponY);
+                ctx.lineTo(tipX, tipY);
+                ctx.stroke();
+                
+                // Weapon tip
+                ctx.fillStyle = '#e0d0c0';
+                ctx.beginPath();
+                ctx.arc(tipX, tipY, weapon.width / 2 + 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Precision indicator at tip
+                ctx.strokeStyle = precision <= 0.2 ? '#00ff8840' : '#ff335540';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(tipX, tipY, precision * 10 + 5, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // Attacker position
+            ctx.fillStyle = '#aa9988';
+            ctx.beginPath();
+            ctx.arc(cx - 80, cy, 20, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function renderDetail() {
+            const w = canvasDetail.width;
+            const h = canvasDetail.height;
+            
+            ctxDetail.fillStyle = '#0a0608';
+            ctxDetail.fillRect(0, 0, w, h);
+            
+            // Show last hit zone detail
+            if (lastHitZone) {
+                const cx = w / 2;
+                const cy = h / 2;
+                const scale = 3;
+                
+                // Zone label
+                ctxDetail.fillStyle = '#ffaa33';
+                ctxDetail.font = 'bold 14px "Orbitron"';
+                ctxDetail.textAlign = 'center';
+                ctxDetail.fillText(`Last Hit: ${lastHitZone.bone.toUpperCase()}`, cx, 30);
+                ctxDetail.font = '11px "Share Tech Mono"';
+                ctxDetail.fillStyle = '#888';
+                ctxDetail.fillText(`Damage: ${lastHitZone.damage} (${lastHitZone.mult}x multiplier)`, cx, 50);
+                
+                // Draw enlarged bone hitbox
+                const bone = SKELETON[lastHitZone.bone];
+                
+                // Precision grid (high)
+                const precHigh = BASE_PRECISION[settings.baseHigh];
+                const gridHigh = precHigh * scale * 20;
+                
+                ctxDetail.strokeStyle = 'rgba(0, 255, 136, 0.2)';
+                ctxDetail.lineWidth = 1;
+                
+                for (let x = cx - 150; x < cx + 150; x += Math.max(5, gridHigh)) {
+                    ctxDetail.beginPath();
+                    ctxDetail.moveTo(x, cy - 100);
+                    ctxDetail.lineTo(x, cy + 100);
+                    ctxDetail.stroke();
+                }
+                for (let y = cy - 100; y < cy + 100; y += Math.max(5, gridHigh)) {
+                    ctxDetail.beginPath();
+                    ctxDetail.moveTo(cx - 150, y);
+                    ctxDetail.lineTo(cx + 150, y);
+                    ctxDetail.stroke();
+                }
+                
+                // Bone hitbox
+                ctxDetail.fillStyle = bone.color + '60';
+                ctxDetail.beginPath();
+                ctxDetail.arc(cx, cy, bone.radius * scale, 0, Math.PI * 2);
+                ctxDetail.fill();
+                
+                ctxDetail.strokeStyle = bone.color;
+                ctxDetail.lineWidth = 3;
+                ctxDetail.stroke();
+                
+                // Hit point
+                ctxDetail.fillStyle = '#ffffff';
+                ctxDetail.beginPath();
+                ctxDetail.arc(cx + (Math.random() - 0.5) * 10, cy + (Math.random() - 0.5) * 10, 5, 0, Math.PI * 2);
+                ctxDetail.fill();
+                
+                // Labels
+                ctxDetail.fillStyle = '#666';
+                ctxDetail.font = '10px "Share Tech Mono"';
+                ctxDetail.textAlign = 'left';
+                ctxDetail.fillText(`Hitbox radius: ${bone.radius}px`, 20, h - 40);
+                ctxDetail.fillText(`Detection precision: ${precHigh}mm`, 20, h - 25);
+                ctxDetail.fillText(`Grid: ${(precHigh * 20).toFixed(1)}mm cells (scaled)`, 20, h - 10);
+                
+            } else {
+                ctxDetail.fillStyle = '#444';
+                ctxDetail.font = '12px "Share Tech Mono"';
+                ctxDetail.textAlign = 'center';
+                ctxDetail.fillText('Swing weapon to see hit zone detail', w / 2, h / 2);
+            }
+            
+            ctxDetail.textAlign = 'left';
+        }
+        
+        function mainLoop() {
+            update();
+            render();
+            requestAnimationFrame(mainLoop);
+        }
+        
+        // Event handlers
+        document.querySelectorAll('.weapon-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.weapon-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.weapon = btn.dataset.weapon;
+            });
+        });
+        
+        document.querySelectorAll('.base-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.base-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.baseHigh = parseInt(btn.dataset.base);
+                updateStats();
+            });
+        });
+        
+        document.getElementById('swingSpeed').addEventListener('input', (e) => {
+            settings.swingSpeed = parseInt(e.target.value);
+            const labels = ['Very Slow', 'Slow', 'Normal', 'Fast', 'Very Fast'];
+            document.getElementById('swingSpeedVal').textContent = labels[settings.swingSpeed];
+        });
+        
+        document.getElementById('targetMove').addEventListener('input', (e) => {
+            settings.targetMove = parseInt(e.target.value);
+            const labels = ['Idle', 'Slight', 'Moving', 'Dodging', 'Erratic'];
+            document.getElementById('targetMoveVal').textContent = labels[settings.targetMove];
+        });
+        
+        document.getElementById('btnSwing').addEventListener('click', swing);
+        
+        document.getElementById('btnCombo').addEventListener('click', () => {
+            swing();
+            setTimeout(swing, 600);
+            setTimeout(swing, 1200);
+        });
+        
+        document.getElementById('btnFlurry').addEventListener('click', () => {
+            for (let i = 0; i < 10; i++) {
+                setTimeout(swing, i * 300);
+            }
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            stats = {
+                totalSwings: 0,
+                cleanHits: 0,
+                misses: 0,
+                ghostHits: 0,
+                criticals: 0,
+                totalDamage: 0
+            };
+            combatLog = [];
+            lastHitZone = null;
+            document.getElementById('combatLog').innerHTML = 
+                '<div class="log-entry">Stats reset</div>';
+            updateStats();
+        });
+        
+        // Keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                swing();
+                e.preventDefault();
+            }
+        });
+        
+        window.addEventListener('resize', resize);
+        resize();
+        updateStats();
+        mainLoop();
+    </script>
+</body>
+</html>

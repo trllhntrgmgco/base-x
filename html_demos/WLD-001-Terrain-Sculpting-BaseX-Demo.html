@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WLD-001: Terrain Sculpting | Base-X Engine Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #060810;
+            --panel-bg: rgba(8, 14, 24, 0.95);
+            --terrain-low: #1a3d2e;
+            --terrain-mid: #4a7c59;
+            --terrain-high: #8fbc8f;
+            --terrain-peak: #e8e8e8;
+            --water-deep: #0a2a4a;
+            --water-shallow: #2d6a8a;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-orange: #ff8844;
+            --accent-yellow: #ffdd00;
+            --base-64: #00ff88;
+            --base-48: #00d4ff;
+            --base-32: #ffdd00;
+            --base-24: #ff8844;
+            --base-16: #ff4444;
+            --text-primary: #d0e0f0;
+            --text-dim: #556677;
+            --border-glow: rgba(0, 212, 255, 0.3);
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 12px 20px;
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.08), transparent, rgba(0, 255, 136, 0.08));
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .demo-badge {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            color: #000;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.75em;
+            letter-spacing: 2px;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6em;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .stat-group {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .stat-value.base { color: var(--base-48); }
+        .stat-value.ops { color: var(--accent-green); }
+        .stat-value.fps { color: var(--accent-yellow); }
+        
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            gap: 15px;
+            height: calc(100vh - 120px);
+        }
+        
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.15), transparent);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-glow);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: var(--accent-cyan);
+        }
+        
+        .panel-content {
+            padding: 15px;
+        }
+        
+        /* Tool Panel */
+        .tool-section {
+            margin-bottom: 20px;
+        }
+        
+        .tool-section-title {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .tool-btn {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            padding: 12px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .tool-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--accent-cyan);
+        }
+        
+        .tool-btn.active {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        }
+        
+        .tool-icon {
+            font-size: 1.5em;
+            margin-bottom: 4px;
+        }
+        
+        .tool-name {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Sliders */
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .slider-name {
+            font-size: 0.8em;
+            color: var(--text-dim);
+        }
+        
+        .slider-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85em;
+            color: var(--accent-cyan);
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+        
+        /* Canvas Area */
+        .canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .view-tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 2px;
+        }
+        
+        .view-tab {
+            flex: 1;
+            padding: 8px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--border-glow);
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            transition: all 0.2s;
+        }
+        
+        .view-tab:hover {
+            background: rgba(0, 212, 255, 0.15);
+        }
+        
+        .view-tab.active {
+            background: var(--panel-bg);
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 0 0 8px 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #terrainCanvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        
+        /* Brush Preview */
+        .brush-preview {
+            position: absolute;
+            pointer-events: none;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+            transition: width 0.1s, height 0.1s;
+        }
+        
+        /* LOD Indicator */
+        .lod-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-glow);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8em;
+        }
+        
+        .lod-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .lod-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .lod-label {
+            color: var(--text-dim);
+        }
+        
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .zoom-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--border-glow);
+            border-radius: 6px;
+            color: var(--accent-cyan);
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .zoom-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--accent-cyan);
+        }
+        
+        /* Right Panel - Stats */
+        .stats-panel {
+            overflow-y: auto;
+        }
+        
+        .dro-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .dro-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7em;
+            color: var(--accent-green);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .dro-meter {
+            height: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        
+        .dro-fill {
+            height: 100%;
+            transition: width 0.3s, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        
+        .dro-scale {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65em;
+            color: var(--text-dim);
+        }
+        
+        .base-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .base-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .base-info {
+            flex: 1;
+        }
+        
+        .base-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8em;
+        }
+        
+        .base-desc {
+            font-size: 0.7em;
+            color: var(--text-dim);
+        }
+        
+        .base-precision {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+        }
+        
+        /* Heightmap Preview */
+        .heightmap-preview {
+            margin-bottom: 15px;
+        }
+        
+        .heightmap-canvas {
+            width: 100%;
+            height: 120px;
+            background: #000;
+            border-radius: 6px;
+            border: 1px solid var(--border-glow);
+        }
+        
+        /* Operations Log */
+        .ops-log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .ops-entry {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7em;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .ops-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .ops-action {
+            color: var(--accent-cyan);
+        }
+        
+        .ops-base {
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        
+        /* Terrain Stats */
+        .terrain-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .terrain-stat {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .terrain-stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.2em;
+            color: var(--accent-cyan);
+        }
+        
+        .terrain-stat-label {
+            font-size: 0.65em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Presets */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .preset-btn {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .preset-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--accent-cyan);
+        }
+        
+        .preset-icon {
+            font-size: 1.5em;
+            margin-bottom: 4px;
+        }
+        
+        .preset-name {
+            font-size: 0.7em;
+            color: var(--text-dim);
+        }
+        
+        /* Color legend */
+        .color-legend {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        
+        .legend-item {
+            flex: 1;
+            height: 20px;
+            border-radius: 3px;
+            position: relative;
+        }
+        
+        .legend-item span {
+            position: absolute;
+            bottom: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6em;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="demo-badge">WLD-001</div>
+                <h1>TERRAIN SCULPTING</h1>
+            </div>
+            <div class="header-right">
+                <div class="stat-group">
+                    <div class="stat-label">Active Base</div>
+                    <div class="stat-value base" id="activeBase">BASE-48</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Ops/Frame</div>
+                    <div class="stat-value ops" id="opsCount">0</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">FPS</div>
+                    <div class="stat-value fps" id="fpsCount">60</div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Panel - Tools -->
+            <div class="panel">
+                <div class="panel-header">⚒ SCULPTING TOOLS</div>
+                <div class="panel-content">
+                    <!-- Brush Tools -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Brush Mode</div>
+                        <div class="tool-grid">
+                            <div class="tool-btn active" data-tool="raise" onclick="selectTool('raise')">
+                                <div class="tool-icon">⬆</div>
+                                <div class="tool-name">Raise</div>
+                            </div>
+                            <div class="tool-btn" data-tool="lower" onclick="selectTool('lower')">
+                                <div class="tool-icon">⬇</div>
+                                <div class="tool-name">Lower</div>
+                            </div>
+                            <div class="tool-btn" data-tool="smooth" onclick="selectTool('smooth')">
+                                <div class="tool-icon">〰</div>
+                                <div class="tool-name">Smooth</div>
+                            </div>
+                            <div class="tool-btn" data-tool="flatten" onclick="selectTool('flatten')">
+                                <div class="tool-icon">▬</div>
+                                <div class="tool-name">Flatten</div>
+                            </div>
+                            <div class="tool-btn" data-tool="noise" onclick="selectTool('noise')">
+                                <div class="tool-icon">⚡</div>
+                                <div class="tool-name">Noise</div>
+                            </div>
+                            <div class="tool-btn" data-tool="erode" onclick="selectTool('erode')">
+                                <div class="tool-icon">💧</div>
+                                <div class="tool-name">Erode</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Brush Settings -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Brush Settings</div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Brush Size</span>
+                                <span class="slider-value" id="brushSizeValue">50</span>
+                            </div>
+                            <input type="range" id="brushSize" min="10" max="200" value="50" oninput="updateBrushSize()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Brush Strength</span>
+                                <span class="slider-value" id="brushStrengthValue">50%</span>
+                            </div>
+                            <input type="range" id="brushStrength" min="1" max="100" value="50" oninput="updateBrushStrength()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Brush Falloff</span>
+                                <span class="slider-value" id="brushFalloffValue">0.5</span>
+                            </div>
+                            <input type="range" id="brushFalloff" min="0" max="100" value="50" oninput="updateBrushFalloff()">
+                        </div>
+                    </div>
+                    
+                    <!-- View Settings -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">View Settings</div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Zoom Level</span>
+                                <span class="slider-value" id="zoomValue">1.0x</span>
+                            </div>
+                            <input type="range" id="zoomLevel" min="25" max="400" value="100" oninput="updateZoom()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Water Level</span>
+                                <span class="slider-value" id="waterLevelValue">20%</span>
+                            </div>
+                            <input type="range" id="waterLevel" min="0" max="100" value="20" oninput="updateWaterLevel()">
+                        </div>
+                    </div>
+                    
+                    <!-- Terrain Presets -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Terrain Presets</div>
+                        <div class="preset-grid">
+                            <div class="preset-btn" onclick="applyPreset('mountains')">
+                                <div class="preset-icon">🏔</div>
+                                <div class="preset-name">Mountains</div>
+                            </div>
+                            <div class="preset-btn" onclick="applyPreset('valleys')">
+                                <div class="preset-icon">🏞</div>
+                                <div class="preset-name">Valleys</div>
+                            </div>
+                            <div class="preset-btn" onclick="applyPreset('islands')">
+                                <div class="preset-icon">🏝</div>
+                                <div class="preset-name">Islands</div>
+                            </div>
+                            <div class="preset-btn" onclick="applyPreset('flat')">
+                                <div class="preset-icon">🟫</div>
+                                <div class="preset-name">Flat</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center - Canvas -->
+            <div class="canvas-container">
+                <div class="view-tabs">
+                    <div class="view-tab active" data-view="3d" onclick="switchView('3d')">3D VIEW</div>
+                    <div class="view-tab" data-view="top" onclick="switchView('top')">TOP DOWN</div>
+                    <div class="view-tab" data-view="height" onclick="switchView('height')">HEIGHTMAP</div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="terrainCanvas"></canvas>
+                    <div class="brush-preview" id="brushPreview"></div>
+                    
+                    <div class="lod-indicator">
+                        <div class="lod-row">
+                            <span class="lod-label">LOD Level:</span>
+                            <span id="lodLevel" style="color: var(--accent-cyan);">HIGH</span>
+                        </div>
+                        <div class="lod-row">
+                            <span class="lod-label">Grid Res:</span>
+                            <span id="gridRes" style="color: var(--accent-green);">256×256</span>
+                        </div>
+                        <div class="lod-row">
+                            <span class="lod-label">Precision:</span>
+                            <span id="precisionVal" style="color: var(--accent-yellow);">±0.1m</span>
+                        </div>
+                    </div>
+                    
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" onclick="zoomIn()">+</button>
+                        <button class="zoom-btn" onclick="zoomOut()">−</button>
+                        <button class="zoom-btn" onclick="resetView()">⟲</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel - Stats -->
+            <div class="panel stats-panel">
+                <div class="panel-header">📊 DRO METRICS</div>
+                <div class="panel-content">
+                    <!-- DRO Display -->
+                    <div class="dro-display">
+                        <div class="dro-title">DYNAMIC RADIX OPTIMIZER</div>
+                        <div class="dro-meter">
+                            <div class="dro-fill" id="droFill" style="width: 75%; background: linear-gradient(90deg, var(--base-16), var(--base-48));">
+                                BASE-48
+                            </div>
+                        </div>
+                        <div class="dro-scale">
+                            <span>B-16</span>
+                            <span>B-24</span>
+                            <span>B-32</span>
+                            <span>B-48</span>
+                            <span>B-64</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Base Selection Factors -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Base Selection Factors</div>
+                        
+                        <div class="base-indicator">
+                            <div class="base-dot" style="background: var(--base-48);"></div>
+                            <div class="base-info">
+                                <div class="base-name">Brush Precision</div>
+                                <div class="base-desc">Close-up editing</div>
+                            </div>
+                            <div class="base-precision" id="brushBase">B-48</div>
+                        </div>
+                        
+                        <div class="base-indicator">
+                            <div class="base-dot" style="background: var(--base-24);"></div>
+                            <div class="base-info">
+                                <div class="base-name">Terrain Mesh</div>
+                                <div class="base-desc">Vertex positions</div>
+                            </div>
+                            <div class="base-precision" id="meshBase">B-24</div>
+                        </div>
+                        
+                        <div class="base-indicator">
+                            <div class="base-dot" style="background: var(--base-16);"></div>
+                            <div class="base-info">
+                                <div class="base-name">Water Sim</div>
+                                <div class="base-desc">Surface level</div>
+                            </div>
+                            <div class="base-precision" id="waterBase">B-16</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Terrain Stats -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Terrain Statistics</div>
+                        <div class="terrain-stats">
+                            <div class="terrain-stat">
+                                <div class="terrain-stat-value" id="minHeight">0m</div>
+                                <div class="terrain-stat-label">Min Height</div>
+                            </div>
+                            <div class="terrain-stat">
+                                <div class="terrain-stat-value" id="maxHeight">100m</div>
+                                <div class="terrain-stat-label">Max Height</div>
+                            </div>
+                            <div class="terrain-stat">
+                                <div class="terrain-stat-value" id="avgHeight">45m</div>
+                                <div class="terrain-stat-label">Avg Height</div>
+                            </div>
+                            <div class="terrain-stat">
+                                <div class="terrain-stat-value" id="vertexCount">65K</div>
+                                <div class="terrain-stat-label">Vertices</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Heightmap Preview -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Heightmap Preview</div>
+                        <div class="heightmap-preview">
+                            <canvas id="heightmapCanvas" class="heightmap-canvas"></canvas>
+                            <div class="color-legend">
+                                <div class="legend-item" style="background: var(--water-deep);"><span>Water</span></div>
+                                <div class="legend-item" style="background: var(--terrain-low);"><span>Low</span></div>
+                                <div class="legend-item" style="background: var(--terrain-mid);"><span>Mid</span></div>
+                                <div class="legend-item" style="background: var(--terrain-high);"><span>High</span></div>
+                                <div class="legend-item" style="background: var(--terrain-peak);"><span>Peak</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Operations Log -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Operations Log</div>
+                        <div class="ops-log" id="opsLog">
+                            <div class="ops-entry">
+                                <span class="ops-action">System initialized</span>
+                                <span class="ops-base" style="background: var(--base-24); color: #000;">B-24</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ===== BASE-X ENGINE: TERRAIN SCULPTING =====
+        
+        // Canvas setup
+        const canvas = document.getElementById('terrainCanvas');
+        const ctx = canvas.getContext('2d');
+        const heightmapCanvas = document.getElementById('heightmapCanvas');
+        const heightmapCtx = heightmapCanvas.getContext('2d');
+        
+        // Terrain data
+        const GRID_SIZE = 128;
+        let heightmap = [];
+        let currentTool = 'raise';
+        let currentView = '3d';
+        
+        // Brush settings
+        let brushSize = 50;
+        let brushStrength = 0.5;
+        let brushFalloff = 0.5;
+        let zoomLevel = 1.0;
+        let waterLevel = 0.2;
+        
+        // Camera for 3D view
+        let camera = {
+            rotationX: 0.6,
+            rotationY: 0.3,
+            distance: 300,
+            panX: 0,
+            panY: 0
+        };
+        
+        // DRO State
+        let dro = {
+            currentBase: 48,
+            brushBase: 48,
+            meshBase: 24,
+            waterBase: 16,
+            opsCount: 0,
+            transitionCount: 0
+        };
+        
+        // Performance tracking
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 60;
+        
+        // Mouse state
+        let isDrawing = false;
+        let mouseX = 0;
+        let mouseY = 0;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        
+        // Initialize
+        function init() {
+            resizeCanvas();
+            initHeightmap();
+            applyPreset('mountains');
+            
+            // Event listeners
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mouseleave', stopDraw);
+            canvas.addEventListener('wheel', handleWheel);
+            
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Start render loop
+            requestAnimationFrame(render);
+            
+            logOperation('Terrain engine initialized', 24);
+        }
+        
+        function resizeCanvas() {
+            const wrapper = canvas.parentElement;
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            
+            heightmapCanvas.width = heightmapCanvas.clientWidth;
+            heightmapCanvas.height = heightmapCanvas.clientHeight;
+        }
+        
+        function initHeightmap() {
+            heightmap = [];
+            for (let y = 0; y < GRID_SIZE; y++) {
+                heightmap[y] = [];
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    heightmap[y][x] = 0;
+                }
+            }
+        }
+        
+        // ===== DRO (Dynamic Radix Optimizer) =====
+        
+        function calculateDROBase() {
+            // Base selection based on zoom level and tool activity
+            let targetBase;
+            
+            if (zoomLevel >= 3.0) {
+                // Very close - need high precision
+                targetBase = 64;
+            } else if (zoomLevel >= 2.0) {
+                targetBase = 48;
+            } else if (zoomLevel >= 1.0) {
+                targetBase = 32;
+            } else if (zoomLevel >= 0.5) {
+                targetBase = 24;
+            } else {
+                // Zoomed out - lower precision fine
+                targetBase = 16;
+            }
+            
+            // Brush precision scales with brush size (smaller = higher precision needed)
+            if (isDrawing) {
+                const brushFactor = 1 - (brushSize / 200);
+                dro.brushBase = Math.round(16 + brushFactor * 48);
+                targetBase = Math.max(targetBase, dro.brushBase);
+            }
+            
+            if (dro.currentBase !== targetBase) {
+                dro.transitionCount++;
+                logOperation(`Base transition: ${dro.currentBase} → ${targetBase}`, targetBase);
+            }
+            
+            dro.currentBase = targetBase;
+            
+            // Update mesh base based on distance
+            dro.meshBase = Math.min(targetBase, 32);
+            
+            return targetBase;
+        }
+        
+        function getBasePrecision(base) {
+            const precisions = {
+                16: '±2m',
+                24: '±0.5m',
+                32: '±0.1m',
+                48: '±0.01m',
+                64: '±0.001m'
+            };
+            return precisions[base] || '±1m';
+        }
+        
+        function getBaseColor(base) {
+            if (base >= 64) return 'var(--base-64)';
+            if (base >= 48) return 'var(--base-48)';
+            if (base >= 32) return 'var(--base-32)';
+            if (base >= 24) return 'var(--base-24)';
+            return 'var(--base-16)';
+        }
+        
+        function getLODLevel(base) {
+            if (base >= 48) return 'ULTRA';
+            if (base >= 32) return 'HIGH';
+            if (base >= 24) return 'MEDIUM';
+            return 'LOW';
+        }
+        
+        function getGridResolution() {
+            if (zoomLevel >= 2.0) return '256×256';
+            if (zoomLevel >= 1.0) return '128×128';
+            if (zoomLevel >= 0.5) return '64×64';
+            return '32×32';
+        }
+        
+        // ===== TERRAIN TOOLS =====
+        
+        function selectTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tool === tool);
+            });
+            logOperation(`Tool: ${tool}`, dro.currentBase);
+        }
+        
+        function applyBrush(gridX, gridY) {
+            const radius = Math.ceil(brushSize / (canvas.width / GRID_SIZE) / 2);
+            const strength = brushStrength * 0.1;
+            
+            dro.opsCount = 0;
+            
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    const x = Math.floor(gridX + dx);
+                    const y = Math.floor(gridY + dy);
+                    
+                    if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist <= radius) {
+                            // Falloff calculation
+                            const falloff = Math.pow(1 - (dist / radius), brushFalloff * 2);
+                            const delta = strength * falloff;
+                            
+                            dro.opsCount++;
+                            
+                            switch (currentTool) {
+                                case 'raise':
+                                    heightmap[y][x] = Math.min(1, heightmap[y][x] + delta);
+                                    break;
+                                case 'lower':
+                                    heightmap[y][x] = Math.max(0, heightmap[y][x] - delta);
+                                    break;
+                                case 'smooth':
+                                    const avg = getAverageHeight(x, y, 2);
+                                    heightmap[y][x] += (avg - heightmap[y][x]) * delta * 2;
+                                    break;
+                                case 'flatten':
+                                    const targetHeight = heightmap[Math.floor(gridY)][Math.floor(gridX)];
+                                    heightmap[y][x] += (targetHeight - heightmap[y][x]) * delta * 3;
+                                    break;
+                                case 'noise':
+                                    heightmap[y][x] += (Math.random() - 0.5) * delta;
+                                    heightmap[y][x] = Math.max(0, Math.min(1, heightmap[y][x]));
+                                    break;
+                                case 'erode':
+                                    // Simple erosion - move height downhill
+                                    const slope = getSlope(x, y);
+                                    heightmap[y][x] = Math.max(0, heightmap[y][x] - delta * slope);
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        function getAverageHeight(x, y, radius) {
+            let sum = 0;
+            let count = 0;
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
+                        sum += heightmap[ny][nx];
+                        count++;
+                    }
+                }
+            }
+            return sum / count;
+        }
+        
+        function getSlope(x, y) {
+            let maxDiff = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
+                        const diff = heightmap[y][x] - heightmap[ny][nx];
+                        maxDiff = Math.max(maxDiff, diff);
+                    }
+                }
+            }
+            return maxDiff;
+        }
+        
+        // ===== PRESETS =====
+        
+        function applyPreset(preset) {
+            initHeightmap();
+            
+            switch (preset) {
+                case 'mountains':
+                    // Multiple peaks with noise
+                    for (let i = 0; i < 5; i++) {
+                        const px = Math.random() * GRID_SIZE;
+                        const py = Math.random() * GRID_SIZE;
+                        const height = 0.5 + Math.random() * 0.5;
+                        const radius = 15 + Math.random() * 25;
+                        addPeak(px, py, height, radius);
+                    }
+                    addNoise(0.1);
+                    break;
+                    
+                case 'valleys':
+                    // Start high, carve valleys
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        for (let x = 0; x < GRID_SIZE; x++) {
+                            heightmap[y][x] = 0.6;
+                        }
+                    }
+                    for (let i = 0; i < 3; i++) {
+                        carveValley();
+                    }
+                    addNoise(0.05);
+                    break;
+                    
+                case 'islands':
+                    // Ocean with islands
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        for (let x = 0; x < GRID_SIZE; x++) {
+                            heightmap[y][x] = 0.1;
+                        }
+                    }
+                    for (let i = 0; i < 4; i++) {
+                        const px = 20 + Math.random() * (GRID_SIZE - 40);
+                        const py = 20 + Math.random() * (GRID_SIZE - 40);
+                        addPeak(px, py, 0.4 + Math.random() * 0.4, 10 + Math.random() * 20);
+                    }
+                    addNoise(0.05);
+                    break;
+                    
+                case 'flat':
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        for (let x = 0; x < GRID_SIZE; x++) {
+                            heightmap[y][x] = 0.3;
+                        }
+                    }
+                    break;
+            }
+            
+            logOperation(`Preset: ${preset}`, 24);
+            updateTerrainStats();
+        }
+        
+        function addPeak(px, py, height, radius) {
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+                    if (dist < radius) {
+                        const falloff = Math.pow(1 - dist / radius, 2);
+                        heightmap[y][x] = Math.max(heightmap[y][x], height * falloff);
+                    }
+                }
+            }
+        }
+        
+        function carveValley() {
+            let x = Math.random() * GRID_SIZE;
+            let y = 0;
+            const direction = Math.random() * Math.PI / 2 + Math.PI / 4;
+            
+            while (y < GRID_SIZE && x >= 0 && x < GRID_SIZE) {
+                const radius = 5 + Math.random() * 10;
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        const nx = Math.floor(x + dx);
+                        const ny = Math.floor(y + dy);
+                        if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < radius) {
+                                const depth = 0.3 * (1 - dist / radius);
+                                heightmap[ny][nx] = Math.max(0, heightmap[ny][nx] - depth);
+                            }
+                        }
+                    }
+                }
+                x += Math.cos(direction) * 3 + (Math.random() - 0.5) * 4;
+                y += Math.sin(direction) * 3 + Math.random() * 2;
+            }
+        }
+        
+        function addNoise(amount) {
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    heightmap[y][x] += (Math.random() - 0.5) * amount;
+                    heightmap[y][x] = Math.max(0, Math.min(1, heightmap[y][x]));
+                }
+            }
+        }
+        
+        // ===== MOUSE HANDLING =====
+        
+        function startDraw(e) {
+            isDrawing = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            handleDraw(e);
+        }
+        
+        function handleMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            
+            updateBrushPreview();
+            
+            if (isDrawing) {
+                if (e.buttons === 2 || e.shiftKey) {
+                    // Right click or shift - rotate camera
+                    const deltaX = e.clientX - lastMouseX;
+                    const deltaY = e.clientY - lastMouseY;
+                    camera.rotationY += deltaX * 0.01;
+                    camera.rotationX += deltaY * 0.01;
+                    camera.rotationX = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, camera.rotationX));
+                } else {
+                    handleDraw(e);
+                }
+            }
+            
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        }
+        
+        function handleDraw(e) {
+            if (currentView === '3d') {
+                // Convert screen to terrain coordinates
+                const gridCoords = screenToGrid(mouseX, mouseY);
+                if (gridCoords) {
+                    applyBrush(gridCoords.x, gridCoords.y);
+                }
+            } else {
+                // Top-down view - direct mapping
+                const gridX = (mouseX / canvas.width) * GRID_SIZE;
+                const gridY = (mouseY / canvas.height) * GRID_SIZE;
+                applyBrush(gridX, gridY);
+            }
+        }
+        
+        function stopDraw() {
+            if (isDrawing) {
+                isDrawing = false;
+                updateTerrainStats();
+            }
+        }
+        
+        function screenToGrid(sx, sy) {
+            // Simplified - just use center-biased mapping for 3D view
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            const offsetX = (sx - centerX) / (canvas.width * 0.4 * zoomLevel);
+            const offsetY = (sy - centerY) / (canvas.height * 0.4 * zoomLevel);
+            
+            const gridX = (0.5 + offsetX) * GRID_SIZE;
+            const gridY = (0.5 + offsetY / Math.cos(camera.rotationX)) * GRID_SIZE;
+            
+            if (gridX >= 0 && gridX < GRID_SIZE && gridY >= 0 && gridY < GRID_SIZE) {
+                return { x: gridX, y: gridY };
+            }
+            return null;
+        }
+        
+        function handleWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            zoomLevel = Math.max(0.25, Math.min(4, zoomLevel * delta));
+            document.getElementById('zoomLevel').value = zoomLevel * 100;
+            updateZoom();
+        }
+        
+        function updateBrushPreview() {
+            const preview = document.getElementById('brushPreview');
+            const size = brushSize * zoomLevel;
+            preview.style.width = size + 'px';
+            preview.style.height = size + 'px';
+            preview.style.left = (mouseX - size / 2) + 'px';
+            preview.style.top = (mouseY - size / 2) + 'px';
+            preview.style.borderColor = getBaseColor(dro.currentBase);
+        }
+        
+        // ===== UI UPDATES =====
+        
+        function updateBrushSize() {
+            brushSize = parseInt(document.getElementById('brushSize').value);
+            document.getElementById('brushSizeValue').textContent = brushSize;
+        }
+        
+        function updateBrushStrength() {
+            brushStrength = parseInt(document.getElementById('brushStrength').value) / 100;
+            document.getElementById('brushStrengthValue').textContent = Math.round(brushStrength * 100) + '%';
+        }
+        
+        function updateBrushFalloff() {
+            brushFalloff = parseInt(document.getElementById('brushFalloff').value) / 100;
+            document.getElementById('brushFalloffValue').textContent = brushFalloff.toFixed(2);
+        }
+        
+        function updateZoom() {
+            zoomLevel = parseInt(document.getElementById('zoomLevel').value) / 100;
+            document.getElementById('zoomValue').textContent = zoomLevel.toFixed(1) + 'x';
+        }
+        
+        function updateWaterLevel() {
+            waterLevel = parseInt(document.getElementById('waterLevel').value) / 100;
+            document.getElementById('waterLevelValue').textContent = Math.round(waterLevel * 100) + '%';
+        }
+        
+        function zoomIn() {
+            zoomLevel = Math.min(4, zoomLevel * 1.2);
+            document.getElementById('zoomLevel').value = zoomLevel * 100;
+            updateZoom();
+        }
+        
+        function zoomOut() {
+            zoomLevel = Math.max(0.25, zoomLevel / 1.2);
+            document.getElementById('zoomLevel').value = zoomLevel * 100;
+            updateZoom();
+        }
+        
+        function resetView() {
+            zoomLevel = 1.0;
+            camera.rotationX = 0.6;
+            camera.rotationY = 0.3;
+            document.getElementById('zoomLevel').value = 100;
+            updateZoom();
+        }
+        
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.view === view);
+            });
+            logOperation(`View: ${view.toUpperCase()}`, dro.currentBase);
+        }
+        
+        function updateTerrainStats() {
+            let minH = 1, maxH = 0, sumH = 0;
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const h = heightmap[y][x];
+                    minH = Math.min(minH, h);
+                    maxH = Math.max(maxH, h);
+                    sumH += h;
+                }
+            }
+            const avgH = sumH / (GRID_SIZE * GRID_SIZE);
+            
+            document.getElementById('minHeight').textContent = Math.round(minH * 100) + 'm';
+            document.getElementById('maxHeight').textContent = Math.round(maxH * 100) + 'm';
+            document.getElementById('avgHeight').textContent = Math.round(avgH * 100) + 'm';
+            document.getElementById('vertexCount').textContent = (GRID_SIZE * GRID_SIZE / 1000).toFixed(0) + 'K';
+        }
+        
+        function logOperation(action, base) {
+            const log = document.getElementById('opsLog');
+            const entry = document.createElement('div');
+            entry.className = 'ops-entry';
+            entry.innerHTML = `
+                <span class="ops-action">${action}</span>
+                <span class="ops-base" style="background: ${getBaseColor(base)}; color: #000;">B-${base}</span>
+            `;
+            log.insertBefore(entry, log.firstChild);
+            
+            // Keep log short
+            while (log.children.length > 20) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        // ===== RENDERING =====
+        
+        function render() {
+            const currentTime = performance.now();
+            frameCount++;
+            
+            if (currentTime - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+            
+            // Update DRO
+            calculateDROBase();
+            
+            // Clear canvas
+            ctx.fillStyle = '#0a1520';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Render based on view mode
+            switch (currentView) {
+                case '3d':
+                    render3D();
+                    break;
+                case 'top':
+                    renderTopDown();
+                    break;
+                case 'height':
+                    renderHeightmap();
+                    break;
+            }
+            
+            // Update heightmap preview
+            renderHeightmapPreview();
+            
+            // Update UI
+            updateDRODisplay();
+            
+            requestAnimationFrame(render);
+        }
+        
+        function render3D() {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const scale = Math.min(canvas.width, canvas.height) * 0.35 * zoomLevel;
+            
+            // Calculate step based on LOD
+            const step = zoomLevel >= 2 ? 1 : zoomLevel >= 1 ? 2 : zoomLevel >= 0.5 ? 3 : 4;
+            
+            // Render terrain as wireframe/solid
+            for (let y = 0; y < GRID_SIZE - step; y += step) {
+                for (let x = 0; x < GRID_SIZE - step; x += step) {
+                    const h00 = heightmap[y][x];
+                    const h10 = heightmap[y][x + step];
+                    const h01 = heightmap[y + step][x];
+                    const h11 = heightmap[y + step][x + step];
+                    
+                    // Transform to 3D
+                    const p00 = project3D(x, y, h00, cx, cy, scale);
+                    const p10 = project3D(x + step, y, h10, cx, cy, scale);
+                    const p01 = project3D(x, y + step, h01, cx, cy, scale);
+                    const p11 = project3D(x + step, y + step, h11, cx, cy, scale);
+                    
+                    // Calculate average height for color
+                    const avgH = (h00 + h10 + h01 + h11) / 4;
+                    
+                    // Draw quad
+                    ctx.beginPath();
+                    ctx.moveTo(p00.x, p00.y);
+                    ctx.lineTo(p10.x, p10.y);
+                    ctx.lineTo(p11.x, p11.y);
+                    ctx.lineTo(p01.x, p01.y);
+                    ctx.closePath();
+                    
+                    // Color based on height
+                    if (avgH < waterLevel) {
+                        ctx.fillStyle = `rgba(10, 42, 74, ${0.7 + avgH * 0.3})`;
+                    } else {
+                        ctx.fillStyle = getTerrainColor(avgH);
+                    }
+                    ctx.fill();
+                    
+                    // Wireframe
+                    ctx.strokeStyle = 'rgba(0, 212, 255, 0.15)';
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            }
+            
+            // Water plane
+            if (waterLevel > 0) {
+                ctx.fillStyle = 'rgba(45, 90, 138, 0.4)';
+                const corners = [
+                    project3D(0, 0, waterLevel, cx, cy, scale),
+                    project3D(GRID_SIZE, 0, waterLevel, cx, cy, scale),
+                    project3D(GRID_SIZE, GRID_SIZE, waterLevel, cx, cy, scale),
+                    project3D(0, GRID_SIZE, waterLevel, cx, cy, scale)
+                ];
+                ctx.beginPath();
+                ctx.moveTo(corners[0].x, corners[0].y);
+                for (let i = 1; i < 4; i++) {
+                    ctx.lineTo(corners[i].x, corners[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        
+        function project3D(x, y, h, cx, cy, scale) {
+            // Normalize to -1 to 1
+            const nx = (x / GRID_SIZE - 0.5) * 2;
+            const ny = (y / GRID_SIZE - 0.5) * 2;
+            const nz = h * 0.5;
+            
+            // Rotate around Y axis
+            const cosY = Math.cos(camera.rotationY);
+            const sinY = Math.sin(camera.rotationY);
+            const rx = nx * cosY - ny * sinY;
+            const ry = nx * sinY + ny * cosY;
+            
+            // Rotate around X axis
+            const cosX = Math.cos(camera.rotationX);
+            const sinX = Math.sin(camera.rotationX);
+            const fy = ry * cosX - nz * sinX;
+            const fz = ry * sinX + nz * cosX;
+            
+            // Project to 2D
+            return {
+                x: cx + rx * scale,
+                y: cy + fy * scale
+            };
+        }
+        
+        function getTerrainColor(h) {
+            if (h < 0.25) {
+                return `rgb(26, 61, 46)`; // Low - dark green
+            } else if (h < 0.5) {
+                return `rgb(74, 124, 89)`; // Mid - green
+            } else if (h < 0.75) {
+                return `rgb(143, 188, 143)`; // High - light green
+            } else {
+                return `rgb(${200 + h * 55}, ${200 + h * 55}, ${200 + h * 55})`; // Peak - white/gray
+            }
+        }
+        
+        function renderTopDown() {
+            const cellW = canvas.width / GRID_SIZE;
+            const cellH = canvas.height / GRID_SIZE;
+            
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const h = heightmap[y][x];
+                    
+                    if (h < waterLevel) {
+                        const depth = waterLevel - h;
+                        ctx.fillStyle = `rgb(${10 + depth * 50}, ${42 + depth * 80}, ${74 + depth * 100})`;
+                    } else {
+                        ctx.fillStyle = getTerrainColor(h);
+                    }
+                    
+                    ctx.fillRect(x * cellW, y * cellH, cellW + 1, cellH + 1);
+                }
+            }
+            
+            // Grid lines at high zoom
+            if (zoomLevel >= 2) {
+                ctx.strokeStyle = 'rgba(0, 212, 255, 0.1)';
+                ctx.lineWidth = 0.5;
+                for (let i = 0; i <= GRID_SIZE; i += 4) {
+                    ctx.beginPath();
+                    ctx.moveTo(i * cellW, 0);
+                    ctx.lineTo(i * cellW, canvas.height);
+                    ctx.moveTo(0, i * cellH);
+                    ctx.lineTo(canvas.width, i * cellH);
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        function renderHeightmap() {
+            const cellW = canvas.width / GRID_SIZE;
+            const cellH = canvas.height / GRID_SIZE;
+            
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const h = heightmap[y][x];
+                    const gray = Math.floor(h * 255);
+                    ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+                    ctx.fillRect(x * cellW, y * cellH, cellW + 1, cellH + 1);
+                }
+            }
+        }
+        
+        function renderHeightmapPreview() {
+            const w = heightmapCanvas.width;
+            const h = heightmapCanvas.height;
+            const cellW = w / GRID_SIZE;
+            const cellH = h / GRID_SIZE;
+            
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const hVal = heightmap[y][x];
+                    
+                    if (hVal < waterLevel) {
+                        heightmapCtx.fillStyle = '#0a2a4a';
+                    } else {
+                        heightmapCtx.fillStyle = getTerrainColor(hVal);
+                    }
+                    
+                    heightmapCtx.fillRect(x * cellW, y * cellH, cellW + 1, cellH + 1);
+                }
+            }
+        }
+        
+        function updateDRODisplay() {
+            // Header stats
+            document.getElementById('activeBase').textContent = `BASE-${dro.currentBase}`;
+            document.getElementById('activeBase').style.color = getBaseColor(dro.currentBase);
+            document.getElementById('opsCount').textContent = dro.opsCount;
+            document.getElementById('fpsCount').textContent = fps;
+            
+            // LOD indicator
+            document.getElementById('lodLevel').textContent = getLODLevel(dro.currentBase);
+            document.getElementById('lodLevel').style.color = getBaseColor(dro.currentBase);
+            document.getElementById('gridRes').textContent = getGridResolution();
+            document.getElementById('precisionVal').textContent = getBasePrecision(dro.currentBase);
+            
+            // DRO meter
+            const droFill = document.getElementById('droFill');
+            const fillPercent = ((dro.currentBase - 16) / 48) * 100;
+            droFill.style.width = fillPercent + '%';
+            droFill.style.background = `linear-gradient(90deg, var(--base-16), ${getBaseColor(dro.currentBase)})`;
+            droFill.textContent = `BASE-${dro.currentBase}`;
+            
+            // Base indicators
+            document.getElementById('brushBase').textContent = `B-${dro.brushBase}`;
+            document.getElementById('meshBase').textContent = `B-${dro.meshBase}`;
+            document.getElementById('waterBase').textContent = `B-${dro.waterBase}`;
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', init);
+        
+        // Prevent context menu on right-click (for camera rotation)
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
+</body>
+</html>

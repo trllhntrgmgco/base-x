@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEC-006: Character Movement — Base-X Game Engine</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&family=JetBrains+Mono:wght@300;400;500&display=swap');
+:root{--bg:#0a0508;--blood:#8b1a1a;--blood-b:#cc2222;--bone:#d4c5a9;--bone-d:#7a6e5e;--purple:#6b2fa0;--ghost:#a8e0d0;--ghost-d:#4a8878;--void:#1a0a28;--fire:#ff6622;--ice:#44bbff;--gold:#c9a84c}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--bone);font-family:'Crimson Pro',serif;overflow:hidden;height:100vh;width:100vw}
+.hdr{position:fixed;top:0;left:0;right:0;height:44px;background:linear-gradient(180deg,rgba(10,5,8,.97),rgba(10,5,8,.85));border-bottom:1px solid var(--blood);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:100}
+.hdr-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:var(--bg);background:var(--blood-b);padding:2px 8px;letter-spacing:2px}
+.hdr-title{font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:var(--blood-b);letter-spacing:3px;margin-left:12px}
+.hdr-right{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--bone-d)}
+.dro{position:fixed;top:44px;left:0;right:0;height:24px;background:rgba(10,5,8,.8);border-bottom:1px solid rgba(139,26,26,.2);display:flex;align-items:center;padding:0 16px;gap:18px;z-index:99;font-family:'JetBrains Mono',monospace;font-size:9px}
+.dro-i{display:flex;gap:5px}.dro-l{color:var(--bone-d);letter-spacing:1px}.dro-v{color:var(--blood-b);font-weight:500}
+.main{position:fixed;top:68px;left:0;right:0;bottom:0;display:flex}
+.panel-left{width:220px;flex-shrink:0;background:rgba(10,5,8,.9);border-right:1px solid rgba(139,26,26,.2);overflow-y:auto;padding:12px}
+.panel-left::-webkit-scrollbar{width:4px}.panel-left::-webkit-scrollbar-thumb{background:var(--blood)}
+.sec-label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--bone-d);letter-spacing:2px;margin:10px 0 6px}
+.char-card{padding:8px 10px;margin-bottom:6px;border:1px solid rgba(139,26,26,.2);background:rgba(139,26,26,.04);cursor:pointer;transition:all .2s}
+.char-card:hover{border-color:var(--blood);background:rgba(139,26,26,.08)}
+.char-card.active{border-color:var(--blood-b);background:rgba(139,26,26,.12)}
+.char-name{font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:var(--bone)}
+.char-class{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--purple);letter-spacing:1px}
+.char-stats{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--bone-d)}
+.stat-bar-wrap{display:flex;align-items:center;gap:4px}
+.stat-bar{flex:1;height:3px;background:rgba(139,26,26,.2);border-radius:1px}
+.stat-fill{height:100%;border-radius:1px;transition:width .3s}
+.realm-btn{display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:4px;border:1px solid rgba(139,26,26,.15);background:transparent;color:var(--bone-d);font-family:'Cinzel',serif;font-size:11px;cursor:pointer;transition:all .2s;width:100%;text-align:left}
+.realm-btn:hover{border-color:var(--blood);color:var(--bone)}
+.realm-btn.active{border-color:var(--blood-b);color:var(--bone);background:rgba(139,26,26,.08)}
+.realm-grav{font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--ghost-d);margin-left:auto}
+.center{flex:1;display:flex;flex-direction:column;position:relative}
+canvas{width:100%;flex:1;display:block;background:var(--void)}
+.move-hud{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;padding:6px 16px;background:rgba(10,5,8,.85);border:1px solid rgba(139,26,26,.3);font-family:'JetBrains Mono',monospace;font-size:10px;z-index:10}
+.state-tag{padding:2px 8px;font-size:9px;letter-spacing:1px;font-weight:500}
+.state-tag.idle{color:var(--bone-d);border:1px solid var(--bone-d)}
+.state-tag.walk{color:var(--ghost);border:1px solid var(--ghost-d)}
+.state-tag.run{color:var(--gold);border:1px solid var(--gold)}
+.state-tag.jump{color:var(--ice);border:1px solid var(--ice)}
+.state-tag.climb{color:var(--fire);border:1px solid var(--fire)}
+.state-tag.dodge{color:var(--blood-b);border:1px solid var(--blood-b)}
+.state-tag.fall{color:var(--purple);border:1px solid var(--purple)}
+.state-tag.wall{color:#44cc44;border:1px solid #44cc44}
+.vel-display{display:flex;gap:10px;font-size:9px}
+.vel-axis{color:var(--bone-d)}.vel-num{color:var(--ghost);font-weight:500}
+.panel-right{width:200px;flex-shrink:0;background:rgba(10,5,8,.9);border-left:1px solid rgba(139,26,26,.2);overflow-y:auto;padding:12px}
+.panel-right::-webkit-scrollbar{width:4px}.panel-right::-webkit-scrollbar-thumb{background:var(--blood)}
+.dro-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(139,26,26,.06);font-family:'JetBrains Mono',monospace;font-size:9px}
+.dro-sys{color:var(--bone-d)}.dro-base{font-weight:500;padding:1px 5px;font-size:8px}
+.stam-bar{width:100%;height:8px;background:rgba(139,26,26,.15);border:1px solid rgba(139,26,26,.2);margin-top:3px}
+.stam-fill{height:100%;background:linear-gradient(90deg,var(--ghost-d),var(--ghost));transition:width .15s}
+.input-vis{display:grid;grid-template-columns:repeat(3,28px);gap:3px;justify-content:center;margin-top:8px}
+.key-box{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(139,26,26,.2);font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--bone-d);transition:all .1s}
+.key-box.pressed{border-color:var(--blood-b);color:var(--blood-b);background:rgba(139,26,26,.15)}
+.hints{position:absolute;top:8px;right:8px;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--bone-d);z-index:10;text-align:right;line-height:1.6}
+.hints kbd{display:inline-block;background:rgba(139,26,26,.15);border:1px solid rgba(139,26,26,.3);padding:0 4px;color:var(--blood-b);font-size:8px}
+.terrain-label{position:absolute;top:8px;left:8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--bone-d);z-index:10}
+</style>
+</head>
+<body>
+<div class="hdr"><div style="display:flex;align-items:center"><div class="hdr-badge">NEC-006</div><div class="hdr-title">CHARACTER MOVEMENT</div></div><div class="hdr-right">NECROTOPIA VR · BASE-X ENGINE · © Keenan Dunham & Troll Hunter Gaming LLC</div></div>
+<div class="dro"><div class="dro-i"><span class="dro-l">DRO</span><span class="dro-v" id="droMode">ACTIVE</span></div><div class="dro-i"><span class="dro-l">STATE</span><span class="dro-v" id="droState">IDLE</span></div><div class="dro-i"><span class="dro-l">BASE</span><span class="dro-v" id="droBase">B-8</span></div><div class="dro-i"><span class="dro-l">GRAVITY</span><span class="dro-v" id="droGrav">1.00×</span></div><div class="dro-i"><span class="dro-l">FPS</span><span class="dro-v" id="droFps">60</span></div><div class="dro-i"><span class="dro-l">SAVINGS</span><span class="dro-v" id="droSave">72%</span></div></div>
+<div class="main">
+<div class="panel-left"><div class="sec-label">PLAYABLE CHARACTER</div><div id="charList"></div><div class="sec-label">REALM ENVIRONMENT</div><div id="realmList"></div><div class="sec-label">MOVEMENT TOGGLES</div>
+<label style="display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--bone-d);cursor:pointer;margin:4px 0"><input type="checkbox" id="togTrail" checked> Motion trail</label>
+<label style="display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--bone-d);cursor:pointer;margin:4px 0"><input type="checkbox" id="togIK" checked> Foot IK preview</label>
+<label style="display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--bone-d);cursor:pointer;margin:4px 0"><input type="checkbox" id="togDRO" checked> DRO Visualization</label>
+</div>
+<div class="center"><canvas id="gc"></canvas>
+<div class="hints"><kbd>A</kbd><kbd>D</kbd> Move &nbsp; <kbd>W</kbd> Jump &nbsp; <kbd>Shift</kbd> Sprint<br><kbd>Space</kbd> Dodge Roll &nbsp; <kbd>E</kbd> Climb &nbsp; <kbd>S</kbd> Drop</div>
+<div class="terrain-label" id="terrainLabel">TERRAIN: OBSIDIAN · FRICTION: 0.85</div>
+<div class="move-hud"><div class="state-tag idle" id="stateTag">IDLE</div><div class="vel-display"><span class="vel-axis">VX:<span class="vel-num" id="velX">0.0</span></span><span class="vel-axis">VY:<span class="vel-num" id="velY">0.0</span></span></div><div style="font-size:8px;color:var(--bone-d)">STAMINA</div><div style="width:80px;height:6px;background:rgba(139,26,26,.2);border-radius:2px"><div id="miniStam" style="height:100%;width:100%;background:var(--ghost);border-radius:2px;transition:width .15s"></div></div></div>
+</div>
+<div class="panel-right"><div class="sec-label">DRO PRECISION MAP</div><div id="droBD"></div><div class="sec-label">STAMINA</div><div class="stamina-wrap"><div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9px"><span style="color:var(--bone-d)">ENERGY</span><span style="color:var(--ghost)" id="stamVal">100 / 100</span></div><div class="stam-bar"><div class="stam-fill" id="stamBar"></div></div></div><div class="sec-label">INPUT STATE</div><div class="input-vis"><div class="key-box" style="grid-column:2" id="kW">W</div><div class="key-box" id="kA">A</div><div class="key-box" id="kS">S</div><div class="key-box" id="kD">D</div><div class="key-box" id="kShift" style="grid-column:1/3;width:auto">⇧</div><div class="key-box" id="kSpace">␣</div></div><div class="sec-label">MOVEMENT LOG</div><div id="moveLog" style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--bone-d);max-height:140px;overflow-y:auto;line-height:1.5"></div></div>
+</div>
+<script>
+const CHARS=[
+{name:"Billy Tait",cls:"Ghost Detective",icon:"👻",speed:5,sprint:8.5,jump:12,climb:.7,dodge:9,weight:.9,color:"#a8e0d0",stamina:100,stamRegen:1.2,maxJumps:2},
+{name:"Bonnie",cls:"War Soldier",icon:"🔫",speed:4.2,sprint:7.5,jump:10,climb:.5,dodge:7,weight:1.2,color:"#cc8844",stamina:130,stamRegen:.8,maxJumps:2},
+{name:"Finnagan",cls:"Werewolf Brawler",icon:"🐺",speed:5.5,sprint:10,jump:14,climb:.9,dodge:8,weight:1,color:"#88aa44",stamina:90,stamRegen:1.5,maxJumps:3},
+{name:"Edward Tait",cls:"Occult Scholar",icon:"📖",speed:3.8,sprint:6.5,jump:9,climb:.4,dodge:6,weight:1.4,color:"#8866cc",stamina:150,stamRegen:.6,maxJumps:2}
+];
+const REALMS=[
+{name:"Hell",icon:"🔥",gravity:1,friction:.85,terrain:"OBSIDIAN",color:"#ff4422",bg:["#1a0505","#2a0808"],hazard:"Lava pools drain stamina"},
+{name:"Asgard",icon:"⚡",gravity:.9,friction:.55,terrain:"ICE",color:"#44bbff",bg:["#050a1a","#0a1a2a"],hazard:"Ice reduces friction — sliding momentum"},
+{name:"Manna",icon:"🐒",gravity:1,friction:.9,terrain:"JADE STONE",color:"#44cc88",bg:["#051a0a","#0a2a12"],hazard:"Standard physics, balanced"},
+{name:"Void",icon:"🌀",gravity:.4,friction:.7,terrain:"VOID GLASS",color:"#aa44ff",bg:["#0a051a","#1a0a2a"],hazard:"Low gravity — floaty, higher jumps"},
+{name:"Nether",icon:"👁️",gravity:1.3,friction:.8,terrain:"FLESH",color:"#cc4488",bg:["#1a050f","#2a0818"],hazard:"Heavy gravity — shorter jumps"},
+{name:"Egypt Prime",icon:"🏺",gravity:1,friction:.95,terrain:"SANDSTONE",color:"#ccaa44",bg:["#1a1408","#2a2010"],hazard:"High friction, precise control"},
+{name:"Cyberworld",icon:"💾",gravity:.8,friction:.75,terrain:"CIRCUIT",color:"#00eeff",bg:["#020a12","#041420"],hazard:"Glitch zones alter gravity"},
+{name:"Serpentverse",icon:"🐍",gravity:1.1,friction:.65,terrain:"SCALED STONE",color:"#88cc22",bg:["#0a1205","#142008"],hazard:"Slippery + poison gas zones"}
+];
+const DRO_MAP={
+idle:{locomotion:8,collision:8,terrain:4,ik:4,physics:8},
+walk:{locomotion:16,collision:16,terrain:8,ik:16,physics:16},
+run:{locomotion:24,collision:24,terrain:16,ik:24,physics:24},
+jump:{locomotion:32,collision:32,terrain:8,ik:8,physics:32},
+fall:{locomotion:24,collision:32,terrain:8,ik:4,physics:32},
+climb:{locomotion:48,collision:48,terrain:48,ik:48,physics:48},
+dodge:{locomotion:64,collision:64,terrain:16,ik:8,physics:64},
+wall:{locomotion:48,collision:48,terrain:32,ik:32,physics:48}
+};
+
+let activeChar=0,activeRealm=0,canvas,ctx,keys={},frameCount=0,lastTime=0,fps=60,mLog=[];
+let P={x:300,y:200,vx:0,vy:0,w:24,h:42,onGround:false,onWall:false,climbing:false,state:'idle',facing:1,stamina:100,maxStamina:100,dodgeCD:0,dodgeT:0,jumpCount:0,maxJumps:2,animF:0,animT:0,trail:[]};
+let platforms=[],walls=[],ladders=[];
+
+function genLevel(){
+  const cw=canvas.width,ch=canvas.height;
+  platforms=[
+    {x:0,y:ch-40,w:cw,h:40,type:'ground'},
+    {x:80,y:ch-140,w:160,h:14,type:'plat'},
+    {x:300,y:ch-220,w:120,h:14,type:'plat'},
+    {x:500,y:ch-160,w:180,h:14,type:'plat'},
+    {x:200,y:ch-320,w:100,h:14,type:'plat'},
+    {x:650,y:ch-280,w:140,h:14,type:'plat'},
+    {x:420,y:ch-380,w:100,h:14,type:'plat'},
+    {x:60,y:ch-440,w:120,h:14,type:'plat'},
+    {x:cw-200,y:ch-340,w:130,h:14,type:'plat'},
+    {x:cw-100,y:ch-180,w:80,h:14,type:'plat'},
+  ];
+  walls=[
+    {x:76,y:ch-440,w:14,h:300},
+    {x:498,y:ch-380,w:14,h:220},
+    {x:cw-210,y:ch-340,w:14,h:200},
+  ];
+  ladders=[
+    {x:310,y:ch-320,w:20,h:180},
+    {x:660,y:ch-280,w:20,h:140},
+  ];
+}
+
+function init(){
+  canvas=document.getElementById('gc');ctx=canvas.getContext('2d');
+  resize();window.addEventListener('resize',resize);
+  buildCharList();buildRealmList();selectChar(0);selectRealm(0);
+  document.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' ')e.preventDefault()});
+  document.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
+  genLevel();requestAnimationFrame(loop);
+}
+
+function resize(){const r=canvas.parentElement.getBoundingClientRect();canvas.width=r.width;canvas.height=r.height;genLevel()}
+
+function buildCharList(){
+  document.getElementById('charList').innerHTML=CHARS.map((c,i)=>`<div class="char-card${i===0?' active':''}" id="cc-${i}" onclick="selectChar(${i})"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">${c.icon}</span><div><div class="char-name">${c.name}</div><div class="char-class">${c.cls.toUpperCase()}</div></div></div><div class="char-stats"><div class="stat-bar-wrap"><span>SPD</span><div class="stat-bar"><div class="stat-fill" style="width:${c.speed/6*100}%;background:${c.color}"></div></div></div><div class="stat-bar-wrap"><span>JMP</span><div class="stat-bar"><div class="stat-fill" style="width:${c.jump/15*100}%;background:${c.color}"></div></div></div><div class="stat-bar-wrap"><span>CLM</span><div class="stat-bar"><div class="stat-fill" style="width:${c.climb*100}%;background:${c.color}"></div></div></div><div class="stat-bar-wrap"><span>DDG</span><div class="stat-bar"><div class="stat-fill" style="width:${c.dodge/10*100}%;background:${c.color}"></div></div></div></div></div>`).join('');
+}
+
+function buildRealmList(){
+  document.getElementById('realmList').innerHTML=REALMS.map((r,i)=>`<button class="realm-btn${i===0?' active':''}" id="rb-${i}" onclick="selectRealm(${i})"><span style="font-size:16px">${r.icon}</span><span>${r.name}</span><span class="realm-grav">${r.gravity}×g</span></button>`).join('');
+}
+
+function selectChar(i){activeChar=i;const c=CHARS[i];P.maxStamina=c.stamina;P.stamina=c.stamina;P.maxJumps=c.maxJumps;document.querySelectorAll('.char-card').forEach((e,j)=>e.classList.toggle('active',j===i));log(`Selected ${c.name}`);}
+function selectRealm(i){activeRealm=i;const r=REALMS[i];document.querySelectorAll('.realm-btn').forEach((e,j)=>e.classList.toggle('active',j===i));document.getElementById('terrainLabel').textContent=`TERRAIN: ${r.terrain} · FRICTION: ${r.friction} · ${r.hazard}`;document.getElementById('droGrav').textContent=r.gravity.toFixed(2)+'×';log(`Entered ${r.name}`);}
+function log(m){mLog.unshift(m);if(mLog.length>20)mLog.pop();document.getElementById('moveLog').innerHTML=mLog.map(s=>`<div>${s}</div>`).join('');}
+
+function isNearLadder(){return ladders.some(l=>P.x+P.w>l.x&&P.x<l.x+l.w&&P.y+P.h>l.y&&P.y<l.y+l.h);}
+function isNearWall(){return walls.some(w=>P.x+P.w+6>w.x&&P.x-6<w.x+w.w&&P.y+P.h>w.y&&P.y<w.y+w.h);}
+
+function update(dt){
+  const ch=CHARS[activeChar],rm=REALMS[activeRealm],grav=.6*rm.gravity,fric=rm.friction;
+  const prev=P.state;
+  if(P.state!=='run'&&P.state!=='dodge'&&P.state!=='climb'&&P.state!=='wall')P.stamina=Math.min(P.maxStamina,P.stamina+ch.stamRegen*dt*60);
+  if(P.dodgeCD>0)P.dodgeCD-=dt*60;
+  if(P.dodgeT>0){P.dodgeT-=dt*60;P.vx=P.facing*ch.dodge*1.5;P.state='dodge';}
+  else{
+    let mx=0;
+    if(keys['a']||keys['arrowleft']){mx=-1;P.facing=-1;}
+    if(keys['d']||keys['arrowright']){mx=1;P.facing=1;}
+    if(keys['e']&&!P.climbing&&(isNearWall()||isNearLadder())&&P.stamina>5){P.climbing=true;P.vx=0;P.vy=0;log("Grabbed surface");}
+    if(P.climbing){
+      P.state=isNearLadder()?'climb':'wall';P.vy=0;P.vx=0;
+      if(keys['w']||keys['arrowup'])P.vy=-ch.climb*3.5;
+      if(keys['s']||keys['arrowdown'])P.vy=ch.climb*2;
+      if(mx)P.vx=mx*ch.speed*.4;
+      P.stamina=Math.max(0,P.stamina-.3*dt*60);
+      if(P.stamina<=0){P.climbing=false;log("Stamina depleted!");}
+      if(keys['s']&&P.onGround){P.climbing=false;}
+      if(!isNearWall()&&!isNearLadder())P.climbing=false;
+      // Jump off wall
+      if((keys['w']||keys['arrowup'])&&keys[' ']&&P.stamina>=10){
+        P.climbing=false;P.vy=-ch.jump*.8;P.vx=-P.facing*ch.speed;P.stamina-=10;P.jumpCount=1;log("Wall jump!");
+      }
+    }else{
+      const sprinting=keys['shift']&&P.stamina>0&&mx!==0;
+      const spd=sprinting?ch.sprint:ch.speed;
+      if(sprinting)P.stamina=Math.max(0,P.stamina-.4*dt*60);
+      if(mx){P.vx+=mx*spd*.3;const mxV=spd;if(Math.abs(P.vx)>mxV)P.vx=Math.sign(P.vx)*mxV;}
+      else{P.vx*=(.7*fric);if(Math.abs(P.vx)<.1)P.vx=0;}
+      P.vy+=grav;
+      if((keys['w']||keys['arrowup'])&&P.jumpCount<P.maxJumps){if(!P._jh){P.vy=-ch.jump*(rm.gravity<.6?.8:1);P.jumpCount++;P._jh=true;P.stamina=Math.max(0,P.stamina-8);log(P.jumpCount>1?(P.jumpCount>2?"Triple jump!":"Double jump!"):"Jump");}}
+      if(!keys['w']&&!keys['arrowup'])P._jh=false;
+      if(keys[' ']&&P.dodgeCD<=0&&P.onGround&&P.stamina>=15){P.dodgeT=12;P.dodgeCD=30;P.stamina-=15;P.vy=-2;log("Dodge roll!");}
+    }
+  }
+  P.x+=P.vx*dt*60;P.y+=P.vy*dt*60;
+  P.onGround=false;
+  platforms.forEach(p=>{
+    if(P.x+P.w>p.x&&P.x<p.x+p.w){
+      if(P.vy>=0&&P.y+P.h>=p.y&&P.y+P.h<=p.y+p.h+Math.abs(P.vy)*dt*60+6){P.y=p.y-P.h;P.vy=0;P.onGround=true;P.jumpCount=0;}
+      if(P.vy<0&&P.y<=p.y+p.h&&P.y>=p.y&&p.type==='ground'){P.y=p.y+p.h;P.vy=0;}
+    }
+  });
+  walls.forEach(w=>{if(P.y+P.h>w.y&&P.y<w.y+w.h){if(P.x+P.w>w.x&&P.x<w.x&&P.vx>0){P.x=w.x-P.w;P.vx=0;}if(P.x<w.x+w.w&&P.x+P.w>w.x+w.w&&P.vx<0){P.x=w.x+w.w;P.vx=0;}}});
+  if(P.x<0){P.x=0;P.vx=0;}if(P.x+P.w>canvas.width){P.x=canvas.width-P.w;P.vx=0;}
+  if(P.y>canvas.height+50){P.x=300;P.y=100;P.vx=0;P.vy=0;log("Fell — respawned");}
+  if(P.dodgeT>0)P.state='dodge';
+  else if(P.climbing)P.state=isNearLadder()?'climb':'wall';
+  else if(!P.onGround)P.state=P.vy<0?'jump':'fall';
+  else if(Math.abs(P.vx)>.5)P.state=keys['shift']&&Math.abs(P.vx)>ch.speed?'run':'walk';
+  else P.state='idle';
+  if(P.state!==prev)log(`→ ${P.state.toUpperCase()}`);
+  if(document.getElementById('togTrail').checked&&frameCount%3===0){P.trail.push({x:P.x+P.w/2,y:P.y+P.h/2,age:0,s:P.state});if(P.trail.length>40)P.trail.shift();}
+  P.trail.forEach(t=>t.age++);
+  P.animT+=dt*60;if(P.animT>8){P.animT=0;P.animF=(P.animF+1)%4;}
+}
+
+function render(){
+  const rm=REALMS[activeRealm],ch=CHARS[activeChar];
+  const g=ctx.createLinearGradient(0,0,0,canvas.height);g.addColorStop(0,rm.bg[0]);g.addColorStop(1,rm.bg[1]);ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle=rm.color+'08';for(let i=0;i<30;i++){ctx.beginPath();ctx.arc(((frameCount*.3+i*97)%canvas.width),((frameCount*.2+i*67)%canvas.height),1.5,0,Math.PI*2);ctx.fill();}
+  // Ladders
+  ctx.fillStyle='#443322';ladders.forEach(l=>{ctx.fillRect(l.x,l.y,3,l.h);ctx.fillRect(l.x+l.w-3,l.y,3,l.h);for(let r=l.y+12;r<l.y+l.h;r+=16)ctx.fillRect(l.x,r,l.w,2);});
+  // Platforms
+  platforms.forEach(p=>{ctx.fillStyle=p.type==='ground'?rm.color+'20':rm.color+'18';ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle=p.type==='ground'?rm.color+'40':rm.color+'50';ctx.fillRect(p.x,p.y,p.w,2);});
+  // Walls
+  walls.forEach(w=>{ctx.fillStyle=rm.color+'15';ctx.fillRect(w.x,w.y,w.w,w.h);ctx.fillStyle=rm.color+'35';ctx.fillRect(w.x,w.y,w.w,2);if(document.getElementById('togIK').checked){ctx.fillStyle=rm.color+'25';for(let g=w.y+20;g<w.y+w.h;g+=30)ctx.fillRect(w.x+3,g,w.w-6,4);}});
+  // DRO ring
+  if(document.getElementById('togDRO').checked){const dro=DRO_MAP[P.state]||DRO_MAP.idle;const mb=Math.max(...Object.values(dro));ctx.strokeStyle=`rgba(${mb>32?255:100},${mb>16?200:80},${mb>48?100:50},.3)`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(P.x+P.w/2,P.y+P.h/2,30+mb*.5,0,Math.PI*2);ctx.stroke();ctx.fillStyle=rm.color+'60';ctx.font='8px "JetBrains Mono"';ctx.fillText(`B-${mb}`,P.x+P.w+8,P.y);}
+  // Trail
+  if(document.getElementById('togTrail').checked){const sc={idle:'168,224,208',walk:'168,224,208',run:'201,168,76',jump:'68,187,255',fall:'107,47,160',climb:'255,102,34',dodge:'204,34,34',wall:'68,204,68'};P.trail.forEach(t=>{const a=Math.max(0,1-t.age/40);ctx.fillStyle=`rgba(${sc[t.s]||'168,224,208'},${a*.4})`;ctx.beginPath();ctx.arc(t.x,t.y,3,0,Math.PI*2);ctx.fill();});}
+  // Player
+  const px=P.x,py=P.y,pw=P.w,ph=P.h;
+  if(P.onGround){ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(px+pw/2,py+ph+1,pw*.6,3,0,0,Math.PI*2);ctx.fill();}
+  ctx.fillStyle=ch.color;
+  if(P.state==='dodge'){const sq=Math.sin(P.dodgeT*.5)*.3;ctx.save();ctx.translate(px+pw/2,py+ph);ctx.scale(1+sq,1-sq);ctx.fillRect(-pw/2,-ph,pw,ph);ctx.restore();ctx.fillStyle=ch.color+'20';ctx.fillRect(px-P.facing*20,py,pw,ph);ctx.fillStyle=ch.color+'10';ctx.fillRect(px-P.facing*40,py,pw,ph);}
+  else if(P.climbing){ctx.fillRect(px,py,pw,ph);ctx.fillRect(px-6,py+8,6,4);ctx.fillRect(px+pw,py+4,6,4);if(document.getElementById('togIK').checked){ctx.fillStyle='#ff440088';ctx.beginPath();ctx.arc(px-4,py+10,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(px+pw+4,py+6,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(px+4,py+ph,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(px+pw-4,py+ph-8,3,0,Math.PI*2);ctx.fill();}}
+  else{const bob=(P.state==='walk'||P.state==='run')?Math.sin(P.animF*Math.PI/2)*2:0;ctx.fillRect(px+4,py+bob,pw-8,12);ctx.fillRect(px+2,py+12+bob,pw-4,18);const ls=(P.state==='walk'||P.state==='run')?Math.sin(P.animF*Math.PI/2)*4:0;ctx.fillRect(px+2+ls,py+30+bob,8,12);ctx.fillRect(px+pw-10-ls,py+30+bob,8,12);ctx.fillStyle=P.state==='dodge'?'#ff0000':'#ffffff';ctx.fillRect(P.facing===1?px+pw-8:px+4,py+4+bob,4,4);if(document.getElementById('togIK').checked&&P.onGround){ctx.fillStyle='#44cc4488';ctx.beginPath();ctx.arc(px+6+ls,py+ph,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(px+pw-6-ls,py+ph,3,0,Math.PI*2);ctx.fill();}}
+  if(P.state==='run'&&frameCount%2===0){ctx.fillStyle=ch.color+'40';for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(px+pw/2-P.facing*20+Math.random()*10,py+ph-5+Math.random()*10,Math.random()*3,0,Math.PI*2);ctx.fill();}}
+}
+
+function updateUI(){
+  const dro=DRO_MAP[P.state]||DRO_MAP.idle,mb=Math.max(...Object.values(dro));
+  const tot=Object.values(dro).reduce((a,b)=>a+b,0),sav=Math.round((1-tot/(64*5))*100);
+  document.getElementById('droState').textContent=P.state.toUpperCase();
+  document.getElementById('droBase').textContent=`B-${mb}`;
+  document.getElementById('droFps').textContent=Math.round(fps);
+  document.getElementById('droSave').textContent=sav+'%';
+  const tag=document.getElementById('stateTag');tag.textContent=P.state.toUpperCase();tag.className=`state-tag ${P.state}`;
+  document.getElementById('velX').textContent=P.vx.toFixed(1);document.getElementById('velY').textContent=P.vy.toFixed(1);
+  const sp=(P.stamina/P.maxStamina)*100;document.getElementById('stamBar').style.width=sp+'%';document.getElementById('miniStam').style.width=sp+'%';document.getElementById('stamVal').textContent=`${Math.round(P.stamina)} / ${P.maxStamina}`;
+  const bc={4:'#444',8:'#666',16:'var(--ghost-d)',24:'var(--gold)',32:'var(--ice)',48:'var(--fire)',64:'var(--blood-b)'};
+  document.getElementById('droBD').innerHTML=Object.entries(dro).map(([k,v])=>`<div class="dro-row"><span class="dro-sys">${k.toUpperCase()}</span><span class="dro-base" style="color:${bc[v]||'#888'};border:1px solid ${bc[v]||'#888'}44">B-${v}</span></div>`).join('');
+  ['w','a','s','d'].forEach(k=>{document.getElementById(`k${k.toUpperCase()}`).classList.toggle('pressed',!!keys[k]||!!keys['arrow'+{w:'up',a:'left',s:'down',d:'right'}[k]]);});
+  document.getElementById('kShift').classList.toggle('pressed',!!keys['shift']);
+  document.getElementById('kSpace').classList.toggle('pressed',!!keys[' ']);
+}
+
+function loop(t){const dt=Math.min((t-lastTime)/1000,.033);lastTime=t;frameCount++;if(frameCount%10===0)fps=1/dt;update(dt);render();updateUI();requestAnimationFrame(loop);}
+init();
+</script>
+</body>
+</html>

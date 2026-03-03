@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPC-005: Asteroid Mining | Base-X Engine Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --void: #040408;
+            --panel: rgba(8, 12, 22, 0.95);
+            --panel-border: rgba(200, 160, 60, 0.2);
+            --gold: #dda832;
+            --gold-dim: #886620;
+            --cyan: #00b4ff;
+            --green: #00ff88;
+            --red: #ff3344;
+            --orange: #ff9500;
+            --yellow: #ffd000;
+            --white: #d0d8e4;
+            --dim: #4a5568;
+            --b64: #00ff88;
+            --b48: #00ccff;
+            --b32: #ffd000;
+            --b16: #ff8800;
+            --b8: #ff3344;
+            --platinum: #c0c8d8;
+            --iridium: #8888ff;
+            --titanium: #66ccaa;
+            --ice: #aaddff;
+            --iron: #aa7744;
+            --regolith: #665544;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--void);
+            color: var(--white);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            height: 46px;
+            background: linear-gradient(180deg, rgba(200,160,60,0.06), transparent);
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            flex-shrink: 0;
+        }
+        .hdr-left { display: flex; align-items: center; gap: 12px; }
+        .hdr-badge {
+            font-family: 'Orbitron', monospace;
+            font-size: 9px; font-weight: 900; letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--gold), #886620);
+            color: #fff; padding: 4px 10px; border-radius: 3px;
+        }
+        .hdr-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 15px; font-weight: 700; color: var(--gold);
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px rgba(200,160,60,0.3);
+        }
+        .hdr-right {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px; color: var(--dim);
+            display: flex; gap: 18px;
+        }
+        .hdr-right span { color: var(--gold); }
+
+        .main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 240px 1fr 270px;
+            overflow: hidden;
+        }
+
+        .side-panel, .right-panel {
+            background: var(--panel);
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .side-panel { border-right: 1px solid var(--panel-border); }
+        .right-panel { border-left: 1px solid var(--panel-border); }
+
+        .panel-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 10px; font-weight: 600;
+            color: var(--gold-dim);
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(200,160,60,0.1);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        .stat-label { color: var(--dim); font-size: 11px; }
+        .stat-val { font-family: 'Share Tech Mono', monospace; font-size: 12px; }
+        .section-gap { height: 12px; }
+
+        .canvas-wrap { position: relative; overflow: hidden; background: var(--void); }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* HUD */
+        .hud-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+        }
+        .hud-tl, .hud-tr, .hud-bl, .hud-br {
+            position: absolute;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px; color: var(--gold-dim); padding: 10px;
+        }
+        .hud-tl { top: 0; left: 0; }
+        .hud-tr { top: 0; right: 0; text-align: right; }
+        .hud-bl { bottom: 0; left: 0; }
+        .hud-br { bottom: 0; right: 0; text-align: right; }
+
+        .crosshair {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px; height: 50px;
+        }
+        .crosshair::before, .crosshair::after {
+            content: ''; position: absolute;
+            background: rgba(200,160,60,0.25);
+        }
+        .crosshair::before { width: 1px; height: 100%; left: 50%; }
+        .crosshair::after { width: 100%; height: 1px; top: 50%; }
+
+        .dro-bar {
+            position: absolute; bottom: 8px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; gap: 3px;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 8px; border-radius: 4px;
+            border: 1px solid rgba(200,160,60,0.15);
+        }
+        .dro-seg {
+            width: 28px; height: 8px; border-radius: 2px;
+            background: rgba(255,255,255,0.04);
+            transition: all 0.3s;
+        }
+        .dro-seg.lit { box-shadow: 0 0 6px; }
+        .dro-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 8px; color: var(--dim);
+            text-align: center; margin-top: 2px;
+        }
+
+        /* Resource bars */
+        .res-bar { height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px; overflow: hidden; margin: 4px 0; }
+        .res-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+        /* Cargo grid */
+        .cargo-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 4px; margin-top: 6px;
+        }
+        .cargo-cell {
+            padding: 6px;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 3px;
+            background: rgba(255,255,255,0.01);
+            text-align: center;
+        }
+        .cargo-cell .cargo-amt {
+            font-family: 'Orbitron', monospace;
+            font-size: 16px; font-weight: 700;
+        }
+        .cargo-cell .cargo-name {
+            font-size: 9px; color: var(--dim);
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 1px;
+        }
+        .cargo-cell .cargo-val {
+            font-size: 9px; color: var(--gold-dim);
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        /* Tool selector */
+        .tool-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 4px; margin-top: 6px;
+        }
+        .tool-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 10px; font-weight: 600;
+            padding: 6px; border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.02);
+            color: var(--dim); cursor: pointer;
+            border-radius: 2px; text-align: center;
+            transition: all 0.2s;
+        }
+        .tool-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .tool-btn.selected { border-color: var(--gold); color: var(--gold); background: rgba(200,160,60,0.08); }
+
+        /* Composition bars */
+        .comp-row {
+            display: flex; align-items: center; gap: 6px;
+            padding: 3px 0;
+        }
+        .comp-label { font-size: 10px; color: var(--dim); width: 55px; }
+        .comp-bar { flex: 1; height: 5px; background: rgba(255,255,255,0.04); border-radius: 3px; overflow: hidden; }
+        .comp-fill { height: 100%; border-radius: 3px; }
+        .comp-pct { font-family: 'Share Tech Mono', monospace; font-size: 10px; width: 32px; text-align: right; }
+
+        /* Controls */
+        .controls-bar {
+            height: 42px;
+            background: var(--panel);
+            border-top: 1px solid var(--panel-border);
+            display: flex; align-items: center;
+            justify-content: center;
+            gap: 10px; padding: 0 16px; flex-shrink: 0;
+        }
+        .ctrl-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 12px; font-weight: 600;
+            padding: 5px 14px;
+            border: 1px solid var(--panel-border);
+            background: rgba(200,160,60,0.04);
+            color: var(--dim); cursor: pointer;
+            border-radius: 3px; transition: all 0.2s;
+        }
+        .ctrl-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .ctrl-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(200,160,60,0.1); box-shadow: 0 0 8px rgba(200,160,60,0.15); }
+        .ctrl-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.06); }
+
+        /* Log */
+        .log-wrap {
+            max-height: 110px; overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace; font-size: 10px;
+        }
+        .log-entry { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .log-time { color: var(--dim); }
+        .log-msg.info { color: var(--cyan); }
+        .log-msg.success { color: var(--green); }
+        .log-msg.warn { color: var(--orange); }
+        .log-msg.error { color: var(--red); }
+        .log-msg.gold { color: var(--gold); }
+
+        /* Yield indicator */
+        .yield-flash {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', monospace;
+            font-size: 18px; font-weight: 700;
+            pointer-events: none;
+            opacity: 0; transition: opacity 0.3s;
+        }
+
+        @media (max-width: 1000px) {
+            .main { grid-template-columns: 1fr; }
+            .side-panel, .right-panel { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="hdr-left">
+        <div class="hdr-badge">BASE-X</div>
+        <div class="hdr-title">SPC-005 · ASTEROID MINING</div>
+    </div>
+    <div class="hdr-right">
+        <div>OP TIME <span id="opTime">00:00</span></div>
+        <div>YIELD <span id="yieldRate">0.0 kg/hr</span></div>
+        <div>CARGO <span id="cargoHdr">0 / 500 kg</span></div>
+    </div>
+</div>
+
+<div class="main">
+    <!-- LEFT PANEL -->
+    <div class="side-panel">
+        <div class="panel-title">ASTEROID DATA</div>
+        <div class="stat-row"><span class="stat-label">Designation</span><span class="stat-val" id="astName" style="color:var(--gold)">2035-XR7</span></div>
+        <div class="stat-row"><span class="stat-label">Classification</span><span class="stat-val" id="astClass">M-Type</span></div>
+        <div class="stat-row"><span class="stat-label">Diameter</span><span class="stat-val" id="astDiam">340 m</span></div>
+        <div class="stat-row"><span class="stat-label">Mass</span><span class="stat-val" id="astMass">4.2×10⁷ t</span></div>
+        <div class="stat-row"><span class="stat-label">Rotation</span><span class="stat-val" id="astRot">2.4 hr</span></div>
+        <div class="stat-row"><span class="stat-label">Surface Temp</span><span class="stat-val" id="astTemp">-103°C</span></div>
+        <div class="stat-row"><span class="stat-label">Est. Value</span><span class="stat-val" style="color:var(--gold)">$2.8B</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">COMPOSITION</div>
+        <div class="comp-row"><span class="comp-label">Iron</span><div class="comp-bar"><div class="comp-fill" style="width:42%;background:var(--iron)"></div></div><span class="comp-pct" style="color:var(--iron)">42%</span></div>
+        <div class="comp-row"><span class="comp-label">Nickel</span><div class="comp-bar"><div class="comp-fill" style="width:22%;background:#aa9966"></div></div><span class="comp-pct" style="color:#aa9966">22%</span></div>
+        <div class="comp-row"><span class="comp-label">Platinum</span><div class="comp-bar"><div class="comp-fill" style="width:8%;background:var(--platinum)"></div></div><span class="comp-pct" style="color:var(--platinum)">8%</span></div>
+        <div class="comp-row"><span class="comp-label">Iridium</span><div class="comp-bar"><div class="comp-fill" style="width:4%;background:var(--iridium)"></div></div><span class="comp-pct" style="color:var(--iridium)">4%</span></div>
+        <div class="comp-row"><span class="comp-label">Titanium</span><div class="comp-bar"><div class="comp-fill" style="width:6%;background:var(--titanium)"></div></div><span class="comp-pct" style="color:var(--titanium)">6%</span></div>
+        <div class="comp-row"><span class="comp-label">Water Ice</span><div class="comp-bar"><div class="comp-fill" style="width:10%;background:var(--ice)"></div></div><span class="comp-pct" style="color:var(--ice)">10%</span></div>
+        <div class="comp-row"><span class="comp-label">Regolith</span><div class="comp-bar"><div class="comp-fill" style="width:8%;background:var(--regolith)"></div></div><span class="comp-pct" style="color:var(--regolith)">8%</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">MINING TOOL</div>
+        <div class="tool-grid">
+            <div class="tool-btn selected" data-tool="scanner" onclick="selectTool('scanner')">📡 SCAN</div>
+            <div class="tool-btn" data-tool="laser" onclick="selectTool('laser')">⚡ LASER</div>
+            <div class="tool-btn" data-tool="drill" onclick="selectTool('drill')">⛏ DRILL</div>
+            <div class="tool-btn" data-tool="blaster" onclick="selectTool('blaster')">💥 BLAST</div>
+            <div class="tool-btn" data-tool="collector" onclick="selectTool('collector')">🧲 COLLECT</div>
+            <div class="tool-btn" data-tool="refiner" onclick="selectTool('refiner')">🔥 REFINE</div>
+        </div>
+        <div class="section-gap"></div>
+        <div class="stat-row"><span class="stat-label">Tool Power</span><span class="stat-val" id="toolPower">100%</span></div>
+        <div class="stat-row"><span class="stat-label">Tool Temp</span><span class="stat-val" id="toolTemp">22°C</span></div>
+        <div class="res-bar"><div class="res-fill" id="toolPowerBar" style="width:100%;background:var(--green)"></div></div>
+    </div>
+
+    <!-- CANVAS -->
+    <div class="canvas-wrap">
+        <canvas id="mineCanvas"></canvas>
+        <div class="hud-overlay">
+            <div class="hud-tl">
+                <div>DRO BASE: <span id="hudBase" style="color:var(--b32)">BASE-32</span></div>
+                <div>PRECISION: <span id="hudPrec">±0.1 mm</span></div>
+                <div>OPS/FRAME: <span id="hudOps">1,024</span></div>
+            </div>
+            <div class="hud-tr">
+                <div>TARGET: <span id="hudTarget" style="color:var(--gold)">—</span></div>
+                <div>DEPTH: <span id="hudDepth">0.0 m</span></div>
+                <div>FRAG SIZE: <span id="hudFrag">—</span></div>
+            </div>
+            <div class="hud-bl">
+                <div>TOOL: <span id="hudTool" style="color:var(--gold)">SCANNER</span></div>
+                <div>MODE: <span id="hudMode">SURVEY</span></div>
+            </div>
+            <div class="hud-br">
+                <div>FIVE PILLARS</div>
+                <div>DIST: <span id="pDist">0.50</span> VEL: <span id="pVel">0.20</span></div>
+                <div>INT: <span id="pInt">0.30</span> PHS: <span id="pPhs">0.40</span></div>
+                <div>PER: <span id="pPer">0.50</span></div>
+            </div>
+            <div class="crosshair"></div>
+            <div class="dro-bar">
+                <div><div class="dro-seg" id="seg8"></div><div class="dro-label">8</div></div>
+                <div><div class="dro-seg" id="seg16"></div><div class="dro-label">16</div></div>
+                <div><div class="dro-seg lit" id="seg32" style="background:var(--b32)"></div><div class="dro-label">32</div></div>
+                <div><div class="dro-seg" id="seg48"></div><div class="dro-label">48</div></div>
+                <div><div class="dro-seg" id="seg64"></div><div class="dro-label">64</div></div>
+            </div>
+        </div>
+        <div class="yield-flash" id="yieldFlash"></div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+        <div class="panel-title">CARGO HOLD</div>
+        <div class="stat-row"><span class="stat-label">Capacity</span><span class="stat-val" id="cargoTotal">0 / 500 kg</span></div>
+        <div class="res-bar"><div class="res-fill" id="cargoBar" style="width:0%;background:var(--gold)"></div></div>
+
+        <div class="cargo-grid">
+            <div class="cargo-cell"><div class="cargo-amt" id="cIron" style="color:var(--iron)">0</div><div class="cargo-name">IRON</div><div class="cargo-val">$120/kg</div></div>
+            <div class="cargo-cell"><div class="cargo-amt" id="cNickel" style="color:#aa9966">0</div><div class="cargo-name">NICKEL</div><div class="cargo-val">$280/kg</div></div>
+            <div class="cargo-cell"><div class="cargo-amt" id="cPlat" style="color:var(--platinum)">0</div><div class="cargo-name">PLATINUM</div><div class="cargo-val">$31K/kg</div></div>
+            <div class="cargo-cell"><div class="cargo-amt" id="cIrid" style="color:var(--iridium)">0</div><div class="cargo-name">IRIDIUM</div><div class="cargo-val">$52K/kg</div></div>
+            <div class="cargo-cell"><div class="cargo-amt" id="cTitan" style="color:var(--titanium)">0</div><div class="cargo-name">TITANIUM</div><div class="cargo-val">$4.5K/kg</div></div>
+            <div class="cargo-cell"><div class="cargo-amt" id="cIce" style="color:var(--ice)">0</div><div class="cargo-name">WATER ICE</div><div class="cargo-val">$8K/kg</div></div>
+        </div>
+
+        <div class="section-gap"></div>
+        <div class="stat-row"><span class="stat-label">Total Value</span><span class="stat-val" id="totalVal" style="color:var(--gold)">$0</span></div>
+        <div class="stat-row"><span class="stat-label">Yield Rate</span><span class="stat-val" id="yieldRateP">0.0 kg/hr</span></div>
+        <div class="stat-row"><span class="stat-label">Efficiency</span><span class="stat-val" id="efficiency" style="color:var(--green)">—</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">DRO ANALYSIS</div>
+        <div class="stat-row"><span class="stat-label">Active Base</span><span class="stat-val" id="droBase" style="color:var(--b32)">32</span></div>
+        <div class="stat-row"><span class="stat-label">Precision</span><span class="stat-val" id="droPrecision">±0.1 mm</span></div>
+        <div class="stat-row"><span class="stat-label">Base Switches</span><span class="stat-val" id="droSwitches">0</span></div>
+        <div class="stat-row"><span class="stat-label">Avg Base</span><span class="stat-val" id="droAvg">32.0</span></div>
+        <div class="stat-row"><span class="stat-label">Savings vs B64</span><span class="stat-val" id="droSavings" style="color:var(--green)">75%</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">CONTEXT TRIGGERS</div>
+        <div class="stat-row"><span class="stat-label">Vein Detected</span><span class="stat-val" id="trigVein">NO</span></div>
+        <div class="stat-row"><span class="stat-label">Fracture Risk</span><span class="stat-val" id="trigFrac">LOW</span></div>
+        <div class="stat-row"><span class="stat-label">Ice Pocket</span><span class="stat-val" id="trigIce">NO</span></div>
+        <div class="stat-row"><span class="stat-label">Precision Mode</span><span class="stat-val" id="trigPrec">OFF</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">OPERATIONS LOG</div>
+        <div class="log-wrap" id="logWrap"></div>
+    </div>
+</div>
+
+<div class="controls-bar">
+    <button class="ctrl-btn active" id="btnPlay" onclick="toggleSim()">⏸ PAUSE</button>
+    <button class="ctrl-btn" onclick="resetSim()">↺ RESET</button>
+    <div class="ctrl-sep"></div>
+    <button class="ctrl-btn" onclick="autoMine()">AUTO MINE</button>
+    <button class="ctrl-btn" onclick="deepScan()">DEEP SCAN</button>
+    <button class="ctrl-btn" onclick="targetVein()">TARGET VEIN</button>
+    <div class="ctrl-sep"></div>
+    <button class="ctrl-btn" onclick="setAsteroid('M')">M-TYPE</button>
+    <button class="ctrl-btn" onclick="setAsteroid('S')">S-TYPE</button>
+    <button class="ctrl-btn" onclick="setAsteroid('C')">C-TYPE</button>
+</div>
+
+<script>
+const canvas = document.getElementById('mineCanvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+    const w = canvas.parentElement;
+    canvas.width = w.clientWidth;
+    canvas.height = w.clientHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ═══════════════════════════════
+// STATE
+// ═══════════════════════════════
+
+const RESOURCES = {
+    iron:     { color: '#aa7744', value: 120 },
+    nickel:   { color: '#aa9966', value: 280 },
+    platinum: { color: '#c0c8d8', value: 31000 },
+    iridium:  { color: '#8888ff', value: 52000 },
+    titanium: { color: '#66ccaa', value: 4500 },
+    ice:      { color: '#aaddff', value: 8000 },
+};
+
+const ASTEROID_TYPES = {
+    M: { name: '2035-XR7', class: 'M-Type (Metallic)', diam: 340, mass: '4.2×10⁷', rot: 2.4, temp: -103, estVal: '$2.8B',
+         comp: { iron: 0.42, nickel: 0.22, platinum: 0.08, iridium: 0.04, titanium: 0.06, ice: 0.10, regolith: 0.08 } },
+    S: { name: '2037-KV3', class: 'S-Type (Siliceous)', diam: 520, mass: '1.1×10⁸', rot: 4.1, temp: -87, estVal: '$1.2B',
+         comp: { iron: 0.25, nickel: 0.12, platinum: 0.03, iridium: 0.01, titanium: 0.15, ice: 0.22, regolith: 0.22 } },
+    C: { name: '2039-AB1', class: 'C-Type (Carbon)', diam: 680, mass: '2.8×10⁸', rot: 6.8, temp: -123, estVal: '$4.1B',
+         comp: { iron: 0.10, nickel: 0.05, platinum: 0.12, iridium: 0.08, titanium: 0.03, ice: 0.35, regolith: 0.27 } },
+};
+
+const S = {
+    running: true,
+    time: 0,
+    opTime: 0,
+    autoMining: false,
+    asteroidType: 'M',
+
+    // Mining cursor
+    cursor: { x: 0, y: 0 },
+    mouseX: 0, mouseY: 0,
+
+    // Tool
+    tool: 'scanner',
+    toolPower: 100,
+    toolTemp: 22,
+    mining: false,
+    miningTarget: null,
+
+    // Asteroid geometry
+    asteroid: {
+        cx: 0, cy: 0,
+        radius: 180,
+        rotation: 0,
+        chunks: [],
+        veins: [],
+        craters: [],
+        particles: [],
+        scanLines: [],
+    },
+
+    // Cargo
+    cargo: { iron: 0, nickel: 0, platinum: 0, iridium: 0, titanium: 0, ice: 0 },
+    cargoMax: 500,
+    totalMined: 0,
+    yieldRate: 0,
+    yieldHistory: [],
+
+    // Fragments
+    fragments: [],
+    collectBeams: [],
+
+    // DRO
+    dro: {
+        currentBase: 32,
+        switches: 0,
+        history: [],
+        avgBase: 32,
+        pillars: { dist: 0.5, vel: 0.2, int: 0.3, phs: 0.4, per: 0.5 },
+    },
+
+    // Stars
+    stars: [],
+
+    // Scan data
+    scanned: false,
+    deepScanned: false,
+    targetedVein: null,
+};
+
+// ═══════════════════════════════
+// INIT
+// ═══════════════════════════════
+
+function initScene() {
+    const W = canvas.width, H = canvas.height;
+    S.asteroid.cx = W * 0.5;
+    S.asteroid.cy = H * 0.5;
+
+    // Stars
+    S.stars = [];
+    for (let i = 0; i < 300; i++) {
+        S.stars.push({
+            x: Math.random() * 2000 - 500,
+            y: Math.random() * 1500 - 250,
+            size: Math.random() * 1.2 + 0.3,
+            brightness: Math.random() * 0.7 + 0.3,
+            twinkle: Math.random() * 4 + 1,
+        });
+    }
+
+    // Generate asteroid surface chunks
+    S.asteroid.chunks = [];
+    const R = S.asteroid.radius;
+    for (let i = 0; i < 60; i++) {
+        const angle = (i / 60) * Math.PI * 2;
+        const wobble = R + (Math.random() - 0.5) * R * 0.3;
+        S.asteroid.chunks.push({ angle, radius: wobble });
+    }
+
+    // Generate mineral veins
+    S.asteroid.veins = [];
+    const comp = ASTEROID_TYPES[S.asteroidType].comp;
+    const minerals = Object.keys(RESOURCES);
+    for (let i = 0; i < 12; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const depth = 0.3 + Math.random() * 0.6;
+        const mineral = minerals[Math.floor(Math.random() * minerals.length)];
+        const richness = comp[mineral] * (0.5 + Math.random());
+        S.asteroid.veins.push({
+            angle, depth, mineral, richness,
+            width: 8 + Math.random() * 20,
+            length: 20 + Math.random() * 50,
+            depleted: 0,
+            discovered: false,
+        });
+    }
+
+    // Craters
+    S.asteroid.craters = [];
+    for (let i = 0; i < 8; i++) {
+        S.asteroid.craters.push({
+            angle: Math.random() * Math.PI * 2,
+            dist: 0.7 + Math.random() * 0.25,
+            size: 5 + Math.random() * 15,
+        });
+    }
+
+    S.fragments = [];
+    S.asteroid.particles = [];
+    S.asteroid.scanLines = [];
+
+    log('Mining vessel positioned at asteroid', 'info');
+    log(`Target: ${ASTEROID_TYPES[S.asteroidType].name} (${ASTEROID_TYPES[S.asteroidType].class})`, 'gold');
+}
+
+// ═══════════════════════════════
+// DRO
+// ═══════════════════════════════
+
+function computeDRO() {
+    const dist = S.miningTarget ? 0.8 : 0.3;
+    const vel = S.mining ? 0.7 : 0.1;
+    const interaction = S.mining ? (S.tool === 'laser' || S.tool === 'drill' ? 0.9 : 0.5) : 0.2;
+
+    let phase = 0.4;
+    if (S.targetedVein && S.mining) {
+        const vein = S.targetedVein;
+        if (vein.mineral === 'platinum' || vein.mineral === 'iridium') phase = 0.95;
+        else if (vein.mineral === 'titanium') phase = 0.75;
+        else phase = 0.5;
+    }
+    if (S.tool === 'blaster') phase = Math.max(phase, 0.3); // blasting = less precision needed
+
+    const perceptual = S.tool === 'scanner' ? 0.6 :
+                       S.tool === 'laser' ? 0.85 :
+                       S.tool === 'drill' ? 0.8 :
+                       S.tool === 'collector' ? 0.5 : 0.4;
+
+    S.dro.pillars = { dist, vel, int: interaction, phs: phase, per: perceptual };
+
+    const composite = dist * 0.15 + vel * 0.1 + interaction * 0.25 + phase * 0.35 + perceptual * 0.15;
+
+    let target;
+    if (composite > 0.85) target = 64;
+    else if (composite > 0.65) target = 48;
+    else if (composite > 0.45) target = 32;
+    else if (composite > 0.25) target = 16;
+    else target = 8;
+
+    if (target !== S.dro.currentBase) {
+        S.dro.switches++;
+        log(`DRO: Base-${S.dro.currentBase} → Base-${target}`, 'info');
+        S.dro.currentBase = target;
+    }
+
+    S.dro.history.push(S.dro.currentBase);
+    if (S.dro.history.length > 300) S.dro.history.shift();
+    S.dro.avgBase = S.dro.history.reduce((a,b) => a+b, 0) / S.dro.history.length;
+}
+
+function getPrec(base) {
+    switch(base) {
+        case 64: return { str: '±0.001 mm', ops: 4096 };
+        case 48: return { str: '±0.01 mm', ops: 2847 };
+        case 32: return { str: '±0.1 mm', ops: 1024 };
+        case 16: return { str: '±1.0 mm', ops: 256 };
+        case 8:  return { str: '±10 mm', ops: 64 };
+    }
+    return { str: '—', ops: 0 };
+}
+
+function baseColor(b) {
+    return { 64:'#00ff88', 48:'#00ccff', 32:'#ffd000', 16:'#ff8800', 8:'#ff3344' }[b] || '#fff';
+}
+
+// ═══════════════════════════════
+// PHYSICS
+// ═══════════════════════════════
+
+function updatePhysics(dt) {
+    // Asteroid rotation
+    const rotSpeed = (2 * Math.PI) / (ASTEROID_TYPES[S.asteroidType].rot * 3600);
+    S.asteroid.rotation += rotSpeed * dt * 600; // sped up for visual
+
+    // Fragments drift
+    S.fragments = S.fragments.filter(f => {
+        f.x += f.vx * dt * 60;
+        f.y += f.vy * dt * 60;
+        f.rotation += f.rotSpeed * dt;
+        f.life -= dt;
+        return f.life > 0;
+    });
+
+    // Particles
+    S.asteroid.particles = S.asteroid.particles.filter(p => {
+        p.x += p.vx * dt * 60;
+        p.y += p.vy * dt * 60;
+        p.life -= dt;
+        return p.life > 0;
+    });
+
+    // Scan lines
+    S.asteroid.scanLines = S.asteroid.scanLines.filter(sl => {
+        sl.progress += dt * 2;
+        return sl.progress < 1;
+    });
+
+    // Collect beams
+    S.collectBeams = S.collectBeams.filter(cb => {
+        cb.life -= dt;
+        return cb.life > 0;
+    });
+
+    // Tool systems
+    if (S.mining) {
+        S.toolPower = Math.max(0, S.toolPower - dt * 0.5);
+        S.toolTemp = Math.min(180, S.toolTemp + dt * 8);
+        if (S.toolTemp > 150) {
+            log('⚠ Tool overheating!', 'warn');
+        }
+        if (S.toolPower <= 0) {
+            S.mining = false;
+            log('Tool power depleted — recharging', 'error');
+        }
+    } else {
+        S.toolPower = Math.min(100, S.toolPower + dt * 2);
+        S.toolTemp = Math.max(22, S.toolTemp - dt * 5);
+    }
+
+    // Auto mining
+    if (S.autoMining && S.running) {
+        autoMineStep(dt);
+    }
+
+    // Yield tracking
+    S.yieldHistory.push(S.totalMined);
+    if (S.yieldHistory.length > 120) S.yieldHistory.shift();
+    if (S.yieldHistory.length > 10) {
+        const recent = S.yieldHistory.slice(-60);
+        const delta = recent[recent.length-1] - recent[0];
+        S.yieldRate = delta * 60; // per minute → per hour approx
+    }
+}
+
+function autoMineStep(dt) {
+    // Cycle through veins and mine them
+    if (!S.targetedVein) {
+        const available = S.asteroid.veins.filter(v => v.depleted < 1 && v.discovered);
+        if (available.length > 0) {
+            S.targetedVein = available[0];
+            S.tool = 'laser';
+            S.mining = true;
+            updateToolUI();
+            log(`Auto-targeting ${S.targetedVein.mineral} vein`, 'gold');
+        } else if (!S.deepScanned) {
+            deepScan();
+        }
+    }
+
+    if (S.targetedVein && S.mining && S.toolPower > 0) {
+        mineVein(S.targetedVein, dt);
+    }
+
+    if (S.targetedVein && S.targetedVein.depleted >= 1) {
+        log(`${S.targetedVein.mineral} vein exhausted`, 'warn');
+        S.targetedVein = null;
+    }
+
+    // Collect floating fragments
+    if (S.fragments.length > 5 && Math.random() < dt * 2) {
+        collectNearby();
+    }
+}
+
+function mineVein(vein, dt) {
+    const base = S.dro.currentBase;
+    const efficiencyMult = base >= 48 ? 1.0 : base >= 32 ? 0.85 : 0.6;
+
+    const mineRate = dt * 0.8 * efficiencyMult;
+    vein.depleted = Math.min(1, vein.depleted + mineRate * 0.1);
+
+    const amount = mineRate * vein.richness * 2;
+    const totalCargo = Object.values(S.cargo).reduce((a,b) => a+b, 0);
+
+    if (totalCargo < S.cargoMax) {
+        S.cargo[vein.mineral] = (S.cargo[vein.mineral] || 0) + amount;
+        S.totalMined += amount;
+
+        // Spawn fragments
+        if (Math.random() < dt * 8) {
+            const cx = S.asteroid.cx;
+            const cy = S.asteroid.cy;
+            const vAngle = vein.angle + S.asteroid.rotation;
+            const vDist = S.asteroid.radius * vein.depth;
+            const fx = cx + Math.cos(vAngle) * vDist;
+            const fy = cy + Math.sin(vAngle) * vDist;
+
+            S.fragments.push({
+                x: fx + (Math.random()-0.5)*20,
+                y: fy + (Math.random()-0.5)*20,
+                vx: (Math.random()-0.5) * 1.5,
+                vy: (Math.random()-0.5) * 1.5,
+                size: 2 + Math.random() * 5,
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random()-0.5) * 0.1,
+                life: 3 + Math.random() * 4,
+                color: RESOURCES[vein.mineral].color,
+                mineral: vein.mineral,
+            });
+
+            // Mining particles
+            for (let i = 0; i < 4; i++) {
+                S.asteroid.particles.push({
+                    x: fx, y: fy,
+                    vx: (Math.random()-0.5) * 3,
+                    vy: (Math.random()-0.5) * 3,
+                    life: 0.5 + Math.random() * 0.5,
+                    color: Math.random() > 0.5 ? RESOURCES[vein.mineral].color : '#ffaa44',
+                    size: 1 + Math.random() * 2,
+                });
+            }
+        }
+    }
+}
+
+function collectNearby() {
+    S.fragments.forEach(f => {
+        if (f.life > 0.5) {
+            S.collectBeams.push({
+                x: f.x, y: f.y,
+                tx: S.asteroid.cx - 200, ty: S.asteroid.cy - 100,
+                life: 0.4,
+                color: f.color,
+            });
+            f.life = 0;
+        }
+    });
+}
+
+// ═══════════════════════════════
+// RENDER
+// ═══════════════════════════════
+
+function render() {
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = '#040408';
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    S.stars.forEach(s => {
+        const sx = (s.x % W + W) % W;
+        const sy = (s.y % H + H) % H;
+        const tw = 0.5 + 0.5 * Math.sin(S.time * s.twinkle);
+        ctx.fillStyle = `rgba(180, 200, 230, ${s.brightness * tw})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, s.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Sun
+    const sunGrad = ctx.createRadialGradient(W-100, 80, 0, W-100, 80, 250);
+    sunGrad.addColorStop(0, 'rgba(255, 220, 150, 0.12)');
+    sunGrad.addColorStop(0.5, 'rgba(255, 180, 80, 0.03)');
+    sunGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = sunGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    const cx = S.asteroid.cx;
+    const cy = S.asteroid.cy;
+    const R = S.asteroid.radius;
+    const rot = S.asteroid.rotation;
+
+    // ─── ASTEROID BODY ───
+    // Shadow side gradient
+    const bodyGrad = ctx.createRadialGradient(cx - R*0.3, cy - R*0.3, 0, cx, cy, R * 1.2);
+    bodyGrad.addColorStop(0, '#554433');
+    bodyGrad.addColorStop(0.5, '#332822');
+    bodyGrad.addColorStop(1, '#1a1410');
+
+    ctx.save();
+    ctx.beginPath();
+    const chunks = S.asteroid.chunks;
+    for (let i = 0; i <= chunks.length; i++) {
+        const c = chunks[i % chunks.length];
+        const a = c.angle + rot;
+        const px = cx + Math.cos(a) * c.radius;
+        const py = cy + Math.sin(a) * c.radius;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = bodyGrad;
+    ctx.fill();
+
+    // Surface texture
+    ctx.strokeStyle = 'rgba(80, 60, 40, 0.3)';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 30; i++) {
+        const a = (i / 30) * Math.PI * 2 + rot;
+        const r1 = R * (0.3 + Math.random() * 0.5);
+        const r2 = R * (0.4 + Math.random() * 0.5);
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+        ctx.lineTo(cx + Math.cos(a + 0.1) * r2, cy + Math.sin(a + 0.1) * r2);
+        ctx.stroke();
+    }
+
+    // Craters
+    S.asteroid.craters.forEach(cr => {
+        const a = cr.angle + rot;
+        const d = R * cr.dist;
+        const crx = cx + Math.cos(a) * d;
+        const cry = cy + Math.sin(a) * d;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        ctx.beginPath();
+        ctx.ellipse(crx, cry, cr.size, cr.size * 0.6, a, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(100, 80, 60, 0.3)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+    });
+
+    // ─── MINERAL VEINS ───
+    S.asteroid.veins.forEach(v => {
+        if (!v.discovered) return;
+        const a = v.angle + rot;
+        const d = R * v.depth;
+        const vx = cx + Math.cos(a) * d;
+        const vy = cy + Math.sin(a) * d;
+
+        const alpha = 0.6 * (1 - v.depleted);
+        ctx.fillStyle = RESOURCES[v.mineral].color;
+        ctx.globalAlpha = alpha;
+        ctx.save();
+        ctx.translate(vx, vy);
+        ctx.rotate(a);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, v.length / 2, v.width / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sparkle
+        if (v.mineral === 'platinum' || v.mineral === 'iridium') {
+            for (let i = 0; i < 3; i++) {
+                const sx = (Math.random()-0.5) * v.length * 0.8;
+                const sy = (Math.random()-0.5) * v.width * 0.8;
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = Math.random() * 0.5 * (1 - v.depleted);
+                ctx.beginPath();
+                ctx.arc(sx, sy, 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        ctx.restore();
+        ctx.globalAlpha = 1;
+
+        // Label
+        if (S.targetedVein === v) {
+            ctx.strokeStyle = '#ffd000';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.arc(vx, vy, v.length / 2 + 5, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#ffd000';
+            ctx.font = '9px "Share Tech Mono"';
+            ctx.fillText(`${v.mineral.toUpperCase()} ${((1-v.depleted)*100).toFixed(0)}%`, vx - 20, vy - v.width/2 - 6);
+        }
+    });
+
+    // ─── SCAN LINES ───
+    S.asteroid.scanLines.forEach(sl => {
+        const y = cy - R + sl.progress * R * 2;
+        ctx.strokeStyle = `rgba(0, 180, 255, ${0.4 * (1 - sl.progress)})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx - R * 1.2, y);
+        ctx.lineTo(cx + R * 1.2, y);
+        ctx.stroke();
+    });
+
+    // ─── MINING BEAM ───
+    if (S.mining && S.targetedVein) {
+        const v = S.targetedVein;
+        const a = v.angle + rot;
+        const d = R * v.depth;
+        const vx = cx + Math.cos(a) * d;
+        const vy = cy + Math.sin(a) * d;
+
+        const beamColor = S.tool === 'laser' ? '#ff4400' : S.tool === 'drill' ? '#00ccff' : '#ffaa00';
+        const shipX = cx - 220;
+        const shipY = cy - 80;
+
+        ctx.strokeStyle = beamColor;
+        ctx.lineWidth = 2 + Math.sin(S.time * 20) * 1;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(shipX, shipY);
+        ctx.lineTo(vx, vy);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // Impact glow
+        const impGrad = ctx.createRadialGradient(vx, vy, 0, vx, vy, 15);
+        impGrad.addColorStop(0, beamColor);
+        impGrad.addColorStop(0.5, `${beamColor}44`);
+        impGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = impGrad;
+        ctx.fillRect(vx - 15, vy - 15, 30, 30);
+    }
+
+    // ─── COLLECT BEAMS ───
+    S.collectBeams.forEach(cb => {
+        ctx.strokeStyle = cb.color;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = cb.life / 0.4;
+        ctx.setLineDash([2, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cb.x, cb.y);
+        ctx.lineTo(cb.tx, cb.ty);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+    });
+
+    // ─── FRAGMENTS ───
+    S.fragments.forEach(f => {
+        ctx.save();
+        ctx.translate(f.x, f.y);
+        ctx.rotate(f.rotation);
+        ctx.fillStyle = f.color;
+        ctx.globalAlpha = Math.min(1, f.life);
+        // Irregular shape
+        ctx.beginPath();
+        ctx.moveTo(-f.size, -f.size * 0.5);
+        ctx.lineTo(f.size * 0.7, -f.size * 0.8);
+        ctx.lineTo(f.size, f.size * 0.3);
+        ctx.lineTo(-f.size * 0.3, f.size);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+    });
+
+    // ─── PARTICLES ───
+    S.asteroid.particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // ─── MINING SHIP ───
+    const shipX = cx - 220;
+    const shipY = cy - 80;
+
+    ctx.fillStyle = '#556677';
+    ctx.beginPath();
+    ctx.moveTo(shipX + 20, shipY);
+    ctx.lineTo(shipX - 15, shipY - 12);
+    ctx.lineTo(shipX - 25, shipY - 8);
+    ctx.lineTo(shipX - 25, shipY + 8);
+    ctx.lineTo(shipX - 15, shipY + 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#778899';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Engine glow
+    ctx.fillStyle = `rgba(0, 150, 255, ${0.3 + Math.sin(S.time * 8) * 0.1})`;
+    ctx.beginPath();
+    ctx.ellipse(shipX - 28, shipY, 4, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cargo bay indicator
+    const totalCargo = Object.values(S.cargo).reduce((a,b) => a+b, 0);
+    const cargoPct = totalCargo / S.cargoMax;
+    ctx.fillStyle = cargoPct > 0.9 ? '#ff3344' : cargoPct > 0.7 ? '#ffd000' : '#00ff88';
+    ctx.fillRect(shipX - 20, shipY + 14, 30 * cargoPct, 3);
+    ctx.strokeStyle = '#445566';
+    ctx.strokeRect(shipX - 20, shipY + 14, 30, 3);
+
+    // DRO precision ring around ship
+    ctx.strokeStyle = baseColor(S.dro.currentBase);
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.2;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath();
+    ctx.arc(shipX, shipY, 35, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+}
+
+// ═══════════════════════════════
+// UI UPDATE
+// ═══════════════════════════════
+
+function updateUI() {
+    const prec = getPrec(S.dro.currentBase);
+    const bc = baseColor(S.dro.currentBase);
+    const totalCargo = Object.values(S.cargo).reduce((a,b) => a+b, 0);
+
+    // Header
+    const mins = Math.floor(S.opTime / 60);
+    const secs = Math.floor(S.opTime % 60);
+    document.getElementById('opTime').textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    document.getElementById('yieldRate').textContent = S.yieldRate.toFixed(1) + ' kg/hr';
+    document.getElementById('cargoHdr').textContent = `${totalCargo.toFixed(0)} / ${S.cargoMax} kg`;
+
+    // HUD
+    document.getElementById('hudBase').textContent = 'BASE-' + S.dro.currentBase;
+    document.getElementById('hudBase').style.color = bc;
+    document.getElementById('hudPrec').textContent = prec.str;
+    document.getElementById('hudOps').textContent = prec.ops.toLocaleString();
+    document.getElementById('hudTool').textContent = S.tool.toUpperCase();
+    document.getElementById('hudMode').textContent = S.autoMining ? 'AUTO' : S.mining ? 'ACTIVE' : 'STANDBY';
+    document.getElementById('hudTarget').textContent = S.targetedVein ? S.targetedVein.mineral.toUpperCase() : '—';
+    document.getElementById('hudDepth').textContent = S.targetedVein ? (S.targetedVein.depth * ASTEROID_TYPES[S.asteroidType].diam / 2).toFixed(1) + ' m' : '0.0 m';
+    document.getElementById('hudFrag').textContent = S.fragments.length > 0 ? S.fragments.length + ' pcs' : '—';
+
+    // Five Pillars
+    const p = S.dro.pillars;
+    document.getElementById('pDist').textContent = p.dist.toFixed(2);
+    document.getElementById('pVel').textContent = p.vel.toFixed(2);
+    document.getElementById('pInt').textContent = p.int.toFixed(2);
+    document.getElementById('pPhs').textContent = p.phs.toFixed(2);
+    document.getElementById('pPer').textContent = p.per.toFixed(2);
+
+    // DRO segments
+    [8,16,32,48,64].forEach(b => {
+        const el = document.getElementById('seg' + b);
+        if (b === S.dro.currentBase) {
+            el.style.background = baseColor(b);
+            el.style.opacity = 1;
+            el.classList.add('lit');
+        } else {
+            el.style.background = baseColor(b);
+            el.style.opacity = 0.15;
+            el.classList.remove('lit');
+        }
+    });
+
+    // Tool
+    document.getElementById('toolPower').textContent = S.toolPower.toFixed(0) + '%';
+    document.getElementById('toolPower').style.color = S.toolPower < 20 ? '#ff3344' : '#00ff88';
+    document.getElementById('toolTemp').textContent = S.toolTemp.toFixed(0) + '°C';
+    document.getElementById('toolTemp').style.color = S.toolTemp > 120 ? '#ff3344' : S.toolTemp > 80 ? '#ffd000' : '#00ff88';
+    document.getElementById('toolPowerBar').style.width = S.toolPower + '%';
+    document.getElementById('toolPowerBar').style.background = S.toolPower < 20 ? '#ff3344' : '#00ff88';
+
+    // Cargo
+    document.getElementById('cargoTotal').textContent = `${totalCargo.toFixed(0)} / ${S.cargoMax} kg`;
+    document.getElementById('cargoBar').style.width = (totalCargo / S.cargoMax * 100) + '%';
+    document.getElementById('cIron').textContent = S.cargo.iron.toFixed(1);
+    document.getElementById('cNickel').textContent = S.cargo.nickel.toFixed(1);
+    document.getElementById('cPlat').textContent = S.cargo.platinum.toFixed(1);
+    document.getElementById('cIrid').textContent = S.cargo.iridium.toFixed(1);
+    document.getElementById('cTitan').textContent = S.cargo.titanium.toFixed(1);
+    document.getElementById('cIce').textContent = S.cargo.ice.toFixed(1);
+
+    // Value
+    let totalVal = 0;
+    Object.keys(RESOURCES).forEach(r => { totalVal += (S.cargo[r] || 0) * RESOURCES[r].value; });
+    document.getElementById('totalVal').textContent = totalVal >= 1000000 ? '$' + (totalVal/1000000).toFixed(2) + 'M' :
+                                                      totalVal >= 1000 ? '$' + (totalVal/1000).toFixed(1) + 'K' : '$' + totalVal.toFixed(0);
+    document.getElementById('yieldRateP').textContent = S.yieldRate.toFixed(1) + ' kg/hr';
+    document.getElementById('efficiency').textContent = S.dro.currentBase >= 48 ? 'HIGH' : S.dro.currentBase >= 32 ? 'STANDARD' : 'LOW';
+    document.getElementById('efficiency').style.color = S.dro.currentBase >= 48 ? '#00ff88' : S.dro.currentBase >= 32 ? '#ffd000' : '#ff8800';
+
+    // DRO panel
+    document.getElementById('droBase').textContent = S.dro.currentBase;
+    document.getElementById('droBase').style.color = bc;
+    document.getElementById('droPrecision').textContent = prec.str;
+    document.getElementById('droSwitches').textContent = S.dro.switches;
+    document.getElementById('droAvg').textContent = S.dro.avgBase.toFixed(1);
+    const savings = ((4096 - prec.ops) / 4096 * 100).toFixed(0);
+    document.getElementById('droSavings').textContent = savings + '%';
+
+    // Triggers
+    document.getElementById('trigVein').textContent = S.targetedVein ? 'YES' : 'NO';
+    document.getElementById('trigVein').style.color = S.targetedVein ? '#00ff88' : '#4a5568';
+    document.getElementById('trigFrac').textContent = S.fragments.length > 10 ? 'HIGH' : S.fragments.length > 3 ? 'MED' : 'LOW';
+    document.getElementById('trigFrac').style.color = S.fragments.length > 10 ? '#ff3344' : '#00ff88';
+    const iceVein = S.targetedVein?.mineral === 'ice';
+    document.getElementById('trigIce').textContent = iceVein ? 'YES' : 'NO';
+    document.getElementById('trigIce').style.color = iceVein ? '#aaddff' : '#4a5568';
+    document.getElementById('trigPrec').textContent = S.dro.currentBase >= 48 ? 'ON' : 'OFF';
+    document.getElementById('trigPrec').style.color = S.dro.currentBase >= 48 ? '#00ff88' : '#4a5568';
+}
+
+// ═══════════════════════════════
+// CONTROLS
+// ═══════════════════════════════
+
+function selectTool(tool) {
+    S.tool = tool;
+    updateToolUI();
+    log(`Tool: ${tool.toUpperCase()}`, 'info');
+}
+
+function updateToolUI() {
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('selected'));
+    const btn = document.querySelector(`[data-tool="${S.tool}"]`);
+    if (btn) btn.classList.add('selected');
+}
+
+function toggleSim() {
+    S.running = !S.running;
+    document.getElementById('btnPlay').textContent = S.running ? '⏸ PAUSE' : '▶ RESUME';
+    document.getElementById('btnPlay').classList.toggle('active', S.running);
+}
+
+function resetSim() {
+    S.time = 0; S.opTime = 0;
+    S.cargo = { iron: 0, nickel: 0, platinum: 0, iridium: 0, titanium: 0, ice: 0 };
+    S.totalMined = 0; S.yieldRate = 0; S.yieldHistory = [];
+    S.toolPower = 100; S.toolTemp = 22;
+    S.mining = false; S.autoMining = false;
+    S.targetedVein = null; S.scanned = false; S.deepScanned = false;
+    S.dro = { currentBase: 32, switches: 0, history: [], avgBase: 32, pillars: {dist:0.5,vel:0.2,int:0.3,phs:0.4,per:0.5} };
+    S.fragments = []; S.collectBeams = [];
+    S.tool = 'scanner';
+    updateToolUI();
+    initScene();
+    document.getElementById('logWrap').innerHTML = '';
+    log('System reset', 'info');
+}
+
+function autoMine() {
+    S.autoMining = !S.autoMining;
+    if (S.autoMining && !S.deepScanned) deepScan();
+    log(S.autoMining ? 'Auto-mining ENGAGED' : 'Auto-mining DISENGAGED', S.autoMining ? 'success' : 'warn');
+}
+
+function deepScan() {
+    S.scanned = true;
+    S.deepScanned = true;
+    S.asteroid.veins.forEach(v => v.discovered = true);
+
+    // Scan animation
+    for (let i = 0; i < 8; i++) {
+        setTimeout(() => {
+            S.asteroid.scanLines.push({ progress: 0 });
+        }, i * 150);
+    }
+
+    log('Deep scan initiated...', 'info');
+    setTimeout(() => {
+        const veins = S.asteroid.veins.length;
+        const precious = S.asteroid.veins.filter(v => v.mineral === 'platinum' || v.mineral === 'iridium').length;
+        log(`Scan complete: ${veins} veins detected (${precious} precious metals)`, 'success');
+    }, 1200);
+}
+
+function targetVein() {
+    const available = S.asteroid.veins.filter(v => v.depleted < 1 && v.discovered);
+    if (available.length === 0) {
+        log('No veins available — scan first', 'warn');
+        return;
+    }
+    // Prioritize precious metals
+    const precious = available.filter(v => v.mineral === 'platinum' || v.mineral === 'iridium');
+    S.targetedVein = precious.length > 0 ? precious[0] : available[0];
+    S.mining = true;
+    S.tool = S.targetedVein.mineral === 'ice' ? 'drill' : 'laser';
+    updateToolUI();
+    log(`Targeting ${S.targetedVein.mineral} vein (richness: ${(S.targetedVein.richness*100).toFixed(0)}%)`, 'gold');
+}
+
+function setAsteroid(type) {
+    S.asteroidType = type;
+    resetSim();
+    const info = ASTEROID_TYPES[type];
+    document.getElementById('astName').textContent = info.name;
+    document.getElementById('astClass').textContent = info.class;
+    document.getElementById('astDiam').textContent = info.diam + ' m';
+    document.getElementById('astMass').textContent = info.mass + ' t';
+    document.getElementById('astRot').textContent = info.rot + ' hr';
+    document.getElementById('astTemp').textContent = info.temp + '°C';
+
+    // Update composition bars
+    const comp = info.comp;
+    const bars = document.querySelectorAll('.comp-fill');
+    const pcts = document.querySelectorAll('.comp-pct');
+    const keys = ['iron','nickel','platinum','iridium','titanium','ice','regolith'];
+    keys.forEach((k, i) => {
+        if (bars[i]) bars[i].style.width = (comp[k] * 100) + '%';
+        if (pcts[i]) pcts[i].textContent = Math.round(comp[k] * 100) + '%';
+    });
+
+    log(`Navigated to ${info.name} (${info.class})`, 'gold');
+}
+
+function log(msg, type='info') {
+    const wrap = document.getElementById('logWrap');
+    const mins = String(Math.floor(S.opTime/60)).padStart(2,'0');
+    const secs = String(Math.floor(S.opTime%60)).padStart(2,'0');
+    const el = document.createElement('div');
+    el.className = 'log-entry';
+    el.innerHTML = `<span class="log-time">${mins}:${secs}</span> <span class="log-msg ${type}">${msg}</span>`;
+    wrap.appendChild(el);
+    wrap.scrollTop = wrap.scrollHeight;
+    while (wrap.children.length > 50) wrap.removeChild(wrap.firstChild);
+}
+
+// ═══════════════════════════════
+// LOOP
+// ═══════════════════════════════
+
+let lastTime = 0;
+function loop(ts) {
+    const dt = Math.min((ts - lastTime) / 1000, 0.05);
+    lastTime = ts;
+
+    if (S.running) {
+        S.time += dt;
+        S.opTime += dt;
+        updatePhysics(dt);
+        computeDRO();
+    }
+
+    render();
+    updateUI();
+    requestAnimationFrame(loop);
+}
+
+initScene();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

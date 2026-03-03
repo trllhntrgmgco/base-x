@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WLD-005: Rain Storm | Base-X Engine Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #030608;
+            --panel-bg: rgba(8, 14, 24, 0.95);
+            --rain-color: #7ab8e8;
+            --puddle-color: #4a7a9a;
+            --splash-color: #a0d4f0;
+            --accent-blue: #2288dd;
+            --accent-cyan: #00d4ff;
+            --accent-gray: #8899aa;
+            --base-32: #00d4ff;
+            --base-24: #44aadd;
+            --base-16: #6688aa;
+            --text-primary: #d0e0f0;
+            --text-dim: #556677;
+            --border-glow: rgba(34, 136, 221, 0.3);
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            padding: 15px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: linear-gradient(90deg, rgba(34, 136, 221, 0.1), transparent, rgba(0, 212, 255, 0.1));
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .demo-badge {
+            background: linear-gradient(135deg, #2288dd, #00aaff);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.75em;
+            letter-spacing: 2px;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #2288dd;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(34, 136, 221, 0.4);
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .stat-group {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .stat-value.drops { color: var(--rain-color); }
+        .stat-value.base { color: var(--base-24); }
+        .stat-value.water { color: var(--accent-cyan); }
+        
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            background: linear-gradient(90deg, rgba(34, 136, 221, 0.15), transparent);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-glow);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: #2288dd;
+            flex-shrink: 0;
+        }
+        
+        .panel-content {
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        /* Storm Presets */
+        .storm-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .storm-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .storm-btn:hover {
+            border-color: rgba(34, 136, 221, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .storm-btn.active {
+            border-color: #2288dd;
+            box-shadow: 0 0 20px rgba(34, 136, 221, 0.3);
+            background: rgba(34, 136, 221, 0.1);
+        }
+        
+        .storm-icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .storm-name {
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .storm-rate {
+            font-size: 0.65em;
+            color: var(--text-dim);
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        /* Tool Section */
+        .tool-section {
+            margin-bottom: 20px;
+        }
+        
+        .tool-section-title {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Sliders */
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .slider-name {
+            font-size: 0.8em;
+            color: var(--text-dim);
+        }
+        
+        .slider-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85em;
+            color: #2288dd;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(34, 136, 221, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #2288dd;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(34, 136, 221, 0.5);
+        }
+        
+        /* Toggle */
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .toggle-label {
+            font-size: 0.85em;
+        }
+        
+        .toggle {
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .toggle.on {
+            background: rgba(34, 136, 221, 0.5);
+        }
+        
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        
+        .toggle.on::after {
+            transform: translateX(20px);
+        }
+        
+        /* Canvas */
+        .canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #rainCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Info Overlay */
+        .info-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-glow);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8em;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            color: var(--text-dim);
+        }
+        
+        /* Rain Gauge */
+        .rain-gauge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 50px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 8px;
+            border: 1px solid var(--border-glow);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .gauge-label {
+            font-size: 0.6em;
+            color: var(--text-dim);
+            margin-bottom: 5px;
+        }
+        
+        .gauge-tube {
+            flex: 1;
+            width: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(122, 184, 232, 0.3);
+        }
+        
+        .gauge-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, #2266aa, #44aadd);
+            transition: height 0.3s;
+        }
+        
+        .gauge-marks {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: -15px;
+            width: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-size: 0.5em;
+            color: var(--text-dim);
+        }
+        
+        .gauge-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7em;
+            color: var(--rain-color);
+            margin-top: 5px;
+        }
+        
+        /* Right Panel Stats */
+        .water-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .water-stat {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .water-stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1em;
+            color: #2288dd;
+        }
+        
+        .water-stat-label {
+            font-size: 0.65em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* DRO Display */
+        .dro-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .dro-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7em;
+            color: var(--accent-cyan);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .dro-meter {
+            height: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .dro-fill {
+            height: 100%;
+            transition: width 0.3s, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        
+        .dro-scale {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65em;
+            color: var(--text-dim);
+        }
+        
+        /* Puddle Map */
+        .puddle-map {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .puddle-canvas {
+            width: 100%;
+            height: 80px;
+            border-radius: 4px;
+        }
+        
+        /* Water Flow Indicator */
+        .flow-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .flow-arrow {
+            font-size: 1.5em;
+            color: var(--accent-cyan);
+        }
+        
+        .flow-info {
+            flex: 1;
+        }
+        
+        .flow-label {
+            font-size: 0.7em;
+            color: var(--text-dim);
+        }
+        
+        .flow-value {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--rain-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="demo-badge">WLD-005</div>
+                <h1>RAIN STORM</h1>
+            </div>
+            <div class="header-right">
+                <div class="stat-group">
+                    <div class="stat-label">Rain Drops</div>
+                    <div class="stat-value drops" id="dropCount">0</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Active Base</div>
+                    <div class="stat-value base" id="activeBase">BASE-32</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Water Vol</div>
+                    <div class="stat-value water" id="waterVol">0 L</div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Panel -->
+            <div class="panel">
+                <div class="panel-header">🌧️ STORM CONTROL</div>
+                <div class="panel-content">
+                    <!-- Storm Presets -->
+                    <div class="storm-grid">
+                        <div class="storm-btn" data-storm="drizzle" onclick="setStorm('drizzle')">
+                            <div class="storm-icon">🌦️</div>
+                            <div class="storm-name">Drizzle</div>
+                            <div class="storm-rate">0.1 in/hr</div>
+                        </div>
+                        <div class="storm-btn active" data-storm="rain" onclick="setStorm('rain')">
+                            <div class="storm-icon">🌧️</div>
+                            <div class="storm-name">Rain</div>
+                            <div class="storm-rate">0.3 in/hr</div>
+                        </div>
+                        <div class="storm-btn" data-storm="heavy" onclick="setStorm('heavy')">
+                            <div class="storm-icon">⛈️</div>
+                            <div class="storm-name">Heavy</div>
+                            <div class="storm-rate">0.8 in/hr</div>
+                        </div>
+                        <div class="storm-btn" data-storm="downpour" onclick="setStorm('downpour')">
+                            <div class="storm-icon">🌊</div>
+                            <div class="storm-name">Downpour</div>
+                            <div class="storm-rate">2.0 in/hr</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rain Controls -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Precipitation</div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Rain Intensity</span>
+                                <span class="slider-value" id="intensityValue">50%</span>
+                            </div>
+                            <input type="range" id="intensitySlider" min="0" max="100" value="50" oninput="updateIntensity()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Drop Size</span>
+                                <span class="slider-value" id="dropSizeValue">3mm</span>
+                            </div>
+                            <input type="range" id="dropSizeSlider" min="1" max="10" value="3" oninput="updateDropSize()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Wind Speed</span>
+                                <span class="slider-value" id="windValue">10 mph</span>
+                            </div>
+                            <input type="range" id="windSlider" min="0" max="50" value="10" oninput="updateWind()">
+                        </div>
+                    </div>
+                    
+                    <!-- Ground Settings -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Ground Properties</div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Absorption Rate</span>
+                                <span class="slider-value" id="absorptionValue">30%</span>
+                            </div>
+                            <input type="range" id="absorptionSlider" min="0" max="100" value="30" oninput="updateAbsorption()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Terrain Slope</span>
+                                <span class="slider-value" id="slopeValue">15°</span>
+                            </div>
+                            <input type="range" id="slopeSlider" min="0" max="45" value="15" oninput="updateSlope()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Surface Roughness</span>
+                                <span class="slider-value" id="roughnessValue">50%</span>
+                            </div>
+                            <input type="range" id="roughnessSlider" min="0" max="100" value="50" oninput="updateRoughness()">
+                        </div>
+                    </div>
+                    
+                    <!-- Toggles -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Effects</div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Splash Effects</span>
+                            <div class="toggle on" id="splashToggle" onclick="toggleSplash()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Puddle Formation</span>
+                            <div class="toggle on" id="puddleToggle" onclick="togglePuddles()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Water Runoff</span>
+                            <div class="toggle on" id="runoffToggle" onclick="toggleRunoff()"></div>
+                        </div>
+                        
+                        <div class="toggle-row">
+                            <span class="toggle-label">Ripple Effects</span>
+                            <div class="toggle on" id="rippleToggle" onclick="toggleRipples()"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center - Canvas -->
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="rainCanvas"></canvas>
+                    
+                    <div class="info-overlay">
+                        <div class="info-row">
+                            <span class="info-label">Drop Base:</span>
+                            <span id="dropBase" style="color: var(--base-32);">B-32</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Puddle Base:</span>
+                            <span id="puddleBase" style="color: var(--base-24);">B-24</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Splash Count:</span>
+                            <span id="splashCount" style="color: var(--splash-color);">0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Puddle Count:</span>
+                            <span id="puddleCount" style="color: var(--puddle-color);">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="rain-gauge">
+                        <div class="gauge-label">RAINFALL</div>
+                        <div class="gauge-tube">
+                            <div class="gauge-fill" id="gaugeFill" style="height: 0%;"></div>
+                            <div class="gauge-marks">
+                                <span>2"</span>
+                                <span>1"</span>
+                                <span>0"</span>
+                            </div>
+                        </div>
+                        <div class="gauge-value" id="gaugeValue">0.00"</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel -->
+            <div class="panel">
+                <div class="panel-header">📊 HYDROLOGY DATA</div>
+                <div class="panel-content">
+                    <!-- DRO Display -->
+                    <div class="dro-display">
+                        <div class="dro-title">DYNAMIC RADIX OPTIMIZER</div>
+                        <div class="dro-meter">
+                            <div class="dro-fill" id="droFill" style="width: 60%; background: linear-gradient(90deg, var(--base-24), var(--base-32));">
+                                BASE-32
+                            </div>
+                        </div>
+                        <div class="dro-scale">
+                            <span>B-16</span>
+                            <span>B-24</span>
+                            <span>B-32</span>
+                            <span>B-48</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Water Stats -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Water Balance</div>
+                        <div class="water-stats">
+                            <div class="water-stat">
+                                <div class="water-stat-value" id="precipTotal">0.00"</div>
+                                <div class="water-stat-label">Precip</div>
+                            </div>
+                            <div class="water-stat">
+                                <div class="water-stat-value" id="absorbedTotal">0.00"</div>
+                                <div class="water-stat-label">Absorbed</div>
+                            </div>
+                            <div class="water-stat">
+                                <div class="water-stat-value" id="puddledTotal">0.00"</div>
+                                <div class="water-stat-label">Puddled</div>
+                            </div>
+                            <div class="water-stat">
+                                <div class="water-stat-value" id="runoffTotal">0.00"</div>
+                                <div class="water-stat-label">Runoff</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Puddle Map -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Puddle Distribution</div>
+                        <div class="puddle-map">
+                            <canvas id="puddleCanvas" class="puddle-canvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Flow Indicator -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Water Flow</div>
+                        <div class="flow-indicator">
+                            <div class="flow-arrow">➡️</div>
+                            <div class="flow-info">
+                                <div class="flow-label">Runoff Direction</div>
+                                <div class="flow-value" id="flowDirection">Downslope East</div>
+                            </div>
+                        </div>
+                        <div class="flow-indicator">
+                            <div class="flow-arrow">💧</div>
+                            <div class="flow-info">
+                                <div class="flow-label">Flow Rate</div>
+                                <div class="flow-value" id="flowRate">0.0 L/s</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rain Stats -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Storm Statistics</div>
+                        <div style="font-size: 0.85em; line-height: 1.8;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-dim);">Duration:</span>
+                                <span id="stormDuration" style="color: var(--rain-color);">0:00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-dim);">Peak Intensity:</span>
+                                <span id="peakIntensity" style="color: var(--accent-cyan);">0.0 in/hr</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-dim);">Drops Fallen:</span>
+                                <span id="totalDrops" style="color: var(--splash-color);">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- LOD Info -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">LOD Philosophy</div>
+                        <div style="font-size: 0.75em; color: var(--text-dim); line-height: 1.6;">
+                            Rain uses <span style="color: #2288dd;">MEDIUM precision</span>:
+                            <br>• Base-32 for drop physics
+                            <br>• Base-24 for puddle simulation
+                            <br>• Splash effects are visual only
+                            <br>• Runoff uses terrain slope data
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ===== BASE-X ENGINE: RAIN STORM =====
+        
+        const canvas = document.getElementById('rainCanvas');
+        const ctx = canvas.getContext('2d');
+        const puddleCanvas = document.getElementById('puddleCanvas');
+        const puddleCtx = puddleCanvas.getContext('2d');
+        
+        // Storm settings
+        let stormType = 'rain';
+        let intensity = 0.5;
+        let dropSize = 3;
+        let windSpeed = 10;
+        let absorption = 0.3;
+        let slope = 15;
+        let roughness = 0.5;
+        
+        // Toggles
+        let showSplash = true;
+        let showPuddles = true;
+        let showRunoff = true;
+        let showRipples = true;
+        
+        // Particles
+        let rainDrops = [];
+        let splashes = [];
+        let ripples = [];
+        let runoffStreams = [];
+        
+        // Puddles (grid-based)
+        const PUDDLE_GRID = 32;
+        let puddleGrid = [];
+        
+        // Terrain
+        let terrain = [];
+        const TERRAIN_POINTS = 80;
+        
+        // Water tracking
+        let totalPrecip = 0;
+        let totalAbsorbed = 0;
+        let totalPuddled = 0;
+        let totalRunoff = 0;
+        let totalDropsFallen = 0;
+        let stormStartTime = Date.now();
+        let peakIntensity = 0;
+        
+        // DRO
+        let dro = {
+            currentBase: 32,
+            dropBase: 32,
+            puddleBase: 24
+        };
+        
+        // Storm types
+        const STORM_TYPES = {
+            drizzle: { rate: 5, size: 2, wind: 5, intensity: 0.2 },
+            rain: { rate: 15, size: 3, wind: 10, intensity: 0.5 },
+            heavy: { rate: 40, size: 4, wind: 20, intensity: 0.8 },
+            downpour: { rate: 80, size: 5, wind: 30, intensity: 1.0 }
+        };
+        
+        // Performance
+        let lastTime = performance.now();
+        
+        function init() {
+            resizeCanvas();
+            generateTerrain();
+            initPuddleGrid();
+            
+            window.addEventListener('resize', resizeCanvas);
+            
+            setStorm('rain');
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function resizeCanvas() {
+            const wrapper = canvas.parentElement;
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            
+            puddleCanvas.width = puddleCanvas.clientWidth;
+            puddleCanvas.height = puddleCanvas.clientHeight;
+            
+            generateTerrain();
+        }
+        
+        function generateTerrain() {
+            terrain = [];
+            const baseY = canvas.height * 0.75;
+            
+            for (let i = 0; i <= TERRAIN_POINTS; i++) {
+                const x = (i / TERRAIN_POINTS) * canvas.width;
+                // Create valleys and hills for puddle collection
+                const mainSlope = (i / TERRAIN_POINTS) * Math.tan(slope * Math.PI / 180) * 100;
+                const h1 = Math.sin(i * 0.15) * 25;
+                const h2 = Math.sin(i * 0.08 + 1) * 15;
+                const depression = Math.sin(i * 0.3) * 10 * (1 - roughness * 0.5);
+                terrain.push({ 
+                    x, 
+                    y: baseY + mainSlope + h1 + h2 + depression,
+                    depression: depression < -3 // Mark low points for puddles
+                });
+            }
+        }
+        
+        function initPuddleGrid() {
+            puddleGrid = [];
+            for (let i = 0; i < PUDDLE_GRID; i++) {
+                puddleGrid[i] = {
+                    water: 0,
+                    capacity: 0.5 + Math.random() * 0.5, // Random capacity
+                    x: (i / PUDDLE_GRID) * canvas.width,
+                    isLowPoint: false
+                };
+            }
+            
+            // Mark low points based on terrain
+            for (let i = 1; i < PUDDLE_GRID - 1; i++) {
+                const idx = Math.floor((i / PUDDLE_GRID) * TERRAIN_POINTS);
+                if (terrain[idx] && terrain[idx].depression) {
+                    puddleGrid[i].isLowPoint = true;
+                    puddleGrid[i].capacity *= 2;
+                }
+            }
+        }
+        
+        function getTerrainHeight(x) {
+            const idx = (x / canvas.width) * TERRAIN_POINTS;
+            const i = Math.floor(idx);
+            const t = idx - i;
+            if (i >= TERRAIN_POINTS) return terrain[TERRAIN_POINTS].y;
+            if (i < 0) return terrain[0].y;
+            return terrain[i].y * (1 - t) + terrain[Math.min(i + 1, TERRAIN_POINTS)].y * t;
+        }
+        
+        // ===== STORM CONTROL =====
+        
+        function setStorm(type) {
+            stormType = type;
+            const storm = STORM_TYPES[type];
+            
+            intensity = storm.intensity;
+            dropSize = storm.size;
+            windSpeed = storm.wind;
+            
+            document.getElementById('intensitySlider').value = intensity * 100;
+            document.getElementById('dropSizeSlider').value = dropSize;
+            document.getElementById('windSlider').value = windSpeed;
+            
+            updateIntensity();
+            updateDropSize();
+            updateWind();
+            
+            document.querySelectorAll('.storm-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.storm === type);
+            });
+            
+            peakIntensity = Math.max(peakIntensity, intensity);
+        }
+        
+        function updateIntensity() {
+            intensity = parseInt(document.getElementById('intensitySlider').value) / 100;
+            document.getElementById('intensityValue').textContent = Math.round(intensity * 100) + '%';
+            peakIntensity = Math.max(peakIntensity, intensity);
+        }
+        
+        function updateDropSize() {
+            dropSize = parseInt(document.getElementById('dropSizeSlider').value);
+            document.getElementById('dropSizeValue').textContent = dropSize + 'mm';
+        }
+        
+        function updateWind() {
+            windSpeed = parseInt(document.getElementById('windSlider').value);
+            document.getElementById('windValue').textContent = windSpeed + ' mph';
+        }
+        
+        function updateAbsorption() {
+            absorption = parseInt(document.getElementById('absorptionSlider').value) / 100;
+            document.getElementById('absorptionValue').textContent = Math.round(absorption * 100) + '%';
+        }
+        
+        function updateSlope() {
+            slope = parseInt(document.getElementById('slopeSlider').value);
+            document.getElementById('slopeValue').textContent = slope + '°';
+            generateTerrain();
+        }
+        
+        function updateRoughness() {
+            roughness = parseInt(document.getElementById('roughnessSlider').value) / 100;
+            document.getElementById('roughnessValue').textContent = Math.round(roughness * 100) + '%';
+        }
+        
+        function toggleSplash() {
+            showSplash = !showSplash;
+            document.getElementById('splashToggle').classList.toggle('on', showSplash);
+        }
+        
+        function togglePuddles() {
+            showPuddles = !showPuddles;
+            document.getElementById('puddleToggle').classList.toggle('on', showPuddles);
+        }
+        
+        function toggleRunoff() {
+            showRunoff = !showRunoff;
+            document.getElementById('runoffToggle').classList.toggle('on', showRunoff);
+        }
+        
+        function toggleRipples() {
+            showRipples = !showRipples;
+            document.getElementById('rippleToggle').classList.toggle('on', showRipples);
+        }
+        
+        // ===== RAIN PHYSICS =====
+        
+        function spawnRain(dt) {
+            const spawnRate = intensity * 50 * dt;
+            
+            for (let i = 0; i < spawnRate; i++) {
+                if (rainDrops.length < 3000) {
+                    const windOffset = windSpeed * 0.5;
+                    rainDrops.push({
+                        x: Math.random() * (canvas.width + windOffset * 20) - windOffset * 10,
+                        y: -10 - Math.random() * 100,
+                        vx: windSpeed * 0.3 + (Math.random() - 0.5) * 2,
+                        vy: 15 + Math.random() * 10 + dropSize * 2,
+                        size: dropSize * (0.8 + Math.random() * 0.4),
+                        length: 10 + dropSize * 3
+                    });
+                    totalDropsFallen++;
+                }
+            }
+        }
+        
+        function updateRain(dt) {
+            for (let i = rainDrops.length - 1; i >= 0; i--) {
+                const drop = rainDrops[i];
+                
+                drop.x += drop.vx * dt;
+                drop.y += drop.vy * dt;
+                
+                const groundY = getTerrainHeight(drop.x);
+                
+                if (drop.y >= groundY) {
+                    // Hit ground
+                    handleRainImpact(drop, groundY);
+                    rainDrops.splice(i, 1);
+                } else if (drop.x < -50 || drop.x > canvas.width + 50) {
+                    rainDrops.splice(i, 1);
+                }
+            }
+        }
+        
+        function handleRainImpact(drop, groundY) {
+            const waterAmount = drop.size * 0.001;
+            totalPrecip += waterAmount;
+            
+            // Determine fate of water
+            const absorbChance = absorption * (1 - roughness * 0.3);
+            
+            if (Math.random() < absorbChance) {
+                // Absorbed into ground
+                totalAbsorbed += waterAmount;
+            } else {
+                // Add to puddle grid
+                const gridIdx = Math.floor((drop.x / canvas.width) * PUDDLE_GRID);
+                if (gridIdx >= 0 && gridIdx < PUDDLE_GRID && showPuddles) {
+                    const cell = puddleGrid[gridIdx];
+                    if (cell.water < cell.capacity) {
+                        cell.water += waterAmount;
+                        totalPuddled += waterAmount;
+                    } else {
+                        // Overflow to runoff
+                        totalRunoff += waterAmount;
+                    }
+                }
+            }
+            
+            // Create splash
+            if (showSplash) {
+                for (let j = 0; j < 3 + drop.size; j++) {
+                    splashes.push({
+                        x: drop.x + (Math.random() - 0.5) * 10,
+                        y: groundY,
+                        vx: (Math.random() - 0.5) * 5,
+                        vy: -3 - Math.random() * 5,
+                        life: 1,
+                        size: 1 + Math.random() * 2
+                    });
+                }
+            }
+            
+            // Create ripple in puddle
+            if (showRipples && showPuddles) {
+                const gridIdx = Math.floor((drop.x / canvas.width) * PUDDLE_GRID);
+                if (gridIdx >= 0 && gridIdx < PUDDLE_GRID && puddleGrid[gridIdx].water > 0.1) {
+                    ripples.push({
+                        x: drop.x,
+                        y: groundY,
+                        radius: 0,
+                        maxRadius: 15 + drop.size * 3,
+                        life: 1
+                    });
+                }
+            }
+        }
+        
+        function updateSplashes(dt) {
+            for (let i = splashes.length - 1; i >= 0; i--) {
+                const s = splashes[i];
+                s.x += s.vx * dt;
+                s.y += s.vy * dt;
+                s.vy += 0.5 * dt; // Gravity
+                s.life -= 0.05 * dt;
+                
+                if (s.life <= 0 || s.y > getTerrainHeight(s.x)) {
+                    splashes.splice(i, 1);
+                }
+            }
+        }
+        
+        function updateRipples(dt) {
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const r = ripples[i];
+                r.radius += 2 * dt;
+                r.life -= 0.03 * dt;
+                
+                if (r.life <= 0 || r.radius >= r.maxRadius) {
+                    ripples.splice(i, 1);
+                }
+            }
+        }
+        
+        function updatePuddles(dt) {
+            if (!showPuddles) return;
+            
+            // Water flows downhill (based on slope)
+            if (showRunoff && slope > 0) {
+                for (let i = PUDDLE_GRID - 1; i > 0; i--) {
+                    const cell = puddleGrid[i];
+                    const prevCell = puddleGrid[i - 1];
+                    
+                    if (cell.water > cell.capacity * 0.8) {
+                        const overflow = (cell.water - cell.capacity * 0.8) * 0.1 * dt;
+                        cell.water -= overflow;
+                        
+                        // Flow to lower cell or runoff
+                        if (prevCell.water < prevCell.capacity) {
+                            prevCell.water += overflow * 0.8;
+                        } else {
+                            totalRunoff += overflow;
+                        }
+                    }
+                }
+                
+                // Create runoff stream visuals
+                if (Math.random() < intensity * 0.1 && runoffStreams.length < 20) {
+                    const startX = Math.random() * canvas.width;
+                    runoffStreams.push({
+                        x: startX,
+                        y: getTerrainHeight(startX),
+                        length: 20 + Math.random() * 30,
+                        life: 1
+                    });
+                }
+            }
+            
+            // Update runoff streams
+            for (let i = runoffStreams.length - 1; i >= 0; i--) {
+                const stream = runoffStreams[i];
+                stream.x += slope * 0.2 * dt;
+                stream.y = getTerrainHeight(stream.x);
+                stream.life -= 0.02 * dt;
+                
+                if (stream.life <= 0 || stream.x > canvas.width) {
+                    runoffStreams.splice(i, 1);
+                }
+            }
+            
+            // Slow evaporation/absorption over time
+            for (let i = 0; i < PUDDLE_GRID; i++) {
+                puddleGrid[i].water *= (1 - 0.001 * dt);
+            }
+        }
+        
+        // ===== DRO =====
+        
+        function calculateDRO() {
+            const totalParticles = rainDrops.length + splashes.length;
+            
+            if (totalParticles > 2000) {
+                dro.dropBase = 24;
+            } else if (totalParticles > 1000) {
+                dro.dropBase = 32;
+            } else {
+                dro.dropBase = 32;
+            }
+            
+            // Puddle simulation uses lower precision
+            dro.puddleBase = 24;
+            
+            dro.currentBase = Math.max(dro.dropBase, dro.puddleBase);
+        }
+        
+        function getBaseColor(base) {
+            if (base >= 32) return 'var(--base-32)';
+            if (base >= 24) return 'var(--base-24)';
+            return 'var(--base-16)';
+        }
+        
+        // ===== RENDERING =====
+        
+        function render() {
+            // Sky gradient (stormy)
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.7);
+            const storminess = intensity;
+            gradient.addColorStop(0, `rgb(${30 - storminess * 20}, ${40 - storminess * 25}, ${60 - storminess * 30})`);
+            gradient.addColorStop(1, `rgb(${60 - storminess * 30}, ${70 - storminess * 35}, ${90 - storminess * 40})`);
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Rain streaks
+            ctx.strokeStyle = `rgba(122, 184, 232, ${0.4 + intensity * 0.3})`;
+            ctx.lineWidth = 1;
+            
+            rainDrops.forEach(drop => {
+                ctx.beginPath();
+                ctx.moveTo(drop.x, drop.y);
+                ctx.lineTo(drop.x - drop.vx * 0.3, drop.y - drop.length);
+                ctx.stroke();
+            });
+            
+            // Terrain
+            renderTerrain();
+            
+            // Puddles
+            if (showPuddles) {
+                renderPuddles();
+            }
+            
+            // Ripples
+            if (showRipples) {
+                ctx.strokeStyle = 'rgba(160, 212, 240, 0.4)';
+                ctx.lineWidth = 1;
+                ripples.forEach(r => {
+                    ctx.globalAlpha = r.life * 0.5;
+                    ctx.beginPath();
+                    ctx.arc(r.x, r.y - 2, r.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                });
+                ctx.globalAlpha = 1;
+            }
+            
+            // Splashes
+            if (showSplash) {
+                ctx.fillStyle = 'rgba(160, 212, 240, 0.7)';
+                splashes.forEach(s => {
+                    ctx.globalAlpha = s.life;
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.globalAlpha = 1;
+            }
+            
+            // Runoff streams
+            if (showRunoff) {
+                ctx.strokeStyle = 'rgba(74, 122, 154, 0.6)';
+                ctx.lineWidth = 2;
+                runoffStreams.forEach(stream => {
+                    ctx.globalAlpha = stream.life;
+                    ctx.beginPath();
+                    ctx.moveTo(stream.x, stream.y);
+                    ctx.lineTo(stream.x + stream.length, stream.y + slope * 0.5);
+                    ctx.stroke();
+                });
+                ctx.globalAlpha = 1;
+            }
+            
+            // Render puddle minimap
+            renderPuddleMap();
+        }
+        
+        function renderTerrain() {
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            terrain.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.closePath();
+            
+            const terrainGradient = ctx.createLinearGradient(0, canvas.height * 0.6, 0, canvas.height);
+            terrainGradient.addColorStop(0, '#2a4a3a');
+            terrainGradient.addColorStop(1, '#1a2a1a');
+            
+            ctx.fillStyle = terrainGradient;
+            ctx.fill();
+        }
+        
+        function renderPuddles() {
+            const cellWidth = canvas.width / PUDDLE_GRID;
+            
+            for (let i = 0; i < PUDDLE_GRID; i++) {
+                const cell = puddleGrid[i];
+                if (cell.water > 0.05) {
+                    const x = cell.x;
+                    const y = getTerrainHeight(x + cellWidth / 2);
+                    const width = cellWidth * 0.9;
+                    const depth = Math.min(8, cell.water * 20);
+                    
+                    // Puddle reflection
+                    ctx.fillStyle = `rgba(74, 122, 154, ${0.3 + cell.water * 0.4})`;
+                    ctx.beginPath();
+                    ctx.ellipse(x + cellWidth / 2, y - 1, width / 2, depth, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Highlight
+                    ctx.fillStyle = `rgba(160, 212, 240, ${0.2 * cell.water})`;
+                    ctx.beginPath();
+                    ctx.ellipse(x + cellWidth / 2 - 5, y - 3, width / 4, depth / 2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+        
+        function renderPuddleMap() {
+            const w = puddleCanvas.width;
+            const h = puddleCanvas.height;
+            const cellWidth = w / PUDDLE_GRID;
+            
+            puddleCtx.fillStyle = '#0a1520';
+            puddleCtx.fillRect(0, 0, w, h);
+            
+            for (let i = 0; i < PUDDLE_GRID; i++) {
+                const cell = puddleGrid[i];
+                const fillHeight = (cell.water / cell.capacity) * h;
+                
+                // Background
+                puddleCtx.fillStyle = cell.isLowPoint ? '#1a3040' : '#0f2030';
+                puddleCtx.fillRect(i * cellWidth, 0, cellWidth - 1, h);
+                
+                // Water level
+                if (cell.water > 0) {
+                    const gradient = puddleCtx.createLinearGradient(0, h - fillHeight, 0, h);
+                    gradient.addColorStop(0, '#2288dd');
+                    gradient.addColorStop(1, '#1155aa');
+                    puddleCtx.fillStyle = gradient;
+                    puddleCtx.fillRect(i * cellWidth, h - fillHeight, cellWidth - 1, fillHeight);
+                }
+            }
+        }
+        
+        // ===== UPDATE =====
+        
+        function update(dt) {
+            spawnRain(dt);
+            updateRain(dt);
+            updateSplashes(dt);
+            updateRipples(dt);
+            updatePuddles(dt);
+            calculateDRO();
+            updateUI();
+        }
+        
+        function updateUI() {
+            // Header stats
+            document.getElementById('dropCount').textContent = rainDrops.length;
+            document.getElementById('activeBase').textContent = `BASE-${dro.currentBase}`;
+            document.getElementById('activeBase').style.color = getBaseColor(dro.currentBase);
+            document.getElementById('waterVol').textContent = (totalPrecip * 1000).toFixed(0) + ' L';
+            
+            // Info overlay
+            document.getElementById('dropBase').textContent = `B-${dro.dropBase}`;
+            document.getElementById('puddleBase').textContent = `B-${dro.puddleBase}`;
+            document.getElementById('splashCount').textContent = splashes.length;
+            document.getElementById('puddleCount').textContent = puddleGrid.filter(p => p.water > 0.1).length;
+            
+            // Rain gauge
+            const gaugePercent = Math.min(100, (totalPrecip / 0.05) * 100);
+            document.getElementById('gaugeFill').style.height = gaugePercent + '%';
+            document.getElementById('gaugeValue').textContent = (totalPrecip * 40).toFixed(2) + '"';
+            
+            // Water balance
+            document.getElementById('precipTotal').textContent = (totalPrecip * 40).toFixed(2) + '"';
+            document.getElementById('absorbedTotal').textContent = (totalAbsorbed * 40).toFixed(2) + '"';
+            document.getElementById('puddledTotal').textContent = (totalPuddled * 40).toFixed(2) + '"';
+            document.getElementById('runoffTotal').textContent = (totalRunoff * 40).toFixed(2) + '"';
+            
+            // Flow info
+            document.getElementById('flowDirection').textContent = slope > 0 ? 'Downslope East' : 'Pooling';
+            document.getElementById('flowRate').textContent = (totalRunoff * 10).toFixed(1) + ' L/s';
+            
+            // Storm stats
+            const duration = Math.floor((Date.now() - stormStartTime) / 1000);
+            const mins = Math.floor(duration / 60);
+            const secs = duration % 60;
+            document.getElementById('stormDuration').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            document.getElementById('peakIntensity').textContent = (peakIntensity * 2).toFixed(1) + ' in/hr';
+            document.getElementById('totalDrops').textContent = totalDropsFallen.toLocaleString();
+            
+            // DRO meter
+            const droFill = document.getElementById('droFill');
+            const fillPercent = ((dro.currentBase - 16) / 32) * 100;
+            droFill.style.width = Math.min(100, fillPercent) + '%';
+            droFill.style.background = `linear-gradient(90deg, var(--base-24), ${getBaseColor(dro.currentBase)})`;
+            droFill.textContent = `BASE-${dro.currentBase}`;
+        }
+        
+        // ===== GAME LOOP =====
+        
+        function gameLoop(timestamp) {
+            const dt = Math.min(32, timestamp - lastTime) / 16.67;
+            lastTime = timestamp;
+            
+            update(dt);
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

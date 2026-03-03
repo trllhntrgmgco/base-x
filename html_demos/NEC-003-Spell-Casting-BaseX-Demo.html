@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEC-003: Spell Casting | Base-X Engine Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Orbitron:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --fire: #ff4400;
+            --fire-glow: #ffaa00;
+            --ice: #00ddff;
+            --ice-glow: #aaeeff;
+            --lightning: #ffff00;
+            --lightning-glow: #ffffaa;
+            --dark: #8800ff;
+            --dark-glow: #cc88ff;
+            --holy: #ffffff;
+            --holy-glow: #ffffcc;
+            --poison: #00ff44;
+            --poison-glow: #88ff88;
+            --necro-purple: #6a0dad;
+            --necro-red: #8b0000;
+            --panel-bg: rgba(20, 10, 30, 0.95);
+            --text-bone: #d4c4a8;
+        }
+        
+        body {
+            font-family: 'MedievalSharp', cursive;
+            background: linear-gradient(180deg, #0a0510 0%, #1a0a20 50%, #0a0510 100%);
+            color: var(--text-bone);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .header::before,
+        .header::after {
+            content: '☠';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2em;
+            color: var(--necro-red);
+            opacity: 0.6;
+        }
+        
+        .header::before { left: 15%; }
+        .header::after { right: 15%; }
+        
+        .demo-id {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75em;
+            color: var(--necro-purple);
+            letter-spacing: 4px;
+        }
+        
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 2.8em;
+            font-weight: 700;
+            background: linear-gradient(180deg, #d4c4a8, #8b0000, #4a0000);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 4px;
+            text-shadow: 0 0 30px rgba(139, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.1em;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 260px 1fr 300px;
+            gap: 15px;
+        }
+        
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 2px solid var(--necro-purple);
+            border-radius: 8px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .panel-title {
+            font-family: 'Cinzel', serif;
+            font-size: 0.85em;
+            color: var(--necro-purple);
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(106, 13, 173, 0.3);
+            text-transform: uppercase;
+        }
+        
+        /* Canvas */
+        .canvas-container {
+            position: relative;
+            background: linear-gradient(180deg, #0a0515 0%, #150a20 100%);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid var(--necro-purple);
+        }
+        
+        #spellCanvas {
+            display: block;
+            width: 100%;
+            height: 520px;
+            cursor: crosshair;
+        }
+        
+        /* Mana Bar */
+        .mana-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--necro-purple);
+            width: 200px;
+        }
+        
+        .resource-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+        
+        .resource-bar {
+            height: 12px;
+            background: #1a0a20;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .mana-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2200ff, #8800ff, #cc00ff);
+            border-radius: 6px;
+            transition: width 0.3s;
+            box-shadow: 0 0 10px var(--necro-purple);
+        }
+        
+        .soul-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #004400, #00ff44, #88ff88);
+            border-radius: 6px;
+            transition: width 0.3s;
+            box-shadow: 0 0 10px var(--poison);
+        }
+        
+        /* Spell Selection */
+        .spell-hud {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--necro-purple);
+        }
+        
+        .spell-slot {
+            width: 60px;
+            height: 60px;
+            background: rgba(30, 15, 40, 0.8);
+            border: 2px solid #444;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .spell-slot:hover {
+            transform: translateY(-5px);
+            border-color: #888;
+        }
+        
+        .spell-slot.active {
+            border-color: var(--necro-purple);
+            box-shadow: 0 0 15px var(--necro-purple);
+        }
+        
+        .spell-slot.fire.active { border-color: var(--fire); box-shadow: 0 0 15px var(--fire); }
+        .spell-slot.ice.active { border-color: var(--ice); box-shadow: 0 0 15px var(--ice); }
+        .spell-slot.lightning.active { border-color: var(--lightning); box-shadow: 0 0 15px var(--lightning); }
+        .spell-slot.dark.active { border-color: var(--dark); box-shadow: 0 0 15px var(--dark); }
+        .spell-slot.holy.active { border-color: var(--holy); box-shadow: 0 0 15px var(--holy); }
+        .spell-slot.poison.active { border-color: var(--poison); box-shadow: 0 0 15px var(--poison); }
+        
+        .spell-icon {
+            font-size: 1.8em;
+        }
+        
+        .spell-key {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 0.65em;
+            color: #666;
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .spell-cost {
+            font-size: 0.65em;
+            color: #8888ff;
+            margin-top: 2px;
+        }
+        
+        .cooldown-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            font-size: 0.8em;
+            text-align: center;
+            border-radius: 0 0 6px 6px;
+            display: none;
+        }
+        
+        /* Target Info */
+        .target-hud {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--necro-red);
+            min-width: 150px;
+        }
+        
+        .target-name {
+            font-family: 'Cinzel', serif;
+            color: var(--necro-red);
+            margin-bottom: 5px;
+        }
+        
+        .target-health {
+            height: 8px;
+            background: #1a0a0a;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .target-health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ff4444);
+            transition: width 0.2s;
+        }
+        
+        /* Combo Display */
+        .combo-display {
+            position: absolute;
+            top: 100px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8em;
+        }
+        
+        .combo-count {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--fire);
+        }
+        
+        /* Element Buttons */
+        .element-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .element-btn {
+            padding: 12px 8px;
+            border: 2px solid;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-family: 'MedievalSharp', cursive;
+            font-size: 0.85em;
+        }
+        
+        .element-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .element-btn.fire { border-color: var(--fire); color: var(--fire); }
+        .element-btn.fire:hover, .element-btn.fire.active { background: rgba(255, 68, 0, 0.3); }
+        
+        .element-btn.ice { border-color: var(--ice); color: var(--ice); }
+        .element-btn.ice:hover, .element-btn.ice.active { background: rgba(0, 221, 255, 0.3); }
+        
+        .element-btn.lightning { border-color: var(--lightning); color: var(--lightning); }
+        .element-btn.lightning:hover, .element-btn.lightning.active { background: rgba(255, 255, 0, 0.3); }
+        
+        .element-btn.dark { border-color: var(--dark); color: var(--dark); }
+        .element-btn.dark:hover, .element-btn.dark.active { background: rgba(136, 0, 255, 0.3); }
+        
+        .element-btn.holy { border-color: var(--holy); color: var(--holy); }
+        .element-btn.holy:hover, .element-btn.holy.active { background: rgba(255, 255, 255, 0.2); }
+        
+        .element-btn.poison { border-color: var(--poison); color: var(--poison); }
+        .element-btn.poison:hover, .element-btn.poison.active { background: rgba(0, 255, 68, 0.3); }
+        
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 2px solid var(--necro-purple);
+            background: rgba(106, 13, 173, 0.2);
+            color: var(--text-bone);
+            font-family: 'Cinzel', serif;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: rgba(106, 13, 173, 0.4);
+            box-shadow: 0 0 15px rgba(106, 13, 173, 0.3);
+        }
+        
+        .btn.danger {
+            border-color: var(--necro-red);
+            background: rgba(139, 0, 0, 0.2);
+        }
+        
+        /* Stats */
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9em;
+        }
+        
+        .stat-label { color: #888; }
+        .stat-value {
+            font-family: 'Orbitron', monospace;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+        
+        /* Damage Numbers Float */
+        .damage-number {
+            position: absolute;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 1.2em;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+        }
+        
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+        }
+        
+        /* Event Log */
+        .spell-log {
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.8em;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-entry.fire { color: var(--fire); }
+        .log-entry.ice { color: var(--ice); }
+        .log-entry.lightning { color: var(--lightning); }
+        .log-entry.dark { color: var(--dark); }
+        .log-entry.holy { color: var(--holy); }
+        .log-entry.poison { color: var(--poison); }
+        .log-entry.damage { color: var(--necro-red); }
+        .log-entry.system { color: #888; }
+        
+        /* DRO Info */
+        .dro-info {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 12px;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 15px;
+            color: #444;
+            font-size: 0.8em;
+            border-top: 1px solid rgba(106, 13, 173, 0.3);
+            margin-top: 15px;
+        }
+        
+        .footer span {
+            color: var(--necro-purple);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--necro-purple);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="demo-id">BASE-X ENGINE DEMO • NECROTOPIA VR</div>
+            <h1>SPELL CASTING</h1>
+            <div class="subtitle">Projectile Magic with Elemental Effects</div>
+        </div>
+        
+        <div class="main-grid">
+            <!-- Left Panel: Controls -->
+            <div class="panel">
+                <div class="panel-title">☠ Elemental Selection</div>
+                
+                <div class="element-grid">
+                    <button class="element-btn fire active" onclick="selectElement('fire')">🔥 Fire</button>
+                    <button class="element-btn ice" onclick="selectElement('ice')">❄️ Ice</button>
+                    <button class="element-btn lightning" onclick="selectElement('lightning')">⚡ Lightning</button>
+                    <button class="element-btn dark" onclick="selectElement('dark')">💀 Dark</button>
+                    <button class="element-btn holy" onclick="selectElement('holy')">✨ Holy</button>
+                    <button class="element-btn poison" onclick="selectElement('poison')">☠️ Poison</button>
+                </div>
+                
+                <div class="panel-title">⚔ Actions</div>
+                
+                <button class="btn" onclick="spawnEnemy()">Summon Target Dummy</button>
+                <button class="btn" onclick="spawnWave()">Spawn Enemy Wave</button>
+                <button class="btn" onclick="toggleAutoFire()">Toggle Auto-Cast</button>
+                <button class="btn danger" onclick="resetArena()">Clear Arena</button>
+                
+                <div class="panel-title" style="margin-top: 15px;">🎮 Controls</div>
+                
+                <div style="font-size: 0.8em; color: #888; line-height: 1.6;">
+                    <strong>Click</strong> — Cast selected spell<br>
+                    <strong>1-6</strong> — Quick select element<br>
+                    <strong>Space</strong> — Cast at nearest enemy<br>
+                    <strong>R</strong> — Restore mana
+                </div>
+                
+                <div class="dro-info">
+                    <div class="panel-title" style="margin: 0 0 8px 0; padding: 0; border: none;">Base-X Precision</div>
+                    <div class="stat-row">
+                        <span class="stat-label">Projectile</span>
+                        <span class="stat-value">Base-48</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Impact</span>
+                        <span class="stat-value">Base-64</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Particles</span>
+                        <span class="stat-value">Base-16</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center: Canvas -->
+            <div class="canvas-container">
+                <canvas id="spellCanvas"></canvas>
+                
+                <div class="mana-display">
+                    <div class="resource-label">
+                        <span>💜 MANA</span>
+                        <span id="manaValue">100/100</span>
+                    </div>
+                    <div class="resource-bar">
+                        <div class="mana-fill" id="manaFill" style="width: 100%"></div>
+                    </div>
+                    <div class="resource-label">
+                        <span>💚 SOULS</span>
+                        <span id="soulValue">0</span>
+                    </div>
+                    <div class="resource-bar">
+                        <div class="soul-fill" id="soulFill" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="target-hud" id="targetHud" style="display: none;">
+                    <div class="target-name" id="targetName">Target</div>
+                    <div class="target-health">
+                        <div class="target-health-fill" id="targetHealthFill"></div>
+                    </div>
+                    <div style="font-size: 0.75em; color: #888;" id="targetHealthText">100/100</div>
+                </div>
+                
+                <div class="combo-display">
+                    <div>COMBO</div>
+                    <div class="combo-count" id="comboCount">0</div>
+                </div>
+                
+                <div class="spell-hud">
+                    <div class="spell-slot fire active" data-element="fire" onclick="selectElement('fire')">
+                        <span class="spell-key">1</span>
+                        <span class="spell-icon">🔥</span>
+                        <span class="spell-cost">10</span>
+                        <div class="cooldown-overlay" id="cd-fire"></div>
+                    </div>
+                    <div class="spell-slot ice" data-element="ice" onclick="selectElement('ice')">
+                        <span class="spell-key">2</span>
+                        <span class="spell-icon">❄️</span>
+                        <span class="spell-cost">12</span>
+                        <div class="cooldown-overlay" id="cd-ice"></div>
+                    </div>
+                    <div class="spell-slot lightning" data-element="lightning" onclick="selectElement('lightning')">
+                        <span class="spell-key">3</span>
+                        <span class="spell-icon">⚡</span>
+                        <span class="spell-cost">15</span>
+                        <div class="cooldown-overlay" id="cd-lightning"></div>
+                    </div>
+                    <div class="spell-slot dark" data-element="dark" onclick="selectElement('dark')">
+                        <span class="spell-key">4</span>
+                        <span class="spell-icon">💀</span>
+                        <span class="spell-cost">20</span>
+                        <div class="cooldown-overlay" id="cd-dark"></div>
+                    </div>
+                    <div class="spell-slot holy" data-element="holy" onclick="selectElement('holy')">
+                        <span class="spell-key">5</span>
+                        <span class="spell-icon">✨</span>
+                        <span class="spell-cost">18</span>
+                        <div class="cooldown-overlay" id="cd-holy"></div>
+                    </div>
+                    <div class="spell-slot poison" data-element="poison" onclick="selectElement('poison')">
+                        <span class="spell-key">6</span>
+                        <span class="spell-icon">☠️</span>
+                        <span class="spell-cost">8</span>
+                        <div class="cooldown-overlay" id="cd-poison"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Stats -->
+            <div class="panel">
+                <div class="panel-title">📊 Combat Statistics</div>
+                
+                <div class="stat-row">
+                    <span class="stat-label">Spells Cast</span>
+                    <span class="stat-value" id="statCast">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Total Damage</span>
+                    <span class="stat-value" id="statDamage">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Enemies Slain</span>
+                    <span class="stat-value" id="statKills">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Highest Combo</span>
+                    <span class="stat-value" id="statCombo">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Mana Spent</span>
+                    <span class="stat-value" id="statMana">0</span>
+                </div>
+                
+                <div class="panel-title" style="margin-top: 15px;">⚗ Element Damage</div>
+                
+                <div class="stat-row">
+                    <span class="stat-label" style="color: var(--fire);">🔥 Fire</span>
+                    <span class="stat-value" id="dmgFire">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label" style="color: var(--ice);">❄️ Ice</span>
+                    <span class="stat-value" id="dmgIce">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label" style="color: var(--lightning);">⚡ Lightning</span>
+                    <span class="stat-value" id="dmgLightning">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label" style="color: var(--dark);">💀 Dark</span>
+                    <span class="stat-value" id="dmgDark">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label" style="color: var(--holy);">✨ Holy</span>
+                    <span class="stat-value" id="dmgHoly">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label" style="color: var(--poison);">☠️ Poison</span>
+                    <span class="stat-value" id="dmgPoison">0</span>
+                </div>
+                
+                <div class="panel-title" style="margin-top: 15px;">📜 Combat Log</div>
+                <div class="spell-log" id="spellLog">
+                    <div class="log-entry system">Arena initialized...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <strong>NEC-003: Spell Casting</strong> | Base-X Game Engine Demo Suite | 
+            <span>Troll Hunter Gaming LLC</span> | © 2025 Keenan Dunham
+        </div>
+    </div>
+    
+    <script>
+        // ============================================
+        // BASE-X SPELL CASTING ENGINE
+        // NEC-003 Demo - Elemental Projectile Magic
+        // ============================================
+        
+        const canvas = document.getElementById('spellCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // High DPI
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = 520 * dpr;
+            canvas.style.height = '520px';
+            ctx.scale(dpr, dpr);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // ============================================
+        // SPELL DEFINITIONS
+        // ============================================
+        
+        const SPELLS = {
+            fire: {
+                name: 'Fireball',
+                cost: 10,
+                damage: [15, 25],
+                speed: 12,
+                size: 20,
+                color: '#ff4400',
+                glow: '#ffaa00',
+                cooldown: 500,
+                particleCount: 20,
+                aoe: 40,
+                effect: 'burn',
+                effectDuration: 3000,
+                effectDamage: 5
+            },
+            ice: {
+                name: 'Ice Shard',
+                cost: 12,
+                damage: [12, 20],
+                speed: 15,
+                size: 15,
+                color: '#00ddff',
+                glow: '#aaeeff',
+                cooldown: 600,
+                particleCount: 15,
+                aoe: 0,
+                effect: 'slow',
+                effectDuration: 2000,
+                effectMultiplier: 0.5
+            },
+            lightning: {
+                name: 'Lightning Bolt',
+                cost: 15,
+                damage: [25, 40],
+                speed: 30,
+                size: 8,
+                color: '#ffff00',
+                glow: '#ffffaa',
+                cooldown: 800,
+                particleCount: 30,
+                aoe: 0,
+                effect: 'chain',
+                chainCount: 2,
+                chainDamage: 0.5
+            },
+            dark: {
+                name: 'Soul Rend',
+                cost: 20,
+                damage: [30, 45],
+                speed: 8,
+                size: 25,
+                color: '#8800ff',
+                glow: '#cc88ff',
+                cooldown: 1200,
+                particleCount: 25,
+                aoe: 50,
+                effect: 'lifesteal',
+                lifestealPercent: 0.2
+            },
+            holy: {
+                name: 'Divine Smite',
+                cost: 18,
+                damage: [20, 35],
+                speed: 20,
+                size: 18,
+                color: '#ffffff',
+                glow: '#ffffcc',
+                cooldown: 1000,
+                particleCount: 25,
+                aoe: 60,
+                effect: 'purify',
+                bonusVsUndead: 2.0
+            },
+            poison: {
+                name: 'Venomous Bolt',
+                cost: 8,
+                damage: [8, 12],
+                speed: 10,
+                size: 12,
+                color: '#00ff44',
+                glow: '#88ff88',
+                cooldown: 400,
+                particleCount: 15,
+                aoe: 0,
+                effect: 'poison',
+                effectDuration: 5000,
+                effectDamage: 3,
+                stacks: true
+            }
+        };
+        
+        // ============================================
+        // GAME STATE
+        // ============================================
+        
+        const state = {
+            mana: 100,
+            maxMana: 100,
+            souls: 0,
+            selectedElement: 'fire',
+            spellsCast: 0,
+            totalDamage: 0,
+            enemiesKilled: 0,
+            highestCombo: 0,
+            currentCombo: 0,
+            comboTimer: 0,
+            manaSpent: 0,
+            autoFire: false,
+            cooldowns: {},
+            elementDamage: {
+                fire: 0, ice: 0, lightning: 0, dark: 0, holy: 0, poison: 0
+            }
+        };
+        
+        // Entities
+        let caster = { x: 150, y: 260 };
+        let projectiles = [];
+        let enemies = [];
+        let particles = [];
+        let damageNumbers = [];
+        let targetedEnemy = null;
+        
+        // ============================================
+        // PROJECTILE CLASS
+        // ============================================
+        
+        class Projectile {
+            constructor(x, y, targetX, targetY, element) {
+                this.x = x;
+                this.y = y;
+                this.element = element;
+                this.spell = SPELLS[element];
+                
+                const dx = targetX - x;
+                const dy = targetY - y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                this.vx = (dx / dist) * this.spell.speed;
+                this.vy = (dy / dist) * this.spell.speed;
+                this.angle = Math.atan2(dy, dx);
+                
+                this.alive = true;
+                this.trail = [];
+            }
+            
+            update(dt) {
+                // Store trail
+                this.trail.push({ x: this.x, y: this.y, life: 1 });
+                if (this.trail.length > 10) this.trail.shift();
+                
+                // Update trail life
+                this.trail.forEach(t => t.life -= dt * 3);
+                
+                // Move
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Spawn particles
+                if (Math.random() < 0.5) {
+                    spawnParticle(this.x, this.y, this.element);
+                }
+                
+                // Check bounds
+                const w = canvas.width / (window.devicePixelRatio || 1);
+                const h = 520;
+                if (this.x < 0 || this.x > w || this.y < 0 || this.y > h) {
+                    this.alive = false;
+                }
+                
+                // Check enemy collision
+                for (const enemy of enemies) {
+                    if (!enemy.alive) continue;
+                    
+                    const dx = this.x - enemy.x;
+                    const dy = this.y - enemy.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < enemy.size + this.spell.size) {
+                        this.onHit(enemy);
+                        this.alive = false;
+                        break;
+                    }
+                }
+            }
+            
+            onHit(enemy) {
+                const spell = this.spell;
+                
+                // Calculate damage
+                let damage = spell.damage[0] + Math.random() * (spell.damage[1] - spell.damage[0]);
+                
+                // Holy bonus vs undead
+                if (this.element === 'holy' && enemy.type === 'undead') {
+                    damage *= spell.bonusVsUndead;
+                }
+                
+                damage = Math.floor(damage);
+                
+                // Apply damage
+                enemy.health -= damage;
+                state.totalDamage += damage;
+                state.elementDamage[this.element] += damage;
+                
+                // Combo
+                state.currentCombo++;
+                state.comboTimer = 2;
+                if (state.currentCombo > state.highestCombo) {
+                    state.highestCombo = state.currentCombo;
+                }
+                
+                // Create damage number
+                damageNumbers.push({
+                    x: enemy.x,
+                    y: enemy.y - 30,
+                    value: damage,
+                    color: spell.color,
+                    life: 1
+                });
+                
+                // Impact particles
+                for (let i = 0; i < spell.particleCount; i++) {
+                    spawnParticle(this.x, this.y, this.element, true);
+                }
+                
+                // Apply effects
+                applySpellEffect(enemy, this.element, spell);
+                
+                // AOE damage
+                if (spell.aoe > 0) {
+                    for (const other of enemies) {
+                        if (other === enemy || !other.alive) continue;
+                        const dx = this.x - other.x;
+                        const dy = this.y - other.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < spell.aoe) {
+                            const aoeDmg = Math.floor(damage * 0.5);
+                            other.health -= aoeDmg;
+                            state.totalDamage += aoeDmg;
+                            damageNumbers.push({
+                                x: other.x, y: other.y - 30,
+                                value: aoeDmg, color: spell.color, life: 1
+                            });
+                        }
+                    }
+                }
+                
+                // Lightning chain
+                if (this.element === 'lightning' && spell.chainCount > 0) {
+                    chainLightning(enemy, spell.chainCount, damage * spell.chainDamage);
+                }
+                
+                // Lifesteal
+                if (spell.lifestealPercent) {
+                    const heal = Math.floor(damage * spell.lifestealPercent);
+                    state.mana = Math.min(state.maxMana, state.mana + heal);
+                }
+                
+                // Log
+                addLogEntry(`${spell.name} hits for ${damage} damage!`, this.element);
+                
+                // Check kill
+                if (enemy.health <= 0) {
+                    enemy.alive = false;
+                    state.enemiesKilled++;
+                    state.souls++;
+                    addLogEntry(`Enemy slain! +1 Soul`, 'system');
+                }
+                
+                updateStats();
+            }
+            
+            draw(ctx) {
+                const spell = this.spell;
+                
+                // Draw trail
+                for (let i = 0; i < this.trail.length; i++) {
+                    const t = this.trail[i];
+                    if (t.life <= 0) continue;
+                    
+                    ctx.globalAlpha = t.life * 0.5;
+                    ctx.fillStyle = spell.glow;
+                    ctx.beginPath();
+                    ctx.arc(t.x, t.y, spell.size * 0.5 * t.life, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                
+                // Glow
+                const glow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, spell.size * 2);
+                glow.addColorStop(0, spell.glow);
+                glow.addColorStop(1, 'transparent');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, spell.size * 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Core
+                ctx.fillStyle = spell.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, spell.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Inner bright
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, spell.size * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Element-specific effects
+                if (this.element === 'lightning') {
+                    drawLightningBolt(ctx, this.x - this.vx * 2, this.y - this.vy * 2, this.x, this.y, spell.color);
+                }
+            }
+        }
+        
+        // ============================================
+        // ENEMY CLASS
+        // ============================================
+        
+        class Enemy {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = 30;
+                this.maxHealth = 100;
+                this.health = 100;
+                this.alive = true;
+                this.type = Math.random() < 0.3 ? 'undead' : 'demon';
+                this.effects = [];
+                this.slowMultiplier = 1;
+                
+                // Slight movement
+                this.baseY = y;
+                this.bobPhase = Math.random() * Math.PI * 2;
+            }
+            
+            update(dt) {
+                if (!this.alive) return;
+                
+                // Bob
+                this.bobPhase += dt * 2;
+                this.y = this.baseY + Math.sin(this.bobPhase) * 5;
+                
+                // Process effects
+                this.effects = this.effects.filter(effect => {
+                    effect.duration -= dt * 1000;
+                    
+                    if (effect.type === 'burn' || effect.type === 'poison') {
+                        effect.tickTimer -= dt * 1000;
+                        if (effect.tickTimer <= 0) {
+                            effect.tickTimer = 1000;
+                            this.health -= effect.damage;
+                            state.totalDamage += effect.damage;
+                            damageNumbers.push({
+                                x: this.x, y: this.y - 20,
+                                value: effect.damage,
+                                color: effect.type === 'burn' ? '#ff4400' : '#00ff44',
+                                life: 1
+                            });
+                            
+                            if (this.health <= 0) {
+                                this.alive = false;
+                                state.enemiesKilled++;
+                                state.souls++;
+                            }
+                        }
+                    }
+                    
+                    if (effect.type === 'slow') {
+                        this.slowMultiplier = effect.multiplier;
+                    }
+                    
+                    return effect.duration > 0;
+                });
+                
+                // Reset slow if no slow effect
+                if (!this.effects.find(e => e.type === 'slow')) {
+                    this.slowMultiplier = 1;
+                }
+            }
+            
+            draw(ctx) {
+                if (!this.alive) return;
+                
+                const x = this.x;
+                const y = this.y;
+                
+                // Effect auras
+                for (const effect of this.effects) {
+                    if (effect.type === 'burn') {
+                        ctx.strokeStyle = 'rgba(255, 68, 0, 0.5)';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.arc(x, y, this.size + 5 + Math.random() * 5, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                    if (effect.type === 'poison') {
+                        ctx.strokeStyle = 'rgba(0, 255, 68, 0.5)';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.arc(x, y, this.size + 5, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                    if (effect.type === 'slow') {
+                        ctx.strokeStyle = 'rgba(0, 221, 255, 0.5)';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.arc(x, y, this.size + 8, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }
+                
+                // Shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(x, y + this.size + 5, this.size * 0.8, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Body
+                const bodyColor = this.type === 'undead' ? '#446644' : '#664444';
+                ctx.fillStyle = bodyColor;
+                ctx.beginPath();
+                ctx.arc(x, y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Face
+                ctx.fillStyle = this.type === 'undead' ? '#88ff88' : '#ff4444';
+                ctx.beginPath();
+                ctx.arc(x - 10, y - 5, 5, 0, Math.PI * 2);
+                ctx.arc(x + 10, y - 5, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Mouth
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y + 8, 10, 0, Math.PI);
+                ctx.stroke();
+                
+                // Health bar
+                const barWidth = this.size * 2;
+                const barHeight = 6;
+                const healthPercent = this.health / this.maxHealth;
+                
+                ctx.fillStyle = '#222';
+                ctx.fillRect(x - barWidth/2, y - this.size - 15, barWidth, barHeight);
+                
+                ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : healthPercent > 0.25 ? '#ffff00' : '#ff0000';
+                ctx.fillRect(x - barWidth/2, y - this.size - 15, barWidth * healthPercent, barHeight);
+                
+                // Type indicator
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.type === 'undead' ? '☠' : '👹', x, y - this.size - 20);
+            }
+        }
+        
+        // ============================================
+        // SPELL EFFECTS
+        // ============================================
+        
+        function applySpellEffect(enemy, element, spell) {
+            if (!spell.effect) return;
+            
+            switch (spell.effect) {
+                case 'burn':
+                case 'poison':
+                    // Check if stacking or refreshing
+                    const existing = enemy.effects.find(e => e.type === spell.effect);
+                    if (existing && spell.stacks) {
+                        existing.damage += spell.effectDamage;
+                        existing.duration = spell.effectDuration;
+                    } else if (!existing) {
+                        enemy.effects.push({
+                            type: spell.effect,
+                            duration: spell.effectDuration,
+                            damage: spell.effectDamage,
+                            tickTimer: 1000
+                        });
+                    } else {
+                        existing.duration = spell.effectDuration;
+                    }
+                    break;
+                    
+                case 'slow':
+                    enemy.effects.push({
+                        type: 'slow',
+                        duration: spell.effectDuration,
+                        multiplier: spell.effectMultiplier
+                    });
+                    break;
+            }
+        }
+        
+        function chainLightning(source, remainingChains, damage) {
+            if (remainingChains <= 0) return;
+            
+            let nearest = null;
+            let nearestDist = 200;
+            
+            for (const enemy of enemies) {
+                if (enemy === source || !enemy.alive) continue;
+                const dx = source.x - enemy.x;
+                const dy = source.y - enemy.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < nearestDist) {
+                    nearestDist = dist;
+                    nearest = enemy;
+                }
+            }
+            
+            if (nearest) {
+                const chainDmg = Math.floor(damage);
+                nearest.health -= chainDmg;
+                state.totalDamage += chainDmg;
+                
+                damageNumbers.push({
+                    x: nearest.x, y: nearest.y - 30,
+                    value: chainDmg, color: '#ffff00', life: 1
+                });
+                
+                // Draw chain
+                drawLightningBolt(ctx, source.x, source.y, nearest.x, nearest.y, '#ffff00');
+                
+                // Spawn particles
+                for (let i = 0; i < 10; i++) {
+                    spawnParticle(nearest.x, nearest.y, 'lightning', true);
+                }
+                
+                if (nearest.health <= 0) {
+                    nearest.alive = false;
+                    state.enemiesKilled++;
+                    state.souls++;
+                }
+                
+                chainLightning(nearest, remainingChains - 1, damage * 0.5);
+            }
+        }
+        
+        function drawLightningBolt(ctx, x1, y1, x2, y2, color) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            
+            const segments = 5;
+            const dx = (x2 - x1) / segments;
+            const dy = (y2 - y1) / segments;
+            
+            for (let i = 1; i < segments; i++) {
+                const px = x1 + dx * i + (Math.random() - 0.5) * 20;
+                const py = y1 + dy * i + (Math.random() - 0.5) * 20;
+                ctx.lineTo(px, py);
+            }
+            
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            // Glow
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+        }
+        
+        // ============================================
+        // PARTICLES
+        // ============================================
+        
+        function spawnParticle(x, y, element, burst = false) {
+            const spell = SPELLS[element];
+            const speed = burst ? 5 : 2;
+            
+            particles.push({
+                x, y,
+                vx: (Math.random() - 0.5) * speed,
+                vy: (Math.random() - 0.5) * speed - (burst ? 0 : 1),
+                life: 1,
+                color: Math.random() < 0.5 ? spell.color : spell.glow,
+                size: 2 + Math.random() * 4
+            });
+        }
+        
+        // ============================================
+        // CASTING
+        // ============================================
+        
+        function castSpell(targetX, targetY) {
+            const element = state.selectedElement;
+            const spell = SPELLS[element];
+            
+            // Check cooldown
+            if (state.cooldowns[element] && Date.now() < state.cooldowns[element]) {
+                return;
+            }
+            
+            // Check mana
+            if (state.mana < spell.cost) {
+                addLogEntry('Not enough mana!', 'system');
+                return;
+            }
+            
+            // Consume mana
+            state.mana -= spell.cost;
+            state.manaSpent += spell.cost;
+            state.spellsCast++;
+            
+            // Set cooldown
+            state.cooldowns[element] = Date.now() + spell.cooldown;
+            
+            // Create projectile
+            projectiles.push(new Projectile(caster.x, caster.y, targetX, targetY, element));
+            
+            // Cast particles
+            for (let i = 0; i < 10; i++) {
+                spawnParticle(caster.x, caster.y, element);
+            }
+            
+            updateStats();
+        }
+        
+        function selectElement(element) {
+            state.selectedElement = element;
+            
+            // Update UI
+            document.querySelectorAll('.element-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.classList.contains(element)) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            document.querySelectorAll('.spell-slot').forEach(slot => {
+                slot.classList.remove('active');
+                if (slot.dataset.element === element) {
+                    slot.classList.add('active');
+                }
+            });
+        }
+        
+        // ============================================
+        // SPAWNING
+        // ============================================
+        
+        function spawnEnemy() {
+            const w = canvas.width / (window.devicePixelRatio || 1);
+            const x = 400 + Math.random() * (w - 500);
+            const y = 150 + Math.random() * 200;
+            enemies.push(new Enemy(x, y));
+            addLogEntry('Target dummy summoned', 'system');
+        }
+        
+        function spawnWave() {
+            const w = canvas.width / (window.devicePixelRatio || 1);
+            for (let i = 0; i < 5; i++) {
+                const x = 400 + (i * 100) + Math.random() * 50;
+                const y = 150 + Math.random() * 200;
+                enemies.push(new Enemy(x, y));
+            }
+            addLogEntry('Enemy wave incoming!', 'damage');
+        }
+        
+        function resetArena() {
+            enemies = [];
+            projectiles = [];
+            particles = [];
+            damageNumbers = [];
+            state.mana = state.maxMana;
+            state.currentCombo = 0;
+            addLogEntry('Arena cleared', 'system');
+            updateStats();
+        }
+        
+        function toggleAutoFire() {
+            state.autoFire = !state.autoFire;
+            addLogEntry(`Auto-cast ${state.autoFire ? 'enabled' : 'disabled'}`, 'system');
+        }
+        
+        // ============================================
+        // RENDER
+        // ============================================
+        
+        let time = 0;
+        
+        function render() {
+            time += 0.016;
+            const w = canvas.width / (window.devicePixelRatio || 1);
+            const h = 520;
+            
+            // Background
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+            bgGrad.addColorStop(0, '#0a0515');
+            bgGrad.addColorStop(0.5, '#150a20');
+            bgGrad.addColorStop(1, '#0a0510');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, w, h);
+            
+            // Mystical particles in background
+            ctx.fillStyle = 'rgba(106, 13, 173, 0.1)';
+            for (let i = 0; i < 20; i++) {
+                const px = (Math.sin(time + i) * 0.5 + 0.5) * w;
+                const py = (Math.cos(time * 0.7 + i * 0.5) * 0.5 + 0.5) * h;
+                ctx.beginPath();
+                ctx.arc(px, py, 20 + Math.sin(time * 2 + i) * 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Ground
+            ctx.fillStyle = 'rgba(30, 15, 40, 0.8)';
+            ctx.fillRect(0, h - 80, w, 80);
+            
+            // Caster
+            drawCaster();
+            
+            // Enemies
+            for (const enemy of enemies) {
+                enemy.draw(ctx);
+            }
+            
+            // Projectiles
+            for (const proj of projectiles) {
+                proj.draw(ctx);
+            }
+            
+            // Particles
+            ctx.globalAlpha = 1;
+            for (const p of particles) {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            
+            // Damage numbers
+            for (const dmg of damageNumbers) {
+                ctx.globalAlpha = dmg.life;
+                ctx.fillStyle = dmg.color;
+                ctx.font = 'bold 18px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText(dmg.value, dmg.x, dmg.y);
+            }
+            ctx.globalAlpha = 1;
+        }
+        
+        function drawCaster() {
+            const x = caster.x;
+            const y = caster.y;
+            
+            // Robe
+            ctx.fillStyle = '#2a1a3a';
+            ctx.beginPath();
+            ctx.moveTo(x - 25, y + 40);
+            ctx.lineTo(x - 30, y + 80);
+            ctx.lineTo(x + 30, y + 80);
+            ctx.lineTo(x + 25, y + 40);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Body
+            ctx.fillStyle = '#1a0a2a';
+            ctx.fillRect(x - 15, y, 30, 45);
+            
+            // Head
+            ctx.fillStyle = '#d4a574';
+            ctx.beginPath();
+            ctx.arc(x, y - 15, 18, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Hood
+            ctx.fillStyle = '#2a1a3a';
+            ctx.beginPath();
+            ctx.arc(x, y - 18, 22, Math.PI, 0, true);
+            ctx.fill();
+            
+            // Eyes (glowing)
+            const spell = SPELLS[state.selectedElement];
+            ctx.fillStyle = spell.glow;
+            ctx.shadowColor = spell.color;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(x - 6, y - 15, 3, 0, Math.PI * 2);
+            ctx.arc(x + 6, y - 15, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Staff
+            ctx.fillStyle = '#4a3a2a';
+            ctx.fillRect(x + 20, y - 40, 6, 120);
+            
+            // Staff orb
+            ctx.fillStyle = spell.glow;
+            ctx.shadowColor = spell.color;
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(x + 23, y - 50, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Casting circle when spell selected
+            ctx.strokeStyle = `rgba(${hexToRgb(spell.color)}, ${0.3 + Math.sin(time * 3) * 0.2})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y + 40, 50 + Math.sin(time * 2) * 5, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? 
+                `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+                '255, 255, 255';
+        }
+        
+        // ============================================
+        // UPDATE
+        // ============================================
+        
+        function update(dt) {
+            // Mana regen
+            state.mana = Math.min(state.maxMana, state.mana + dt * 5);
+            
+            // Combo timer
+            if (state.comboTimer > 0) {
+                state.comboTimer -= dt;
+                if (state.comboTimer <= 0) {
+                    state.currentCombo = 0;
+                }
+            }
+            
+            // Update projectiles
+            projectiles = projectiles.filter(p => {
+                p.update(dt);
+                return p.alive;
+            });
+            
+            // Update enemies
+            enemies = enemies.filter(e => {
+                e.update(dt);
+                return e.alive;
+            });
+            
+            // Update particles
+            particles = particles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+                p.life -= dt * 2;
+                return p.life > 0;
+            });
+            
+            // Update damage numbers
+            damageNumbers = damageNumbers.filter(d => {
+                d.y -= 1;
+                d.life -= dt;
+                return d.life > 0;
+            });
+            
+            // Auto fire
+            if (state.autoFire && enemies.length > 0) {
+                const aliveEnemies = enemies.filter(e => e.alive);
+                if (aliveEnemies.length > 0) {
+                    const target = aliveEnemies[0];
+                    castSpell(target.x, target.y);
+                }
+            }
+            
+            // Update cooldown displays
+            updateCooldowns();
+            
+            // Update UI
+            document.getElementById('manaValue').textContent = `${Math.floor(state.mana)}/${state.maxMana}`;
+            document.getElementById('manaFill').style.width = (state.mana / state.maxMana * 100) + '%';
+            document.getElementById('soulValue').textContent = state.souls;
+            document.getElementById('soulFill').style.width = Math.min(100, state.souls * 10) + '%';
+            document.getElementById('comboCount').textContent = state.currentCombo;
+            
+            // Target HUD
+            if (enemies.length > 0) {
+                const target = enemies[0];
+                document.getElementById('targetHud').style.display = 'block';
+                document.getElementById('targetName').textContent = target.type === 'undead' ? 'Undead' : 'Demon';
+                document.getElementById('targetHealthFill').style.width = (target.health / target.maxHealth * 100) + '%';
+                document.getElementById('targetHealthText').textContent = `${Math.max(0, Math.floor(target.health))}/${target.maxHealth}`;
+            } else {
+                document.getElementById('targetHud').style.display = 'none';
+            }
+        }
+        
+        function updateCooldowns() {
+            for (const element in SPELLS) {
+                const cdEl = document.getElementById(`cd-${element}`);
+                if (state.cooldowns[element] && Date.now() < state.cooldowns[element]) {
+                    const remaining = (state.cooldowns[element] - Date.now()) / 1000;
+                    cdEl.style.display = 'block';
+                    cdEl.textContent = remaining.toFixed(1);
+                } else {
+                    cdEl.style.display = 'none';
+                }
+            }
+        }
+        
+        function updateStats() {
+            document.getElementById('statCast').textContent = state.spellsCast;
+            document.getElementById('statDamage').textContent = state.totalDamage;
+            document.getElementById('statKills').textContent = state.enemiesKilled;
+            document.getElementById('statCombo').textContent = state.highestCombo;
+            document.getElementById('statMana').textContent = state.manaSpent;
+            
+            document.getElementById('dmgFire').textContent = state.elementDamage.fire;
+            document.getElementById('dmgIce').textContent = state.elementDamage.ice;
+            document.getElementById('dmgLightning').textContent = state.elementDamage.lightning;
+            document.getElementById('dmgDark').textContent = state.elementDamage.dark;
+            document.getElementById('dmgHoly').textContent = state.elementDamage.holy;
+            document.getElementById('dmgPoison').textContent = state.elementDamage.poison;
+        }
+        
+        function addLogEntry(text, type) {
+            const log = document.getElementById('spellLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.textContent = text;
+            log.insertBefore(entry, log.firstChild);
+            if (log.children.length > 20) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        // ============================================
+        // INPUT
+        // ============================================
+        
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            castSpell(x, y);
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case '1': selectElement('fire'); break;
+                case '2': selectElement('ice'); break;
+                case '3': selectElement('lightning'); break;
+                case '4': selectElement('dark'); break;
+                case '5': selectElement('holy'); break;
+                case '6': selectElement('poison'); break;
+                case ' ':
+                    e.preventDefault();
+                    // Cast at nearest enemy
+                    const alive = enemies.filter(e => e.alive);
+                    if (alive.length > 0) {
+                        castSpell(alive[0].x, alive[0].y);
+                    }
+                    break;
+                case 'r':
+                case 'R':
+                    state.mana = state.maxMana;
+                    addLogEntry('Mana restored', 'system');
+                    break;
+            }
+        });
+        
+        // ============================================
+        // GAME LOOP
+        // ============================================
+        
+        let lastTime = 0;
+        
+        function gameLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+            lastTime = timestamp;
+            
+            update(dt);
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Initialize
+        spawnEnemy();
+        spawnEnemy();
+        spawnEnemy();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

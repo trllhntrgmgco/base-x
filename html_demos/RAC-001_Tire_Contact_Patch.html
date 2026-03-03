@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASE-X ENGINE | RAC-001: Tire Contact Patch</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0a0c;
+            --bg-panel: rgba(12, 12, 15, 0.95);
+            --racing-red: #dd2222;
+            --tire-black: #222222;
+            --asphalt: #333338;
+            --grip-green: #00dd66;
+            --slip-yellow: #ddaa00;
+            --spin-red: #ff3344;
+            --accent-cyan: #00bbcc;
+            --text-primary: #e0e4e8;
+            --text-dim: #667788;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            height: 50px;
+            background: linear-gradient(180deg, rgba(221, 34, 34, 0.12), transparent);
+            border-bottom: 1px solid rgba(221, 34, 34, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-badge {
+            background: linear-gradient(135deg, var(--racing-red), #aa1111);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 10px;
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        
+        .logo-sub {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-left: 10px;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .stat-value.grip { color: var(--grip-green); }
+        .stat-value.slip { color: var(--slip-yellow); }
+        .stat-value.spin { color: var(--spin-red); }
+        
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .control-panel {
+            width: 260px;
+            background: var(--bg-panel);
+            border-right: 1px solid rgba(221, 34, 34, 0.2);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .panel-section {
+            margin-bottom: 18px;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--racing-red);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(221, 34, 34, 0.3);
+        }
+        
+        .tire-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .tire-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 11px;
+            text-align: left;
+        }
+        
+        .tire-btn:hover { background: rgba(221, 34, 34, 0.1); }
+        .tire-btn.active {
+            border-color: var(--racing-red);
+            background: rgba(221, 34, 34, 0.15);
+        }
+        
+        .tire-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 3px solid;
+        }
+        
+        .tire-info { flex: 1; }
+        .tire-name { font-weight: 600; }
+        .tire-stats { font-size: 9px; color: var(--text-dim); }
+        
+        .base-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        
+        .base-btn {
+            padding: 8px 5px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            text-align: center;
+            transition: all 0.15s;
+        }
+        
+        .base-btn:hover { background: rgba(255, 255, 255, 0.06); }
+        .base-btn.active {
+            border-color: var(--grip-green);
+            background: rgba(0, 221, 102, 0.15);
+            color: var(--grip-green);
+        }
+        
+        .slider-group {
+            margin-bottom: 12px;
+        }
+        
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 10px;
+        }
+        
+        .slider-label { color: var(--text-dim); }
+        .slider-value { font-family: 'Share Tech Mono', monospace; color: var(--accent-cyan); }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--racing-red);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .telemetry-box {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+        }
+        
+        .telemetry-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .telemetry-row:last-child { border-bottom: none; }
+        .telemetry-key { color: var(--text-dim); }
+        .telemetry-val { color: var(--accent-cyan); }
+        .telemetry-val.grip { color: var(--grip-green); }
+        .telemetry-val.slip { color: var(--slip-yellow); }
+        .telemetry-val.spin { color: var(--spin-red); }
+        
+        .action-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        
+        .action-btn {
+            padding: 10px;
+            background: rgba(221, 34, 34, 0.15);
+            border: 1px solid rgba(221, 34, 34, 0.4);
+            border-radius: 5px;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .action-btn:hover { background: rgba(221, 34, 34, 0.25); }
+        .action-btn.full { grid-column: span 2; }
+        
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .canvas-row {
+            flex: 1;
+            display: flex;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .canvas-wrapper canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .canvas-label {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            z-index: 10;
+        }
+        
+        .canvas-label.high { color: var(--grip-green); border: 1px solid var(--grip-green); }
+        .canvas-label.low { color: var(--spin-red); border: 1px solid var(--spin-red); }
+        
+        .grip-meter {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 25px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+        
+        .grip-fill {
+            position: absolute;
+            bottom: 0;
+            left: 3px;
+            right: 3px;
+            background: linear-gradient(to top, var(--spin-red), var(--slip-yellow), var(--grip-green));
+            border-radius: 2px;
+            transition: height 0.1s;
+        }
+        
+        .grip-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+        
+        .speed-display {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            color: var(--accent-cyan);
+        }
+        
+        .speed-unit {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-left: 5px;
+        }
+        
+        .info-panel {
+            width: 240px;
+            background: var(--bg-panel);
+            border-left: 1px solid rgba(221, 34, 34, 0.2);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .patch-display {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .patch-visual {
+            width: 120px;
+            height: 80px;
+            margin: 0 auto 10px;
+            background: var(--asphalt);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .patch-area {
+            position: absolute;
+            background: rgba(0, 221, 102, 0.6);
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        
+        .patch-stats {
+            font-size: 10px;
+            text-align: left;
+        }
+        
+        .patch-stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+        }
+        
+        .metrics-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .metric-row:last-child { border-bottom: none; }
+        .metric-key { color: var(--text-dim); }
+        .metric-val { font-family: 'Share Tech Mono', monospace; }
+        .metric-val.good { color: var(--grip-green); }
+        .metric-val.warn { color: var(--slip-yellow); }
+        .metric-val.bad { color: var(--spin-red); }
+        
+        .slip-graph {
+            height: 80px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .slip-curve {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-badge">RAC-001</div>
+            <div class="logo-text">TIRE CONTACT PATCH</div>
+            <div class="logo-sub">Racing Simulation | Grip Physics</div>
+        </div>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-value grip" id="gripLevel">100%</div>
+                <div class="stat-label">Grip Level</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="slipAngle">0.0°</div>
+                <div class="stat-label">Slip Angle</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="slipRatio">0%</div>
+                <div class="stat-label">Slip Ratio</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="contactArea">150</div>
+                <div class="stat-label">Patch (cm²)</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="control-panel">
+            <div class="panel-section">
+                <div class="section-title">Tire Compound</div>
+                <div class="tire-selector">
+                    <button class="tire-btn active" data-tire="soft">
+                        <div class="tire-color" style="background: #222; border-color: #dd2222"></div>
+                        <div class="tire-info">
+                            <div class="tire-name">Soft</div>
+                            <div class="tire-stats">Max grip, fast wear</div>
+                        </div>
+                    </button>
+                    <button class="tire-btn" data-tire="medium">
+                        <div class="tire-color" style="background: #222; border-color: #dddd22"></div>
+                        <div class="tire-info">
+                            <div class="tire-name">Medium</div>
+                            <div class="tire-stats">Balanced performance</div>
+                        </div>
+                    </button>
+                    <button class="tire-btn" data-tire="hard">
+                        <div class="tire-color" style="background: #222; border-color: #ffffff"></div>
+                        <div class="tire-info">
+                            <div class="tire-name">Hard</div>
+                            <div class="tire-stats">Durable, less grip</div>
+                        </div>
+                    </button>
+                    <button class="tire-btn" data-tire="wet">
+                        <div class="tire-color" style="background: #222; border-color: #22aadd"></div>
+                        <div class="tire-info">
+                            <div class="tire-name">Wet</div>
+                            <div class="tire-stats">Rain optimized</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Base</div>
+                <div class="base-grid">
+                    <button class="base-btn" data-base="16">B-16</button>
+                    <button class="base-btn" data-base="24">B-24</button>
+                    <button class="base-btn active" data-base="32">B-32</button>
+                    <button class="base-btn" data-base="40">B-40</button>
+                    <button class="base-btn" data-base="48">B-48</button>
+                    <button class="base-btn" data-base="64">B-64</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Driving Inputs</div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Speed</span>
+                        <span class="slider-value" id="speedVal">100 km/h</span>
+                    </div>
+                    <input type="range" id="speedSlider" min="0" max="350" value="100">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Steering Angle</span>
+                        <span class="slider-value" id="steerVal">0°</span>
+                    </div>
+                    <input type="range" id="steerSlider" min="-45" max="45" value="0">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Throttle</span>
+                        <span class="slider-value" id="throttleVal">0%</span>
+                    </div>
+                    <input type="range" id="throttleSlider" min="0" max="100" value="0">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Brake</span>
+                        <span class="slider-value" id="brakeVal">0%</span>
+                    </div>
+                    <input type="range" id="brakeSlider" min="0" max="100" value="0">
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Conditions</div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Track Temp</span>
+                        <span class="slider-value" id="trackTempVal">30°C</span>
+                    </div>
+                    <input type="range" id="trackTempSlider" min="10" max="60" value="30">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Tire Wear</span>
+                        <span class="slider-value" id="wearVal">0%</span>
+                    </div>
+                    <input type="range" id="wearSlider" min="0" max="100" value="0">
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Actions</div>
+                <div class="action-btns">
+                    <button class="action-btn" id="btnBrake">Hard Brake</button>
+                    <button class="action-btn" id="btnAccel">Full Throttle</button>
+                    <button class="action-btn" id="btnCorner">Corner Entry</button>
+                    <button class="action-btn" id="btnSpin">Induce Spin</button>
+                    <button class="action-btn full" id="btnReset">Reset All</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-area">
+            <div class="canvas-row">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasHigh"></canvas>
+                    <div class="canvas-label high">HIGH PRECISION (Base-32) — 0.1mm accuracy</div>
+                    <div class="grip-meter">
+                        <div class="grip-fill" id="gripFillHigh" style="height: 100%"></div>
+                        <div class="grip-label">Grip</div>
+                    </div>
+                    <div class="speed-display">
+                        <span id="speedDisplayHigh">100</span>
+                        <span class="speed-unit">km/h</span>
+                    </div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="canvasLow"></canvas>
+                    <div class="canvas-label low">LOW PRECISION (Base-16) — 2mm accuracy</div>
+                    <div class="grip-meter">
+                        <div class="grip-fill" id="gripFillLow" style="height: 100%"></div>
+                        <div class="grip-label">Grip</div>
+                    </div>
+                    <div class="speed-display">
+                        <span id="speedDisplayLow">100</span>
+                        <span class="speed-unit">km/h</span>
+                    </div>
+                </div>
+            </div>
+            <div class="canvas-row" style="flex: 0.5">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasDetail"></canvas>
+                    <div class="canvas-label" style="color: var(--accent-cyan); border: 1px solid var(--accent-cyan);">
+                        CONTACT PATCH DETAIL — Pressure Distribution
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="panel-section">
+                <div class="section-title">Contact Patch</div>
+                <div class="patch-display">
+                    <div class="patch-visual">
+                        <div class="patch-area" id="patchArea" style="width: 80px; height: 50px; top: 15px; left: 20px;"></div>
+                    </div>
+                    <div class="patch-stats">
+                        <div class="patch-stat-row">
+                            <span>Length</span>
+                            <span id="patchLength">150 mm</span>
+                        </div>
+                        <div class="patch-stat-row">
+                            <span>Width</span>
+                            <span id="patchWidth">200 mm</span>
+                        </div>
+                        <div class="patch-stat-row">
+                            <span>Area</span>
+                            <span id="patchAreaVal">300 cm²</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Slip Curve</div>
+                <div class="slip-graph">
+                    <canvas id="slipCanvas" width="200" height="80"></canvas>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Tire Telemetry</div>
+                <div class="metrics-box">
+                    <div class="metric-row">
+                        <span class="metric-key">Tire Temp</span>
+                        <span class="metric-val" id="tireTemp">85°C</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Pressure</span>
+                        <span class="metric-val" id="tirePressure">1.8 bar</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Load</span>
+                        <span class="metric-val" id="tireLoad">4500 N</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Lateral G</span>
+                        <span class="metric-val" id="lateralG">0.0 G</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Impact</div>
+                <div class="metrics-box">
+                    <div class="metric-row">
+                        <span class="metric-key">Base-64</span>
+                        <span class="metric-val good">Perfect</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Base-32</span>
+                        <span class="metric-val good">Excellent</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Base-24</span>
+                        <span class="metric-val warn">Adequate</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Base-16</span>
+                        <span class="metric-val bad">Inaccurate</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvasHigh = document.getElementById('canvasHigh');
+        const ctxHigh = canvasHigh.getContext('2d');
+        const canvasLow = document.getElementById('canvasLow');
+        const ctxLow = canvasLow.getContext('2d');
+        const canvasDetail = document.getElementById('canvasDetail');
+        const ctxDetail = canvasDetail.getContext('2d');
+        const slipCanvas = document.getElementById('slipCanvas');
+        const slipCtx = slipCanvas.getContext('2d');
+        
+        // Precision (mm)
+        const BASE_PRECISION = {
+            16: 2.0,
+            24: 0.5,
+            32: 0.1,
+            40: 0.05,
+            48: 0.01,
+            64: 0.001
+        };
+        
+        // Tire compounds
+        const COMPOUNDS = {
+            soft: { grip: 1.15, wear: 1.5, optTemp: 95, color: '#dd2222' },
+            medium: { grip: 1.0, wear: 1.0, optTemp: 90, color: '#dddd22' },
+            hard: { grip: 0.9, wear: 0.7, optTemp: 85, color: '#ffffff' },
+            wet: { grip: 0.8, wear: 0.5, optTemp: 60, color: '#22aadd' }
+        };
+        
+        // State
+        let settings = {
+            compound: 'soft',
+            baseHigh: 32,
+            baseLow: 16,
+            speed: 100,
+            steer: 0,
+            throttle: 0,
+            brake: 0,
+            trackTemp: 30,
+            wear: 0
+        };
+        
+        let simHigh = { 
+            grip: 1.0, 
+            slipAngle: 0, 
+            slipRatio: 0, 
+            tireTemp: 80,
+            wheelSpeed: 100,
+            carSpeed: 100
+        };
+        
+        let simLow = { 
+            grip: 1.0, 
+            slipAngle: 0, 
+            slipRatio: 0, 
+            tireTemp: 80,
+            wheelSpeed: 100,
+            carSpeed: 100
+        };
+        
+        let time = 0;
+        
+        // Initialize
+        function resize() {
+            [canvasHigh, canvasLow].forEach(c => {
+                c.width = c.parentElement.clientWidth;
+                c.height = c.parentElement.clientHeight;
+            });
+            canvasDetail.width = canvasDetail.parentElement.clientWidth;
+            canvasDetail.height = canvasDetail.parentElement.clientHeight;
+        }
+        
+        // Pacejka magic formula (simplified)
+        function calcGrip(slipAngle, slipRatio, compound, temp, wear, precision) {
+            const c = COMPOUNDS[compound];
+            
+            // Temperature factor
+            const tempDiff = Math.abs(temp - c.optTemp);
+            const tempFactor = Math.max(0.5, 1 - tempDiff * 0.01);
+            
+            // Wear factor
+            const wearFactor = Math.max(0.3, 1 - wear * 0.007);
+            
+            // Combined slip
+            const combinedSlip = Math.sqrt(slipAngle * slipAngle + slipRatio * slipRatio);
+            
+            // Pacejka-style curve
+            const peakSlip = 8; // degrees
+            let gripCurve;
+            
+            if (combinedSlip < peakSlip) {
+                // Linear rise to peak
+                gripCurve = combinedSlip / peakSlip;
+            } else {
+                // Falloff after peak
+                gripCurve = 1 - (combinedSlip - peakSlip) * 0.03;
+            }
+            
+            gripCurve = Math.max(0.1, Math.min(1.0, gripCurve));
+            
+            // Add precision error
+            const error = (Math.random() - 0.5) * precision * 0.5;
+            
+            // Final grip
+            let grip = c.grip * tempFactor * wearFactor * gripCurve + error;
+            grip = Math.max(0, Math.min(1.3, grip));
+            
+            return grip;
+        }
+        
+        function calcSlipAngle(steer, speed, precision) {
+            // Slip angle increases with steering and speed
+            const baseSlip = Math.abs(steer) * 0.5 * (1 + speed / 200);
+            const error = (Math.random() - 0.5) * precision * 2;
+            return Math.round((baseSlip + error) / precision) * precision;
+        }
+        
+        function calcSlipRatio(throttle, brake, wheelSpeed, carSpeed, precision) {
+            // Slip ratio: (wheelSpeed - carSpeed) / carSpeed
+            let ratio = 0;
+            
+            if (carSpeed > 0) {
+                if (throttle > 0) {
+                    // Acceleration - wheel spins faster
+                    ratio = (throttle / 100) * 20;
+                }
+                if (brake > 0) {
+                    // Braking - wheel slows
+                    ratio = -(brake / 100) * 30;
+                }
+            }
+            
+            const error = (Math.random() - 0.5) * precision * 5;
+            return Math.round((ratio + error) / precision) * precision;
+        }
+        
+        function calcContactPatch(load, pressure, compound) {
+            // Simplified contact patch calculation
+            const baseArea = 250; // cm²
+            const loadFactor = load / 4000;
+            const pressureFactor = 2.0 / pressure;
+            
+            const area = baseArea * loadFactor * pressureFactor;
+            const width = 200; // mm (tire width)
+            const length = (area * 100) / width; // mm
+            
+            return { area, width, length };
+        }
+        
+        function update() {
+            time += 0.016;
+            
+            const compound = settings.compound;
+            const precHigh = BASE_PRECISION[settings.baseHigh];
+            const precLow = BASE_PRECISION[settings.baseLow];
+            
+            // Update speeds
+            simHigh.carSpeed = settings.speed;
+            simLow.carSpeed = settings.speed;
+            
+            // Calculate slip values
+            simHigh.slipAngle = calcSlipAngle(settings.steer, settings.speed, precHigh);
+            simLow.slipAngle = calcSlipAngle(settings.steer, settings.speed, precLow);
+            
+            simHigh.slipRatio = calcSlipRatio(settings.throttle, settings.brake, 
+                                               simHigh.wheelSpeed, simHigh.carSpeed, precHigh);
+            simLow.slipRatio = calcSlipRatio(settings.throttle, settings.brake,
+                                              simLow.wheelSpeed, simLow.carSpeed, precLow);
+            
+            // Update tire temp
+            const heatGen = (Math.abs(simHigh.slipAngle) + Math.abs(simHigh.slipRatio)) * 0.5;
+            simHigh.tireTemp += (settings.trackTemp + 50 + heatGen - simHigh.tireTemp) * 0.01;
+            simLow.tireTemp += (settings.trackTemp + 50 + heatGen - simLow.tireTemp) * 0.01;
+            
+            // Calculate grip
+            simHigh.grip = calcGrip(simHigh.slipAngle, simHigh.slipRatio, compound, 
+                                    simHigh.tireTemp, settings.wear, precHigh);
+            simLow.grip = calcGrip(simLow.slipAngle, simLow.slipRatio, compound,
+                                   simLow.tireTemp, settings.wear, precLow);
+            
+            // Update UI
+            updateUI();
+        }
+        
+        function updateUI() {
+            // Header stats
+            const gripPct = Math.round(simHigh.grip * 100);
+            document.getElementById('gripLevel').textContent = gripPct + '%';
+            document.getElementById('gripLevel').className = 'stat-value ' + 
+                (gripPct >= 80 ? 'grip' : gripPct >= 50 ? 'slip' : 'spin');
+            
+            document.getElementById('slipAngle').textContent = simHigh.slipAngle.toFixed(1) + '°';
+            document.getElementById('slipRatio').textContent = simHigh.slipRatio.toFixed(0) + '%';
+            
+            // Contact patch
+            const patch = calcContactPatch(4500, 1.8, settings.compound);
+            document.getElementById('contactArea').textContent = Math.round(patch.area);
+            document.getElementById('patchLength').textContent = Math.round(patch.length) + ' mm';
+            document.getElementById('patchWidth').textContent = patch.width + ' mm';
+            document.getElementById('patchAreaVal').textContent = Math.round(patch.area) + ' cm²';
+            
+            // Patch visual
+            const patchEl = document.getElementById('patchArea');
+            const patchScale = patch.area / 300;
+            patchEl.style.width = (80 * patchScale) + 'px';
+            patchEl.style.height = (50 * patchScale) + 'px';
+            patchEl.style.left = (20 + 40 * (1 - patchScale)) + 'px';
+            patchEl.style.top = (15 + 25 * (1 - patchScale)) + 'px';
+            patchEl.style.background = simHigh.grip > 0.8 ? 'rgba(0, 221, 102, 0.6)' :
+                                       simHigh.grip > 0.5 ? 'rgba(221, 170, 0, 0.6)' :
+                                       'rgba(255, 51, 68, 0.6)';
+            
+            // Telemetry
+            document.getElementById('tireTemp').textContent = Math.round(simHigh.tireTemp) + '°C';
+            document.getElementById('tirePressure').textContent = '1.8 bar';
+            document.getElementById('tireLoad').textContent = '4500 N';
+            
+            const lateralG = (simHigh.slipAngle / 10 * simHigh.grip).toFixed(1);
+            document.getElementById('lateralG').textContent = lateralG + ' G';
+            
+            // Grip meters
+            document.getElementById('gripFillHigh').style.height = (simHigh.grip * 100) + '%';
+            document.getElementById('gripFillLow').style.height = (simLow.grip * 100) + '%';
+            
+            // Speed displays
+            document.getElementById('speedDisplayHigh').textContent = settings.speed;
+            document.getElementById('speedDisplayLow').textContent = settings.speed;
+        }
+        
+        function render() {
+            renderTire(ctxHigh, canvasHigh, simHigh, BASE_PRECISION[settings.baseHigh], 'high');
+            renderTire(ctxLow, canvasLow, simLow, BASE_PRECISION[settings.baseLow], 'low');
+            renderDetail();
+            renderSlipCurve();
+        }
+        
+        function renderTire(ctx, canvas, sim, precision, type) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2 - 30;
+            
+            // Background (asphalt)
+            ctx.fillStyle = '#222228';
+            ctx.fillRect(0, 0, w, h);
+            
+            // Asphalt texture
+            ctx.fillStyle = '#2a2a30';
+            for (let i = 0; i < 100; i++) {
+                const x = (i * 137) % w;
+                const y = (i * 171) % h;
+                ctx.fillRect(x, y, 2 + (i % 3), 1 + (i % 2));
+            }
+            
+            // Tire shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(cx + 10, cy + 70, 80, 25, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Tire (top-down view)
+            const tireWidth = 120;
+            const tireHeight = 200;
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(settings.steer * Math.PI / 180);
+            
+            // Tire body
+            ctx.fillStyle = '#1a1a1a';
+            ctx.beginPath();
+            ctx.roundRect(-tireWidth/2, -tireHeight/2, tireWidth, tireHeight, 20);
+            ctx.fill();
+            
+            // Tire treads
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            for (let y = -tireHeight/2 + 20; y < tireHeight/2 - 20; y += 15) {
+                ctx.beginPath();
+                ctx.moveTo(-tireWidth/2 + 10, y);
+                ctx.lineTo(-10, y);
+                ctx.moveTo(10, y);
+                ctx.lineTo(tireWidth/2 - 10, y);
+                ctx.stroke();
+            }
+            
+            // Contact patch
+            const patch = calcContactPatch(4500, 1.8, settings.compound);
+            const patchW = patch.width / 2;
+            const patchH = patch.length / 2;
+            
+            // Patch color based on grip
+            const gripColor = sim.grip > 0.8 ? '#00dd6680' :
+                             sim.grip > 0.5 ? '#ddaa0080' : '#ff334480';
+            
+            ctx.fillStyle = gripColor;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, patchW * 0.5, patchH * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Slip visualization
+            if (Math.abs(sim.slipAngle) > 2 || Math.abs(sim.slipRatio) > 5) {
+                ctx.strokeStyle = '#ff334480';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                
+                const slipX = sim.slipAngle * 2;
+                const slipY = sim.slipRatio * 0.5;
+                
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(-30 + i * 15, tireHeight/2);
+                    ctx.lineTo(-30 + i * 15 + slipX, tireHeight/2 + 30 + slipY);
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+            }
+            
+            ctx.restore();
+            
+            // Compound indicator
+            const compound = COMPOUNDS[settings.compound];
+            ctx.fillStyle = compound.color;
+            ctx.beginPath();
+            ctx.arc(cx, cy - tireHeight/2 - 20, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Precision grid overlay
+            ctx.strokeStyle = precision <= 0.1 ? 'rgba(0, 221, 102, 0.1)' : 'rgba(255, 68, 85, 0.1)';
+            ctx.lineWidth = 1;
+            const gridSize = Math.max(10, precision * 100);
+            
+            for (let x = 0; x < w; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+                ctx.stroke();
+            }
+            
+            // Precision label
+            ctx.fillStyle = precision <= 0.1 ? '#00dd6680' : '#ff445580';
+            ctx.font = '10px "Share Tech Mono"';
+            ctx.fillText(`Precision: ±${precision}mm`, 10, h - 60);
+            ctx.fillText(`Grip calc error: ±${(precision * 5).toFixed(1)}%`, 10, h - 45);
+        }
+        
+        function renderDetail() {
+            const w = canvasDetail.width;
+            const h = canvasDetail.height;
+            
+            ctxDetail.fillStyle = '#181820';
+            ctxDetail.fillRect(0, 0, w, h);
+            
+            // Contact patch pressure distribution (heatmap style)
+            const cx = w / 3;
+            const cy = h / 2;
+            const patch = calcContactPatch(4500, 1.8, settings.compound);
+            
+            // Draw pressure heatmap
+            const patchW = 100;
+            const patchH = 60;
+            
+            for (let x = -patchW/2; x < patchW/2; x += 5) {
+                for (let y = -patchH/2; y < patchH/2; y += 5) {
+                    // Pressure highest in center
+                    const dist = Math.sqrt(x*x/(patchW*patchW/4) + y*y/(patchH*patchH/4));
+                    const pressure = Math.max(0, 1 - dist);
+                    
+                    // Add some variation based on slip
+                    const slipOffset = simHigh.slipAngle * 0.02;
+                    const adjustedPressure = pressure * (1 + slipOffset * (x / patchW));
+                    
+                    const r = Math.round(255 * adjustedPressure);
+                    const g = Math.round(100 * (1 - adjustedPressure));
+                    const b = 50;
+                    
+                    ctxDetail.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                    ctxDetail.fillRect(cx + x - 2, cy + y - 2, 5, 5);
+                }
+            }
+            
+            // Outline
+            ctxDetail.strokeStyle = '#ffffff40';
+            ctxDetail.lineWidth = 2;
+            ctxDetail.beginPath();
+            ctxDetail.ellipse(cx, cy, patchW/2, patchH/2, 0, 0, Math.PI * 2);
+            ctxDetail.stroke();
+            
+            // Labels
+            ctxDetail.fillStyle = '#888';
+            ctxDetail.font = '10px "Share Tech Mono"';
+            ctxDetail.fillText('Pressure Distribution', cx - 50, 20);
+            ctxDetail.fillText('High', cx + patchW/2 + 10, cy - 10);
+            ctxDetail.fillText('Low', cx - patchW/2 - 25, cy + patchH/2);
+            
+            // Comparison data
+            const dx = w * 2/3;
+            
+            ctxDetail.fillStyle = '#00dd66';
+            ctxDetail.font = 'bold 12px "Share Tech Mono"';
+            ctxDetail.fillText('High Precision (Base-32)', dx - 60, 25);
+            
+            ctxDetail.fillStyle = '#aaa';
+            ctxDetail.font = '10px "Share Tech Mono"';
+            ctxDetail.fillText(`Grip: ${(simHigh.grip * 100).toFixed(1)}%`, dx - 60, 50);
+            ctxDetail.fillText(`Slip Angle: ${simHigh.slipAngle.toFixed(2)}°`, dx - 60, 65);
+            ctxDetail.fillText(`Slip Ratio: ${simHigh.slipRatio.toFixed(1)}%`, dx - 60, 80);
+            
+            ctxDetail.fillStyle = '#ff4455';
+            ctxDetail.font = 'bold 12px "Share Tech Mono"';
+            ctxDetail.fillText('Low Precision (Base-16)', dx - 60, 110);
+            
+            ctxDetail.fillStyle = '#aaa';
+            ctxDetail.font = '10px "Share Tech Mono"';
+            ctxDetail.fillText(`Grip: ${(simLow.grip * 100).toFixed(1)}%`, dx - 60, 135);
+            ctxDetail.fillText(`Slip Angle: ${simLow.slipAngle.toFixed(1)}°`, dx - 60, 150);
+            ctxDetail.fillText(`Slip Ratio: ${simLow.slipRatio.toFixed(0)}%`, dx - 60, 165);
+            
+            // Error
+            const gripError = Math.abs(simHigh.grip - simLow.grip) * 100;
+            ctxDetail.fillStyle = gripError > 10 ? '#ff4455' : gripError > 5 ? '#ddaa00' : '#00dd66';
+            ctxDetail.fillText(`Grip Error: ${gripError.toFixed(1)}%`, dx - 60, 190);
+        }
+        
+        function renderSlipCurve() {
+            const w = slipCanvas.width;
+            const h = slipCanvas.height;
+            
+            slipCtx.fillStyle = '#0a0a0c';
+            slipCtx.fillRect(0, 0, w, h);
+            
+            // Draw Pacejka-style curve
+            slipCtx.strokeStyle = '#00dd6640';
+            slipCtx.lineWidth = 2;
+            slipCtx.beginPath();
+            
+            for (let x = 0; x < w; x++) {
+                const slip = (x / w) * 30; // 0 to 30 degrees
+                const peakSlip = 8;
+                let grip;
+                
+                if (slip < peakSlip) {
+                    grip = slip / peakSlip;
+                } else {
+                    grip = 1 - (slip - peakSlip) * 0.03;
+                }
+                
+                grip = Math.max(0.1, Math.min(1.0, grip));
+                const y = h - grip * (h - 10) - 5;
+                
+                if (x === 0) slipCtx.moveTo(x, y);
+                else slipCtx.lineTo(x, y);
+            }
+            
+            slipCtx.stroke();
+            
+            // Current operating point
+            const currentSlip = Math.abs(simHigh.slipAngle);
+            const opX = (currentSlip / 30) * w;
+            const opY = h - simHigh.grip * (h - 10) - 5;
+            
+            slipCtx.fillStyle = '#00dd66';
+            slipCtx.beginPath();
+            slipCtx.arc(opX, opY, 5, 0, Math.PI * 2);
+            slipCtx.fill();
+            
+            // Axis labels
+            slipCtx.fillStyle = '#666';
+            slipCtx.font = '8px "Share Tech Mono"';
+            slipCtx.fillText('0°', 2, h - 2);
+            slipCtx.fillText('30°', w - 15, h - 2);
+            slipCtx.fillText('Grip', 2, 10);
+        }
+        
+        function mainLoop() {
+            update();
+            render();
+            requestAnimationFrame(mainLoop);
+        }
+        
+        // Event handlers
+        document.querySelectorAll('.tire-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tire-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.compound = btn.dataset.tire;
+            });
+        });
+        
+        document.querySelectorAll('.base-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.base-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.baseHigh = parseInt(btn.dataset.base);
+            });
+        });
+        
+        // Sliders
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            settings.speed = parseInt(e.target.value);
+            document.getElementById('speedVal').textContent = settings.speed + ' km/h';
+        });
+        
+        document.getElementById('steerSlider').addEventListener('input', (e) => {
+            settings.steer = parseInt(e.target.value);
+            document.getElementById('steerVal').textContent = settings.steer + '°';
+        });
+        
+        document.getElementById('throttleSlider').addEventListener('input', (e) => {
+            settings.throttle = parseInt(e.target.value);
+            document.getElementById('throttleVal').textContent = settings.throttle + '%';
+            if (settings.throttle > 0) {
+                settings.brake = 0;
+                document.getElementById('brakeSlider').value = 0;
+                document.getElementById('brakeVal').textContent = '0%';
+            }
+        });
+        
+        document.getElementById('brakeSlider').addEventListener('input', (e) => {
+            settings.brake = parseInt(e.target.value);
+            document.getElementById('brakeVal').textContent = settings.brake + '%';
+            if (settings.brake > 0) {
+                settings.throttle = 0;
+                document.getElementById('throttleSlider').value = 0;
+                document.getElementById('throttleVal').textContent = '0%';
+            }
+        });
+        
+        document.getElementById('trackTempSlider').addEventListener('input', (e) => {
+            settings.trackTemp = parseInt(e.target.value);
+            document.getElementById('trackTempVal').textContent = settings.trackTemp + '°C';
+        });
+        
+        document.getElementById('wearSlider').addEventListener('input', (e) => {
+            settings.wear = parseInt(e.target.value);
+            document.getElementById('wearVal').textContent = settings.wear + '%';
+        });
+        
+        // Action buttons
+        document.getElementById('btnBrake').addEventListener('click', () => {
+            settings.brake = 100;
+            settings.throttle = 0;
+            document.getElementById('brakeSlider').value = 100;
+            document.getElementById('brakeVal').textContent = '100%';
+            document.getElementById('throttleSlider').value = 0;
+            document.getElementById('throttleVal').textContent = '0%';
+        });
+        
+        document.getElementById('btnAccel').addEventListener('click', () => {
+            settings.throttle = 100;
+            settings.brake = 0;
+            document.getElementById('throttleSlider').value = 100;
+            document.getElementById('throttleVal').textContent = '100%';
+            document.getElementById('brakeSlider').value = 0;
+            document.getElementById('brakeVal').textContent = '0%';
+        });
+        
+        document.getElementById('btnCorner').addEventListener('click', () => {
+            settings.steer = 25;
+            settings.speed = 150;
+            document.getElementById('steerSlider').value = 25;
+            document.getElementById('steerVal').textContent = '25°';
+            document.getElementById('speedSlider').value = 150;
+            document.getElementById('speedVal').textContent = '150 km/h';
+        });
+        
+        document.getElementById('btnSpin').addEventListener('click', () => {
+            settings.steer = 45;
+            settings.speed = 200;
+            settings.throttle = 100;
+            document.getElementById('steerSlider').value = 45;
+            document.getElementById('steerVal').textContent = '45°';
+            document.getElementById('speedSlider').value = 200;
+            document.getElementById('speedVal').textContent = '200 km/h';
+            document.getElementById('throttleSlider').value = 100;
+            document.getElementById('throttleVal').textContent = '100%';
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            settings.speed = 100;
+            settings.steer = 0;
+            settings.throttle = 0;
+            settings.brake = 0;
+            settings.wear = 0;
+            
+            document.getElementById('speedSlider').value = 100;
+            document.getElementById('speedVal').textContent = '100 km/h';
+            document.getElementById('steerSlider').value = 0;
+            document.getElementById('steerVal').textContent = '0°';
+            document.getElementById('throttleSlider').value = 0;
+            document.getElementById('throttleVal').textContent = '0%';
+            document.getElementById('brakeSlider').value = 0;
+            document.getElementById('brakeVal').textContent = '0%';
+            document.getElementById('wearSlider').value = 0;
+            document.getElementById('wearVal').textContent = '0%';
+        });
+        
+        // Initialize
+        window.addEventListener('resize', resize);
+        resize();
+        mainLoop();
+    </script>
+</body>
+</html>

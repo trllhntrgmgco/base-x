@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WLD-002: Biome Painting | Base-X Engine Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #050608;
+            --panel-bg: rgba(8, 14, 20, 0.95);
+            --forest-dark: #1a4d2e;
+            --forest-light: #3d8b4f;
+            --desert-sand: #d4a85e;
+            --desert-rock: #8b6914;
+            --tundra-ice: #a8d5e5;
+            --tundra-snow: #e8f4f8;
+            --jungle-dark: #0d3d1a;
+            --jungle-bright: #2ecc71;
+            --swamp-murk: #3d4a2e;
+            --swamp-water: #4a6741;
+            --savanna-grass: #c4a04a;
+            --savanna-dry: #a08030;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-orange: #ff8844;
+            --accent-yellow: #ffdd00;
+            --base-64: #00ff88;
+            --base-48: #00d4ff;
+            --base-32: #ffdd00;
+            --base-24: #ff8844;
+            --base-16: #ff4444;
+            --text-primary: #d0e0f0;
+            --text-dim: #556677;
+            --border-glow: rgba(0, 212, 255, 0.3);
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 12px 20px;
+            background: linear-gradient(90deg, rgba(0, 255, 136, 0.08), transparent, rgba(0, 212, 255, 0.08));
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .demo-badge {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: #000;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.75em;
+            letter-spacing: 2px;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #2ecc71;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(46, 204, 113, 0.4);
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        .stat-group {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.7em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .stat-value.base { color: var(--base-48); }
+        .stat-value.veg { color: var(--accent-green); }
+        .stat-value.fps { color: var(--accent-yellow); }
+        
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr 280px;
+            gap: 15px;
+            height: calc(100vh - 120px);
+        }
+        
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            background: linear-gradient(90deg, rgba(46, 204, 113, 0.15), transparent);
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-glow);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: #2ecc71;
+        }
+        
+        .panel-content {
+            padding: 15px;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+        
+        /* Biome Selector */
+        .biome-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .biome-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .biome-btn:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .biome-btn.active {
+            border-color: #2ecc71;
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+        }
+        
+        .biome-icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .biome-name {
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        
+        .biome-desc {
+            font-size: 0.65em;
+            color: var(--text-dim);
+        }
+        
+        /* Biome Colors */
+        .biome-btn[data-biome="forest"] { background: linear-gradient(135deg, var(--forest-dark), var(--forest-light)); }
+        .biome-btn[data-biome="desert"] { background: linear-gradient(135deg, var(--desert-rock), var(--desert-sand)); }
+        .biome-btn[data-biome="tundra"] { background: linear-gradient(135deg, #5a8a9a, var(--tundra-ice)); }
+        .biome-btn[data-biome="jungle"] { background: linear-gradient(135deg, var(--jungle-dark), var(--jungle-bright)); }
+        .biome-btn[data-biome="swamp"] { background: linear-gradient(135deg, var(--swamp-murk), var(--swamp-water)); }
+        .biome-btn[data-biome="savanna"] { background: linear-gradient(135deg, var(--savanna-dry), var(--savanna-grass)); }
+        .biome-btn[data-biome="ocean"] { background: linear-gradient(135deg, #0a2a4a, #2d6a8a); }
+        .biome-btn[data-biome="volcanic"] { background: linear-gradient(135deg, #2a1a1a, #8b2500); }
+        
+        /* Tool Section */
+        .tool-section {
+            margin-bottom: 20px;
+        }
+        
+        .tool-section-title {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Vegetation Types */
+        .veg-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .veg-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .veg-item:hover {
+            background: rgba(46, 204, 113, 0.1);
+            border-color: rgba(46, 204, 113, 0.3);
+        }
+        
+        .veg-item.active {
+            background: rgba(46, 204, 113, 0.2);
+            border-color: #2ecc71;
+        }
+        
+        .veg-icon {
+            font-size: 1.4em;
+            width: 30px;
+            text-align: center;
+        }
+        
+        .veg-info {
+            flex: 1;
+        }
+        
+        .veg-name {
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .veg-count {
+            font-size: 0.7em;
+            color: var(--text-dim);
+        }
+        
+        .veg-toggle {
+            width: 40px;
+            height: 22px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 11px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .veg-toggle.on {
+            background: rgba(46, 204, 113, 0.5);
+        }
+        
+        .veg-toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        
+        .veg-toggle.on::after {
+            transform: translateX(18px);
+        }
+        
+        /* Sliders */
+        .slider-group {
+            margin-bottom: 15px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .slider-name {
+            font-size: 0.8em;
+            color: var(--text-dim);
+        }
+        
+        .slider-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85em;
+            color: var(--accent-green);
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(46, 204, 113, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #2ecc71;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+        }
+        
+        /* Canvas Area */
+        .canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .view-tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 2px;
+        }
+        
+        .view-tab {
+            flex: 1;
+            padding: 8px;
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid var(--border-glow);
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            transition: all 0.2s;
+        }
+        
+        .view-tab:hover {
+            background: rgba(46, 204, 113, 0.15);
+        }
+        
+        .view-tab.active {
+            background: var(--panel-bg);
+            color: #2ecc71;
+            border-color: #2ecc71;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-glow);
+            border-radius: 0 0 8px 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #worldCanvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        
+        /* Brush Preview */
+        .brush-preview {
+            position: absolute;
+            pointer-events: none;
+            border: 2px dashed #2ecc71;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+            transition: width 0.1s, height 0.1s;
+        }
+        
+        /* Info Overlay */
+        .info-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-glow);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8em;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            color: var(--text-dim);
+        }
+        
+        /* Legend */
+        .biome-legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-glow);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            max-width: 300px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.7em;
+        }
+        
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+        }
+        
+        /* Right Panel */
+        .stats-panel {
+            overflow-y: auto;
+        }
+        
+        /* DRO Display */
+        .dro-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .dro-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7em;
+            color: var(--accent-green);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .dro-meter {
+            height: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        
+        .dro-fill {
+            height: 100%;
+            transition: width 0.3s, background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        
+        .dro-scale {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65em;
+            color: var(--text-dim);
+        }
+        
+        /* Biome Stats */
+        .biome-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .biome-stat {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .biome-stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1em;
+            color: #2ecc71;
+        }
+        
+        .biome-stat-label {
+            font-size: 0.65em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Vegetation Summary */
+        .veg-summary {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .veg-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        
+        .veg-bar-icon {
+            width: 24px;
+            text-align: center;
+        }
+        
+        .veg-bar-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .veg-bar-fill {
+            height: 100%;
+            background: #2ecc71;
+            transition: width 0.3s;
+        }
+        
+        .veg-bar-count {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            width: 40px;
+            text-align: right;
+        }
+        
+        /* Presets */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .preset-btn {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .preset-btn:hover {
+            background: rgba(46, 204, 113, 0.2);
+            border-color: #2ecc71;
+        }
+        
+        .preset-icon {
+            font-size: 1.5em;
+            margin-bottom: 4px;
+        }
+        
+        .preset-name {
+            font-size: 0.7em;
+            color: var(--text-dim);
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid rgba(46, 204, 113, 0.4);
+            border-radius: 6px;
+            color: #2ecc71;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            background: rgba(46, 204, 113, 0.3);
+            border-color: #2ecc71;
+        }
+        
+        .action-btn.danger {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: rgba(255, 68, 68, 0.4);
+            color: #ff4444;
+        }
+        
+        .action-btn.danger:hover {
+            background: rgba(255, 68, 68, 0.3);
+            border-color: #ff4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="demo-badge">WLD-002</div>
+                <h1>BIOME PAINTING</h1>
+            </div>
+            <div class="header-right">
+                <div class="stat-group">
+                    <div class="stat-label">Active Base</div>
+                    <div class="stat-value base" id="activeBase">BASE-24</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">Vegetation</div>
+                    <div class="stat-value veg" id="vegCount">0</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">FPS</div>
+                    <div class="stat-value fps" id="fpsCount">60</div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Panel - Biomes & Tools -->
+            <div class="panel">
+                <div class="panel-header">🌍 BIOME SELECTOR</div>
+                <div class="panel-content">
+                    <!-- Biome Grid -->
+                    <div class="biome-grid">
+                        <div class="biome-btn active" data-biome="forest" onclick="selectBiome('forest')">
+                            <div class="biome-icon">🌲</div>
+                            <div class="biome-name">Forest</div>
+                            <div class="biome-desc">Temperate woods</div>
+                        </div>
+                        <div class="biome-btn" data-biome="desert" onclick="selectBiome('desert')">
+                            <div class="biome-icon">🏜️</div>
+                            <div class="biome-name">Desert</div>
+                            <div class="biome-desc">Arid sands</div>
+                        </div>
+                        <div class="biome-btn" data-biome="tundra" onclick="selectBiome('tundra')">
+                            <div class="biome-icon">❄️</div>
+                            <div class="biome-name">Tundra</div>
+                            <div class="biome-desc">Frozen plains</div>
+                        </div>
+                        <div class="biome-btn" data-biome="jungle" onclick="selectBiome('jungle')">
+                            <div class="biome-icon">🌴</div>
+                            <div class="biome-name">Jungle</div>
+                            <div class="biome-desc">Tropical dense</div>
+                        </div>
+                        <div class="biome-btn" data-biome="swamp" onclick="selectBiome('swamp')">
+                            <div class="biome-icon">🐊</div>
+                            <div class="biome-name">Swamp</div>
+                            <div class="biome-desc">Wetlands</div>
+                        </div>
+                        <div class="biome-btn" data-biome="savanna" onclick="selectBiome('savanna')">
+                            <div class="biome-icon">🦁</div>
+                            <div class="biome-name">Savanna</div>
+                            <div class="biome-desc">Grasslands</div>
+                        </div>
+                        <div class="biome-btn" data-biome="ocean" onclick="selectBiome('ocean')">
+                            <div class="biome-icon">🌊</div>
+                            <div class="biome-name">Ocean</div>
+                            <div class="biome-desc">Deep water</div>
+                        </div>
+                        <div class="biome-btn" data-biome="volcanic" onclick="selectBiome('volcanic')">
+                            <div class="biome-icon">🌋</div>
+                            <div class="biome-name">Volcanic</div>
+                            <div class="biome-desc">Lava fields</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Brush Settings -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Brush Settings</div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Brush Size</span>
+                                <span class="slider-value" id="brushSizeValue">60</span>
+                            </div>
+                            <input type="range" id="brushSize" min="20" max="200" value="60" oninput="updateBrushSize()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Brush Strength</span>
+                                <span class="slider-value" id="brushStrengthValue">80%</span>
+                            </div>
+                            <input type="range" id="brushStrength" min="10" max="100" value="80" oninput="updateBrushStrength()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Vegetation Density</span>
+                                <span class="slider-value" id="vegDensityValue">50%</span>
+                            </div>
+                            <input type="range" id="vegDensity" min="0" max="100" value="50" oninput="updateVegDensity()">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span class="slider-name">Blend Radius</span>
+                                <span class="slider-value" id="blendRadiusValue">15</span>
+                            </div>
+                            <input type="range" id="blendRadius" min="0" max="50" value="15" oninput="updateBlendRadius()">
+                        </div>
+                    </div>
+                    
+                    <!-- Vegetation Types for Current Biome -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Vegetation Types</div>
+                        <div class="veg-list" id="vegList">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center - Canvas -->
+            <div class="canvas-container">
+                <div class="view-tabs">
+                    <div class="view-tab active" data-view="world" onclick="switchView('world')">WORLD VIEW</div>
+                    <div class="view-tab" data-view="biome" onclick="switchView('biome')">BIOME MAP</div>
+                    <div class="view-tab" data-view="density" onclick="switchView('density')">DENSITY MAP</div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="worldCanvas"></canvas>
+                    <div class="brush-preview" id="brushPreview"></div>
+                    
+                    <div class="info-overlay">
+                        <div class="info-row">
+                            <span class="info-label">LOD Level:</span>
+                            <span id="lodLevel" style="color: var(--accent-cyan);">MEDIUM</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Plant Base:</span>
+                            <span id="plantBase" style="color: var(--accent-green);">B-16</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Ground Base:</span>
+                            <span id="groundBase" style="color: var(--accent-yellow);">B-24</span>
+                        </div>
+                    </div>
+                    
+                    <div class="biome-legend" id="biomeLegend">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel - Stats -->
+            <div class="panel stats-panel">
+                <div class="panel-header">📊 ECOSYSTEM METRICS</div>
+                <div class="panel-content">
+                    <!-- DRO Display -->
+                    <div class="dro-display">
+                        <div class="dro-title">DYNAMIC RADIX OPTIMIZER</div>
+                        <div class="dro-meter">
+                            <div class="dro-fill" id="droFill" style="width: 40%; background: linear-gradient(90deg, var(--base-16), var(--base-24));">
+                                BASE-24
+                            </div>
+                        </div>
+                        <div class="dro-scale">
+                            <span>B-8</span>
+                            <span>B-16</span>
+                            <span>B-24</span>
+                            <span>B-32</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Biome Coverage -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Biome Coverage</div>
+                        <div class="biome-stats">
+                            <div class="biome-stat">
+                                <div class="biome-stat-value" id="dominantBiome">Forest</div>
+                                <div class="biome-stat-label">Dominant</div>
+                            </div>
+                            <div class="biome-stat">
+                                <div class="biome-stat-value" id="biomeCount">1</div>
+                                <div class="biome-stat-label">Biomes</div>
+                            </div>
+                            <div class="biome-stat">
+                                <div class="biome-stat-value" id="totalPlants">0</div>
+                                <div class="biome-stat-label">Plants</div>
+                            </div>
+                            <div class="biome-stat">
+                                <div class="biome-stat-value" id="biodiversity">0%</div>
+                                <div class="biome-stat-label">Diversity</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vegetation Summary -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">Vegetation Summary</div>
+                        <div class="veg-summary" id="vegSummary">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- World Presets -->
+                    <div class="tool-section">
+                        <div class="tool-section-title">World Presets</div>
+                        <div class="preset-grid">
+                            <div class="preset-btn" onclick="applyPreset('earthlike')">
+                                <div class="preset-icon">🌍</div>
+                                <div class="preset-name">Earth-like</div>
+                            </div>
+                            <div class="preset-btn" onclick="applyPreset('tropical')">
+                                <div class="preset-icon">🏝️</div>
+                                <div class="preset-name">Tropical</div>
+                            </div>
+                            <div class="preset-btn" onclick="applyPreset('arctic')">
+                                <div class="preset-icon">🧊</div>
+                                <div class="preset-name">Arctic</div>
+                            </div>
+                            <div class="preset-btn" onclick="applyPreset('alien')">
+                                <div class="preset-icon">👽</div>
+                                <div class="preset-name">Alien</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="regenerateVegetation()">🔄 Regen</button>
+                        <button class="action-btn danger" onclick="clearAll()">🗑️ Clear</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ===== BASE-X ENGINE: BIOME PAINTING =====
+        
+        const canvas = document.getElementById('worldCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Grid settings
+        const GRID_SIZE = 64;
+        let biomeMap = [];
+        let vegetation = [];
+        let currentView = 'world';
+        
+        // Biome definitions
+        const BIOMES = {
+            forest: {
+                name: 'Forest',
+                icon: '🌲',
+                groundColor: '#2d5a3d',
+                vegetation: [
+                    { type: 'tree_pine', icon: '🌲', probability: 0.3, minSize: 15, maxSize: 35 },
+                    { type: 'tree_oak', icon: '🌳', probability: 0.25, minSize: 20, maxSize: 40 },
+                    { type: 'bush', icon: '🌿', probability: 0.3, minSize: 8, maxSize: 15 },
+                    { type: 'mushroom', icon: '🍄', probability: 0.1, minSize: 4, maxSize: 8 },
+                    { type: 'flower', icon: '🌸', probability: 0.05, minSize: 3, maxSize: 6 }
+                ]
+            },
+            desert: {
+                name: 'Desert',
+                icon: '🏜️',
+                groundColor: '#d4a85e',
+                vegetation: [
+                    { type: 'cactus', icon: '🌵', probability: 0.15, minSize: 15, maxSize: 30 },
+                    { type: 'rock', icon: '🪨', probability: 0.2, minSize: 10, maxSize: 25 },
+                    { type: 'dead_bush', icon: '🥀', probability: 0.1, minSize: 5, maxSize: 12 },
+                    { type: 'skull', icon: '💀', probability: 0.02, minSize: 6, maxSize: 10 }
+                ]
+            },
+            tundra: {
+                name: 'Tundra',
+                icon: '❄️',
+                groundColor: '#a8d5e5',
+                vegetation: [
+                    { type: 'snow_tree', icon: '🎄', probability: 0.15, minSize: 15, maxSize: 30 },
+                    { type: 'ice_rock', icon: '🧊', probability: 0.2, minSize: 10, maxSize: 20 },
+                    { type: 'snow_bush', icon: '❄️', probability: 0.15, minSize: 6, maxSize: 12 },
+                    { type: 'lichen', icon: '🟢', probability: 0.1, minSize: 3, maxSize: 6 }
+                ]
+            },
+            jungle: {
+                name: 'Jungle',
+                icon: '🌴',
+                groundColor: '#1a4d2e',
+                vegetation: [
+                    { type: 'palm', icon: '🌴', probability: 0.35, minSize: 25, maxSize: 50 },
+                    { type: 'fern', icon: '🌿', probability: 0.3, minSize: 10, maxSize: 20 },
+                    { type: 'flower_tropical', icon: '🌺', probability: 0.15, minSize: 5, maxSize: 12 },
+                    { type: 'vine', icon: '🍃', probability: 0.15, minSize: 8, maxSize: 15 },
+                    { type: 'bamboo', icon: '🎋', probability: 0.05, minSize: 20, maxSize: 35 }
+                ]
+            },
+            swamp: {
+                name: 'Swamp',
+                icon: '🐊',
+                groundColor: '#3d4a2e',
+                vegetation: [
+                    { type: 'willow', icon: '🌳', probability: 0.2, minSize: 20, maxSize: 40 },
+                    { type: 'reed', icon: '🌾', probability: 0.3, minSize: 8, maxSize: 18 },
+                    { type: 'lily', icon: '🪷', probability: 0.2, minSize: 5, maxSize: 10 },
+                    { type: 'moss', icon: '🟩', probability: 0.2, minSize: 4, maxSize: 8 },
+                    { type: 'mushroom_swamp', icon: '🍄', probability: 0.1, minSize: 6, maxSize: 12 }
+                ]
+            },
+            savanna: {
+                name: 'Savanna',
+                icon: '🦁',
+                groundColor: '#c4a04a',
+                vegetation: [
+                    { type: 'acacia', icon: '🌳', probability: 0.1, minSize: 30, maxSize: 50 },
+                    { type: 'tall_grass', icon: '🌾', probability: 0.5, minSize: 6, maxSize: 14 },
+                    { type: 'bush_dry', icon: '🌿', probability: 0.2, minSize: 8, maxSize: 15 },
+                    { type: 'rock_flat', icon: '🪨', probability: 0.1, minSize: 12, maxSize: 25 }
+                ]
+            },
+            ocean: {
+                name: 'Ocean',
+                icon: '🌊',
+                groundColor: '#1a5a8a',
+                vegetation: [
+                    { type: 'kelp', icon: '🌿', probability: 0.3, minSize: 15, maxSize: 35 },
+                    { type: 'coral', icon: '🪸', probability: 0.25, minSize: 10, maxSize: 20 },
+                    { type: 'fish', icon: '🐟', probability: 0.2, minSize: 5, maxSize: 12 },
+                    { type: 'shell', icon: '🐚', probability: 0.15, minSize: 4, maxSize: 8 }
+                ]
+            },
+            volcanic: {
+                name: 'Volcanic',
+                icon: '🌋',
+                groundColor: '#3a2a2a',
+                vegetation: [
+                    { type: 'lava_rock', icon: '🪨', probability: 0.3, minSize: 15, maxSize: 30 },
+                    { type: 'fire', icon: '🔥', probability: 0.15, minSize: 8, maxSize: 15 },
+                    { type: 'obsidian', icon: '⬛', probability: 0.2, minSize: 10, maxSize: 20 },
+                    { type: 'ash', icon: '🌫️', probability: 0.2, minSize: 6, maxSize: 12 },
+                    { type: 'crystal', icon: '💎', probability: 0.05, minSize: 8, maxSize: 15 }
+                ]
+            }
+        };
+        
+        // Current state
+        let currentBiome = 'forest';
+        let brushSize = 60;
+        let brushStrength = 0.8;
+        let vegDensity = 0.5;
+        let blendRadius = 15;
+        
+        // Vegetation toggles
+        let vegToggles = {};
+        
+        // DRO State
+        let dro = {
+            currentBase: 24,
+            plantBase: 16,
+            groundBase: 24
+        };
+        
+        // Performance
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 60;
+        
+        // Mouse state
+        let isDrawing = false;
+        let mouseX = 0;
+        let mouseY = 0;
+        
+        // Initialize
+        function init() {
+            resizeCanvas();
+            initBiomeMap();
+            initVegToggles();
+            updateVegList();
+            updateLegend();
+            applyPreset('earthlike');
+            
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mouseleave', stopDraw);
+            
+            window.addEventListener('resize', resizeCanvas);
+            
+            requestAnimationFrame(render);
+        }
+        
+        function resizeCanvas() {
+            const wrapper = canvas.parentElement;
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+        }
+        
+        function initBiomeMap() {
+            biomeMap = [];
+            for (let y = 0; y < GRID_SIZE; y++) {
+                biomeMap[y] = [];
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    biomeMap[y][x] = 'forest';
+                }
+            }
+        }
+        
+        function initVegToggles() {
+            for (const biome in BIOMES) {
+                vegToggles[biome] = {};
+                BIOMES[biome].vegetation.forEach(v => {
+                    vegToggles[biome][v.type] = true;
+                });
+            }
+        }
+        
+        // ===== DRO =====
+        
+        function calculateDROBase() {
+            // Vegetation placement uses low precision (Base-16)
+            // Ground rendering uses medium precision (Base-24)
+            
+            const totalVeg = vegetation.length;
+            
+            if (totalVeg > 2000) {
+                dro.plantBase = 8;
+                dro.groundBase = 16;
+            } else if (totalVeg > 1000) {
+                dro.plantBase = 12;
+                dro.groundBase = 20;
+            } else {
+                dro.plantBase = 16;
+                dro.groundBase = 24;
+            }
+            
+            dro.currentBase = Math.max(dro.plantBase, dro.groundBase);
+        }
+        
+        function getBaseColor(base) {
+            if (base >= 32) return 'var(--base-32)';
+            if (base >= 24) return 'var(--base-24)';
+            if (base >= 16) return 'var(--base-16)';
+            return 'var(--base-16)';
+        }
+        
+        // ===== BIOME PAINTING =====
+        
+        function selectBiome(biome) {
+            currentBiome = biome;
+            document.querySelectorAll('.biome-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.biome === biome);
+            });
+            updateVegList();
+        }
+        
+        function paintBiome(gridX, gridY) {
+            const radius = Math.ceil(brushSize / (canvas.width / GRID_SIZE) / 2);
+            
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    const x = Math.floor(gridX + dx);
+                    const y = Math.floor(gridY + dy);
+                    
+                    if (x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE) {
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist <= radius) {
+                            const falloff = 1 - (dist / radius);
+                            if (Math.random() < falloff * brushStrength) {
+                                biomeMap[y][x] = currentBiome;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Generate vegetation in painted area
+            generateVegetationInArea(gridX, gridY, radius);
+        }
+        
+        function generateVegetationInArea(centerX, centerY, radius) {
+            const cellW = canvas.width / GRID_SIZE;
+            const cellH = canvas.height / GRID_SIZE;
+            
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    const gx = Math.floor(centerX + dx);
+                    const gy = Math.floor(centerY + dy);
+                    
+                    if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist <= radius) {
+                            const biome = biomeMap[gy][gx];
+                            const biomeData = BIOMES[biome];
+                            
+                            // Remove existing vegetation in this cell
+                            vegetation = vegetation.filter(v => {
+                                const vgx = Math.floor(v.x / cellW);
+                                const vgy = Math.floor(v.y / cellH);
+                                return !(vgx === gx && vgy === gy);
+                            });
+                            
+                            // Add new vegetation based on density
+                            if (Math.random() < vegDensity) {
+                                biomeData.vegetation.forEach(vegType => {
+                                    if (vegToggles[biome][vegType.type] && Math.random() < vegType.probability) {
+                                        const vx = gx * cellW + Math.random() * cellW;
+                                        const vy = gy * cellH + Math.random() * cellH;
+                                        const size = vegType.minSize + Math.random() * (vegType.maxSize - vegType.minSize);
+                                        
+                                        vegetation.push({
+                                            x: vx,
+                                            y: vy,
+                                            type: vegType.type,
+                                            icon: vegType.icon,
+                                            size: size,
+                                            biome: biome
+                                        });
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // ===== PRESETS =====
+        
+        function applyPreset(preset) {
+            initBiomeMap();
+            vegetation = [];
+            
+            switch (preset) {
+                case 'earthlike':
+                    // Mix of biomes based on latitude
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        for (let x = 0; x < GRID_SIZE; x++) {
+                            const lat = y / GRID_SIZE;
+                            const noise = Math.random() * 0.2;
+                            
+                            if (lat < 0.15 + noise) {
+                                biomeMap[y][x] = 'tundra';
+                            } else if (lat < 0.3 + noise) {
+                                biomeMap[y][x] = 'forest';
+                            } else if (lat < 0.5 + noise) {
+                                biomeMap[y][x] = Math.random() > 0.5 ? 'forest' : 'savanna';
+                            } else if (lat < 0.7 + noise) {
+                                biomeMap[y][x] = Math.random() > 0.3 ? 'desert' : 'savanna';
+                            } else {
+                                biomeMap[y][x] = 'jungle';
+                            }
+                            
+                            // Add some ocean
+                            if (Math.random() < 0.1) {
+                                biomeMap[y][x] = 'ocean';
+                            }
+                        }
+                    }
+                    break;
+                    
+                case 'tropical':
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        for (let x = 0; x < GRID_SIZE; x++) {
+                            const r = Math.random();
+                            if (r < 0.5) biomeMap[y][x] = 'jungle';
+                            else if (r < 0.7) biomeMap[y][x] = 'swamp';
+                            else if (r < 0.85) biomeMap[y][x] = 'ocean';
+                            else biomeMap[y][x] = 'savanna';
+                        }
+                    }
+                    break;
+                    
+                case 'arctic':
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        for (let x = 0; x < GRID_SIZE; x++) {
+                            const r = Math.random();
+                            if (r < 0.6) biomeMap[y][x] = 'tundra';
+                            else if (r < 0.8) biomeMap[y][x] = 'ocean';
+                            else biomeMap[y][x] = 'forest';
+                        }
+                    }
+                    break;
+                    
+                case 'alien':
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        for (let x = 0; x < GRID_SIZE; x++) {
+                            const r = Math.random();
+                            if (r < 0.35) biomeMap[y][x] = 'volcanic';
+                            else if (r < 0.55) biomeMap[y][x] = 'swamp';
+                            else if (r < 0.75) biomeMap[y][x] = 'desert';
+                            else biomeMap[y][x] = 'jungle';
+                        }
+                    }
+                    break;
+            }
+            
+            regenerateVegetation();
+            updateStats();
+        }
+        
+        function regenerateVegetation() {
+            vegetation = [];
+            const cellW = canvas.width / GRID_SIZE;
+            const cellH = canvas.height / GRID_SIZE;
+            
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const biome = biomeMap[y][x];
+                    const biomeData = BIOMES[biome];
+                    
+                    if (Math.random() < vegDensity) {
+                        biomeData.vegetation.forEach(vegType => {
+                            if (vegToggles[biome][vegType.type] && Math.random() < vegType.probability) {
+                                const vx = x * cellW + Math.random() * cellW;
+                                const vy = y * cellH + Math.random() * cellH;
+                                const size = vegType.minSize + Math.random() * (vegType.maxSize - vegType.minSize);
+                                
+                                vegetation.push({
+                                    x: vx,
+                                    y: vy,
+                                    type: vegType.type,
+                                    icon: vegType.icon,
+                                    size: size,
+                                    biome: biome
+                                });
+                            }
+                        });
+                    }
+                }
+            }
+            
+            updateStats();
+        }
+        
+        function clearAll() {
+            initBiomeMap();
+            vegetation = [];
+            updateStats();
+        }
+        
+        // ===== MOUSE HANDLING =====
+        
+        function startDraw(e) {
+            isDrawing = true;
+            handleDraw(e);
+        }
+        
+        function handleMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            
+            updateBrushPreview();
+            
+            if (isDrawing) {
+                handleDraw(e);
+            }
+        }
+        
+        function handleDraw(e) {
+            const gridX = (mouseX / canvas.width) * GRID_SIZE;
+            const gridY = (mouseY / canvas.height) * GRID_SIZE;
+            paintBiome(gridX, gridY);
+            updateStats();
+        }
+        
+        function stopDraw() {
+            isDrawing = false;
+        }
+        
+        function updateBrushPreview() {
+            const preview = document.getElementById('brushPreview');
+            preview.style.width = brushSize + 'px';
+            preview.style.height = brushSize + 'px';
+            preview.style.left = (mouseX - brushSize / 2) + 'px';
+            preview.style.top = (mouseY - brushSize / 2) + 'px';
+        }
+        
+        // ===== UI UPDATES =====
+        
+        function updateBrushSize() {
+            brushSize = parseInt(document.getElementById('brushSize').value);
+            document.getElementById('brushSizeValue').textContent = brushSize;
+        }
+        
+        function updateBrushStrength() {
+            brushStrength = parseInt(document.getElementById('brushStrength').value) / 100;
+            document.getElementById('brushStrengthValue').textContent = Math.round(brushStrength * 100) + '%';
+        }
+        
+        function updateVegDensity() {
+            vegDensity = parseInt(document.getElementById('vegDensity').value) / 100;
+            document.getElementById('vegDensityValue').textContent = Math.round(vegDensity * 100) + '%';
+        }
+        
+        function updateBlendRadius() {
+            blendRadius = parseInt(document.getElementById('blendRadius').value);
+            document.getElementById('blendRadiusValue').textContent = blendRadius;
+        }
+        
+        function updateVegList() {
+            const list = document.getElementById('vegList');
+            const biomeData = BIOMES[currentBiome];
+            
+            list.innerHTML = biomeData.vegetation.map(v => `
+                <div class="veg-item ${vegToggles[currentBiome][v.type] ? 'active' : ''}" onclick="toggleVeg('${v.type}')">
+                    <div class="veg-icon">${v.icon}</div>
+                    <div class="veg-info">
+                        <div class="veg-name">${v.type.replace(/_/g, ' ')}</div>
+                        <div class="veg-count">${Math.round(v.probability * 100)}% chance</div>
+                    </div>
+                    <div class="veg-toggle ${vegToggles[currentBiome][v.type] ? 'on' : ''}"></div>
+                </div>
+            `).join('');
+        }
+        
+        function toggleVeg(type) {
+            vegToggles[currentBiome][type] = !vegToggles[currentBiome][type];
+            updateVegList();
+        }
+        
+        function updateLegend() {
+            const legend = document.getElementById('biomeLegend');
+            legend.innerHTML = Object.entries(BIOMES).map(([key, biome]) => `
+                <div class="legend-item">
+                    <div class="legend-color" style="background: ${biome.groundColor};"></div>
+                    <span>${biome.icon} ${biome.name}</span>
+                </div>
+            `).join('');
+        }
+        
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.view === view);
+            });
+        }
+        
+        function updateStats() {
+            // Count biomes
+            const biomeCounts = {};
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const b = biomeMap[y][x];
+                    biomeCounts[b] = (biomeCounts[b] || 0) + 1;
+                }
+            }
+            
+            // Find dominant biome
+            let dominant = 'forest';
+            let maxCount = 0;
+            for (const b in biomeCounts) {
+                if (biomeCounts[b] > maxCount) {
+                    maxCount = biomeCounts[b];
+                    dominant = b;
+                }
+            }
+            
+            document.getElementById('dominantBiome').textContent = BIOMES[dominant].name;
+            document.getElementById('biomeCount').textContent = Object.keys(biomeCounts).length;
+            document.getElementById('totalPlants').textContent = vegetation.length;
+            
+            // Biodiversity
+            const uniqueTypes = new Set(vegetation.map(v => v.type));
+            const biodiversity = Math.min(100, Math.round(uniqueTypes.size * 5));
+            document.getElementById('biodiversity').textContent = biodiversity + '%';
+            
+            // Vegetation summary
+            const vegCounts = {};
+            vegetation.forEach(v => {
+                vegCounts[v.icon] = (vegCounts[v.icon] || 0) + 1;
+            });
+            
+            const summary = document.getElementById('vegSummary');
+            const maxVeg = Math.max(...Object.values(vegCounts), 1);
+            summary.innerHTML = Object.entries(vegCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6)
+                .map(([icon, count]) => `
+                    <div class="veg-bar">
+                        <div class="veg-bar-icon">${icon}</div>
+                        <div class="veg-bar-track">
+                            <div class="veg-bar-fill" style="width: ${(count / maxVeg) * 100}%"></div>
+                        </div>
+                        <div class="veg-bar-count">${count}</div>
+                    </div>
+                `).join('');
+        }
+        
+        // ===== RENDERING =====
+        
+        function render() {
+            const currentTime = performance.now();
+            frameCount++;
+            
+            if (currentTime - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+            
+            calculateDROBase();
+            
+            ctx.fillStyle = '#0a1520';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            switch (currentView) {
+                case 'world':
+                    renderWorld();
+                    break;
+                case 'biome':
+                    renderBiomeMap();
+                    break;
+                case 'density':
+                    renderDensityMap();
+                    break;
+            }
+            
+            updateDRODisplay();
+            
+            requestAnimationFrame(render);
+        }
+        
+        function renderWorld() {
+            const cellW = canvas.width / GRID_SIZE;
+            const cellH = canvas.height / GRID_SIZE;
+            
+            // Draw ground
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const biome = biomeMap[y][x];
+                    ctx.fillStyle = BIOMES[biome].groundColor;
+                    ctx.fillRect(x * cellW, y * cellH, cellW + 1, cellH + 1);
+                }
+            }
+            
+            // Add some texture
+            ctx.globalAlpha = 0.1;
+            for (let i = 0; i < 500; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                ctx.fillStyle = Math.random() > 0.5 ? '#000' : '#fff';
+                ctx.fillRect(x, y, 2, 2);
+            }
+            ctx.globalAlpha = 1;
+            
+            // Draw vegetation (sorted by Y for depth)
+            vegetation.sort((a, b) => a.y - b.y);
+            
+            ctx.font = '16px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            
+            vegetation.forEach(v => {
+                ctx.font = `${v.size}px serif`;
+                ctx.fillText(v.icon, v.x, v.y);
+            });
+        }
+        
+        function renderBiomeMap() {
+            const cellW = canvas.width / GRID_SIZE;
+            const cellH = canvas.height / GRID_SIZE;
+            
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const biome = biomeMap[y][x];
+                    ctx.fillStyle = BIOMES[biome].groundColor;
+                    ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
+                    
+                    // Grid lines
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                    ctx.strokeRect(x * cellW, y * cellH, cellW, cellH);
+                }
+            }
+        }
+        
+        function renderDensityMap() {
+            const cellW = canvas.width / GRID_SIZE;
+            const cellH = canvas.height / GRID_SIZE;
+            
+            // Count vegetation per cell
+            const density = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
+            let maxDensity = 1;
+            
+            vegetation.forEach(v => {
+                const gx = Math.floor(v.x / cellW);
+                const gy = Math.floor(v.y / cellH);
+                if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
+                    density[gy][gx]++;
+                    maxDensity = Math.max(maxDensity, density[gy][gx]);
+                }
+            });
+            
+            // Render density heatmap
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const d = density[y][x] / maxDensity;
+                    const r = Math.floor(d * 255);
+                    const g = Math.floor((1 - d) * 100 + d * 200);
+                    const b = Math.floor((1 - d) * 50);
+                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                    ctx.fillRect(x * cellW, y * cellH, cellW + 1, cellH + 1);
+                }
+            }
+        }
+        
+        function updateDRODisplay() {
+            document.getElementById('activeBase').textContent = `BASE-${dro.currentBase}`;
+            document.getElementById('activeBase').style.color = getBaseColor(dro.currentBase);
+            document.getElementById('vegCount').textContent = vegetation.length;
+            document.getElementById('fpsCount').textContent = fps;
+            
+            document.getElementById('lodLevel').textContent = dro.currentBase >= 24 ? 'HIGH' : dro.currentBase >= 16 ? 'MEDIUM' : 'LOW';
+            document.getElementById('plantBase').textContent = `B-${dro.plantBase}`;
+            document.getElementById('groundBase').textContent = `B-${dro.groundBase}`;
+            
+            const droFill = document.getElementById('droFill');
+            const fillPercent = ((dro.currentBase - 8) / 24) * 100;
+            droFill.style.width = fillPercent + '%';
+            droFill.style.background = `linear-gradient(90deg, var(--base-16), ${getBaseColor(dro.currentBase)})`;
+            droFill.textContent = `BASE-${dro.currentBase}`;
+        }
+        
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

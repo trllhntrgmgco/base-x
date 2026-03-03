@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPC-007: Warp/FTL Gate Transit | Base-X Engine Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --void: #020208;
+            --panel: rgba(6, 8, 18, 0.95);
+            --panel-border: rgba(100, 40, 255, 0.2);
+            --purple: #8844ff;
+            --purple-dim: #5522aa;
+            --violet: #aa44ff;
+            --cyan: #00b4ff;
+            --green: #00ff88;
+            --red: #ff3344;
+            --orange: #ff9500;
+            --yellow: #ffd000;
+            --white: #d0d4e8;
+            --dim: #4a5068;
+            --b64: #00ff88;
+            --b48: #00ccff;
+            --b32: #ffd000;
+            --b16: #ff8800;
+            --b8: #ff3344;
+            --throat: #cc66ff;
+            --exotic: #ff44cc;
+            --casimir: #44ffcc;
+            --entangle: #ffaa00;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--void);
+            color: var(--white);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            height: 46px;
+            background: linear-gradient(180deg, rgba(100,40,255,0.06), transparent);
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            flex-shrink: 0;
+        }
+        .hdr-left { display: flex; align-items: center; gap: 12px; }
+        .hdr-badge {
+            font-family: 'Orbitron', monospace;
+            font-size: 9px; font-weight: 900; letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--purple), #4400aa);
+            color: #fff; padding: 4px 10px; border-radius: 3px;
+        }
+        .hdr-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 15px; font-weight: 700; color: var(--purple);
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px rgba(100,40,255,0.3);
+        }
+        .hdr-right {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px; color: var(--dim);
+            display: flex; gap: 18px;
+        }
+        .hdr-right span { color: var(--purple); }
+
+        .main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 240px 1fr 270px;
+            overflow: hidden;
+        }
+
+        .side-panel, .right-panel {
+            background: var(--panel);
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .side-panel { border-right: 1px solid var(--panel-border); }
+        .right-panel { border-left: 1px solid var(--panel-border); }
+
+        .panel-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 10px; font-weight: 600;
+            color: var(--purple-dim);
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(100,40,255,0.1);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        .stat-label { color: var(--dim); font-size: 11px; }
+        .stat-val { font-family: 'Share Tech Mono', monospace; font-size: 12px; }
+        .section-gap { height: 12px; }
+
+        .canvas-wrap { position: relative; overflow: hidden; background: var(--void); }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* HUD */
+        .hud-overlay { position: absolute; top:0; left:0; right:0; bottom:0; pointer-events: none; }
+        .hud-tl, .hud-tr, .hud-bl, .hud-br {
+            position: absolute;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px; color: var(--purple-dim); padding: 10px;
+        }
+        .hud-tl { top:0; left:0; }
+        .hud-tr { top:0; right:0; text-align: right; }
+        .hud-bl { bottom:0; left:0; }
+        .hud-br { bottom:0; right:0; text-align: right; }
+
+        .dro-bar {
+            position: absolute; bottom: 8px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; gap: 3px;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 8px; border-radius: 4px;
+            border: 1px solid rgba(100,40,255,0.15);
+        }
+        .dro-seg { width: 28px; height: 8px; border-radius: 2px; background: rgba(255,255,255,0.04); transition: all 0.3s; }
+        .dro-seg.lit { box-shadow: 0 0 6px; }
+        .dro-label { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: var(--dim); text-align: center; margin-top: 2px; }
+
+        .bar-wrap { height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px; overflow: hidden; margin: 4px 0; }
+        .bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+        /* Gate selector */
+        .gate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 6px; }
+        .gate-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 10px; font-weight: 600;
+            padding: 6px 4px; border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.02);
+            color: var(--dim); cursor: pointer;
+            border-radius: 2px; text-align: center;
+            transition: all 0.2s;
+        }
+        .gate-btn:hover { border-color: var(--purple); color: var(--purple); }
+        .gate-btn.selected { border-color: var(--purple); color: var(--purple); background: rgba(100,40,255,0.08); }
+
+        /* Phase steps */
+        .phase-item {
+            padding: 5px 8px; margin-bottom: 3px;
+            border-radius: 3px; border-left: 3px solid var(--dim);
+            background: rgba(255,255,255,0.015); font-size: 11px;
+        }
+        .phase-item.active { border-left-color: var(--purple); background: rgba(100,40,255,0.06); }
+        .phase-item.done { border-left-color: var(--green); opacity: 0.5; }
+        .phase-name { font-weight: 600; }
+        .phase-detail { color: var(--dim); font-size: 10px; }
+
+        /* Log */
+        .log-wrap { max-height: 110px; overflow-y: auto; font-family: 'Share Tech Mono', monospace; font-size: 10px; }
+        .log-entry { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .log-time { color: var(--dim); }
+        .log-msg { color: var(--white); }
+        .log-msg.info { color: var(--cyan); }
+        .log-msg.success { color: var(--green); }
+        .log-msg.warn { color: var(--orange); }
+        .log-msg.error { color: var(--red); }
+        .log-msg.warp { color: var(--violet); }
+
+        /* Controls */
+        .controls-bar {
+            height: 42px; background: var(--panel);
+            border-top: 1px solid var(--panel-border);
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 0 16px; flex-shrink: 0;
+        }
+        .ctrl-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 11px; font-weight: 600;
+            padding: 5px 12px; border: 1px solid var(--panel-border);
+            background: rgba(100,40,255,0.04);
+            color: var(--dim); cursor: pointer;
+            border-radius: 3px; transition: all 0.2s; letter-spacing: 1px;
+        }
+        .ctrl-btn:hover { border-color: var(--purple); color: var(--purple); }
+        .ctrl-btn.active { border-color: var(--purple); color: var(--purple); background: rgba(100,40,255,0.1); box-shadow: 0 0 8px rgba(100,40,255,0.15); }
+        .ctrl-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.06); }
+
+        @media (max-width: 1000px) {
+            .main { grid-template-columns: 1fr; }
+            .side-panel, .right-panel { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="hdr-left">
+        <div class="hdr-badge">BASE-X</div>
+        <div class="hdr-title">SPC-007 · WARP GATE TRANSIT</div>
+    </div>
+    <div class="hdr-right">
+        <div>QGWTS <span id="gateStatus">STANDBY</span></div>
+        <div>THROAT <span id="throatStatus">CLOSED</span></div>
+        <div>SDC <span id="sdcCoord">0.0.0.0</span></div>
+    </div>
+</div>
+
+<div class="main">
+    <!-- LEFT PANEL -->
+    <div class="side-panel">
+        <div class="panel-title">GATE SYSTEMS</div>
+
+        <div class="stat-row"><span class="stat-label">Origin Gate</span><span class="stat-val" id="originGate" style="color:var(--cyan)">EARTH-01</span></div>
+        <div class="stat-row"><span class="stat-label">Dest Gate</span><span class="stat-val" id="destGate" style="color:var(--violet)">MARS-01</span></div>
+        <div class="stat-row"><span class="stat-label">Distance</span><span class="stat-val" id="gateDist">225M km</span></div>
+        <div class="stat-row"><span class="stat-label">Transit Time</span><span class="stat-val" id="transitTime">~1.2 sec</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">DESTINATION</div>
+
+        <div class="gate-grid">
+            <div class="gate-btn" data-dest="moon" onclick="setDest('moon')">🌙 LUNA</div>
+            <div class="gate-btn selected" data-dest="mars" onclick="setDest('mars')">🔴 MARS</div>
+            <div class="gate-btn" data-dest="jupiter" onclick="setDest('jupiter')">🟠 JUPITER</div>
+            <div class="gate-btn" data-dest="saturn" onclick="setDest('saturn')">🪐 SATURN</div>
+            <div class="gate-btn" data-dest="neptune" onclick="setDest('neptune')">🔵 NEPTUNE</div>
+            <div class="gate-btn" data-dest="alpha" onclick="setDest('alpha')">⭐ α CEN</div>
+        </div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">TOROIDAL RING</div>
+
+        <div class="stat-row"><span class="stat-label">Diameter</span><span class="stat-val">500 m</span></div>
+        <div class="stat-row"><span class="stat-label">QV Modulators</span><span class="stat-val" id="modulators">144 / 144</span></div>
+        <div class="stat-row"><span class="stat-label">Casimir Cascade</span><span class="stat-val" id="casimirPwr" style="color:var(--casimir)">IDLE</span></div>
+        <div class="stat-row"><span class="stat-label">Entangle Core</span><span class="stat-val" id="entangleSync" style="color:var(--entangle)">SYNCED</span></div>
+        <div class="stat-row"><span class="stat-label">Exotic Matter ρ</span><span class="stat-val" id="exoticDensity">0.00 kg/m³</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">REACTOR</div>
+
+        <div class="stat-row"><span class="stat-label">D-He³ Fusion</span><span class="stat-val" id="reactorPwr" style="color:var(--green)">100%</span></div>
+        <div class="bar-wrap"><div class="bar-fill" id="reactorBar" style="width:100%;background:var(--green)"></div></div>
+        <div class="stat-row"><span class="stat-label">Peak Output</span><span class="stat-val">15 TW</span></div>
+        <div class="stat-row"><span class="stat-label">Cap Banks</span><span class="stat-val" id="capBanks">8/8 · 2.5 TJ</span></div>
+        <div class="stat-row"><span class="stat-label">Throat b₀</span><span class="stat-val" id="throatRadius">250 m</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">SHIP STATUS</div>
+
+        <div class="stat-row"><span class="stat-label">Hull Integrity</span><span class="stat-val" id="hullPct" style="color:var(--green)">100%</span></div>
+        <div class="stat-row"><span class="stat-label">Approach Speed</span><span class="stat-val" id="shipSpeed">0.0 km/s</span></div>
+        <div class="stat-row"><span class="stat-label">Alignment</span><span class="stat-val" id="alignment">—</span></div>
+    </div>
+
+    <!-- CANVAS -->
+    <div class="canvas-wrap">
+        <canvas id="warpCanvas"></canvas>
+
+        <div class="hud-overlay">
+            <div class="hud-tl">
+                <div>DRO ACTIVE BASE: <span id="hudBase" style="color:var(--b32)">BASE-32</span></div>
+                <div>PRECISION: <span id="hudPrec">±1.0 mm</span></div>
+                <div>OPS/FRAME: <span id="hudOps">1,024</span></div>
+            </div>
+            <div class="hud-tr">
+                <div>QGWTS: <span id="hudQgwts" style="color:var(--purple)">STANDBY</span></div>
+                <div>THROAT: <span id="hudThroat">CLOSED</span></div>
+                <div>PHASE: <span id="hudPhase">0 / 6</span></div>
+            </div>
+            <div class="hud-bl">
+                <div>ORIGIN: <span id="hudOrigin" style="color:var(--cyan)">EARTH-01</span></div>
+                <div>DEST: <span id="hudDest" style="color:var(--violet)">MARS-01</span></div>
+            </div>
+            <div class="hud-br">
+                <div>FIVE PILLARS</div>
+                <div>DIST: <span id="pillarDist">0.10</span> VEL: <span id="pillarVel">0.10</span></div>
+                <div>INT: <span id="pillarInt">0.20</span> PHS: <span id="pillarPhs">0.90</span></div>
+                <div>PER: <span id="pillarPer">0.80</span></div>
+            </div>
+
+            <div class="dro-bar">
+                <div><div class="dro-seg" id="seg8" style="background:var(--b8);opacity:0.15"></div><div class="dro-label">8</div></div>
+                <div><div class="dro-seg" id="seg16" style="background:var(--b16);opacity:0.15"></div><div class="dro-label">16</div></div>
+                <div><div class="dro-seg lit" id="seg32" style="background:var(--b32)"></div><div class="dro-label">32</div></div>
+                <div><div class="dro-seg" id="seg48" style="background:var(--b48);opacity:0.15"></div><div class="dro-label">48</div></div>
+                <div><div class="dro-seg" id="seg64" style="background:var(--b64);opacity:0.15"></div><div class="dro-label">64</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+        <div class="panel-title">TRANSIT SEQUENCE</div>
+
+        <div class="phase-item active" id="phase0"><div class="phase-name">1. Approach Vector</div><div class="phase-detail">Align with gate aperture · Base-32</div></div>
+        <div class="phase-item" id="phase1"><div class="phase-name">2. Gate Sync</div><div class="phase-detail">144 QV modulators lock · Base-48</div></div>
+        <div class="phase-item" id="phase2"><div class="phase-name">3. Casimir Cascade</div><div class="phase-detail">Negative energy density ρ < 0 · Base-48</div></div>
+        <div class="phase-item" id="phase3"><div class="phase-name">4. Throat Formation</div><div class="phase-detail">Morris-Thorne wormhole opens · Base-64</div></div>
+        <div class="phase-item" id="phase4"><div class="phase-name">5. Transit</div><div class="phase-detail">~1 km proper length · Base-64</div></div>
+        <div class="phase-item" id="phase5"><div class="phase-name">6. Exit Stabilization</div><div class="phase-detail">Dest gate confirms · Base-48</div></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">DRO ANALYSIS</div>
+
+        <div class="stat-row"><span class="stat-label">Active Base</span><span class="stat-val" id="droBase" style="color:var(--b32)">32</span></div>
+        <div class="stat-row"><span class="stat-label">Precision</span><span class="stat-val" id="droPrecision">±1.0 mm</span></div>
+        <div class="stat-row"><span class="stat-label">Base Switches</span><span class="stat-val" id="droSwitches">0</span></div>
+        <div class="stat-row"><span class="stat-label">Avg Base</span><span class="stat-val" id="droAvg">32.0</span></div>
+        <div class="stat-row"><span class="stat-label">Savings vs B64</span><span class="stat-val" id="droSavings" style="color:var(--green)">75%</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">GATE NETWORK — SOL</div>
+
+        <div class="stat-row"><span class="stat-label">🌍 EARTH-01</span><span class="stat-val" style="color:var(--green)">ONLINE</span></div>
+        <div class="stat-row"><span class="stat-label">🌙 LUNA-01</span><span class="stat-val" style="color:var(--green)">ONLINE</span></div>
+        <div class="stat-row"><span class="stat-label">🔴 MARS-01</span><span class="stat-val" style="color:var(--green)">ONLINE</span></div>
+        <div class="stat-row"><span class="stat-label">🟠 JUPITER-01</span><span class="stat-val" style="color:var(--green)">ONLINE</span></div>
+        <div class="stat-row"><span class="stat-label">🪐 SATURN-01</span><span class="stat-val" style="color:var(--green)">ONLINE</span></div>
+        <div class="stat-row"><span class="stat-label">🔵 NEPTUNE-01</span><span class="stat-val" style="color:var(--yellow)">STANDBY</span></div>
+        <div class="stat-row"><span class="stat-label">⭐ α CEN-01</span><span class="stat-val" style="color:var(--orange)">BLIND GATE</span></div>
+
+        <div class="section-gap"></div>
+        <div class="panel-title">TRANSIT LOG</div>
+        <div class="log-wrap" id="logWrap"></div>
+    </div>
+</div>
+
+<div class="controls-bar">
+    <button class="ctrl-btn active" id="btnPlay" onclick="toggleSim()">⏸ PAUSE</button>
+    <button class="ctrl-btn" onclick="resetSim()">↺ RESET</button>
+    <div class="ctrl-sep"></div>
+    <button class="ctrl-btn" onclick="initiateTransit()">⟐ INITIATE TRANSIT</button>
+    <button class="ctrl-btn" onclick="autoSequence()">⚡ AUTO SEQUENCE</button>
+    <div class="ctrl-sep"></div>
+    <button class="ctrl-btn" onclick="deployBlindGate()">📡 DEPLOY BLIND GATE</button>
+    <button class="ctrl-btn" onclick="abortTransit()">✕ ABORT</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// SPC-007: WARP/FTL GATE TRANSIT — BASE-X ENGINE
+// Quantum Gate Warp Transit System (QGWTS)
+// (c) 2025-2026 Keenan Wallace Dunham
+// Troll Hunter Gaming LLC — Patent Pending
+// ═══════════════════════════════════════════════════
+
+const canvas = document.getElementById('warpCanvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+    const w = canvas.parentElement;
+    canvas.width = w.clientWidth;
+    canvas.height = w.clientHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ═══ GATE NETWORK ═══
+const GATES = {
+    moon:    { name:'LUNA-01',    dist:'384K km',     transitSec: 0.4, color:'#ccccdd', sdcExit:'1.3.0.7',  status:'ONLINE' },
+    mars:    { name:'MARS-01',    dist:'225M km',     transitSec: 1.2, color:'#ff6644', sdcExit:'4.7.2.a',  status:'ONLINE' },
+    jupiter: { name:'JUPITER-01', dist:'628M km',     transitSec: 1.8, color:'#ff9944', sdcExit:'7.b.5.3',  status:'ONLINE' },
+    saturn:  { name:'SATURN-01',  dist:'1.27B km',    transitSec: 2.4, color:'#ddbb66', sdcExit:'9.c.8.1',  status:'ONLINE' },
+    neptune: { name:'NEPTUNE-01', dist:'4.35B km',    transitSec: 3.6, color:'#4488ff', sdcExit:'d.2.a.6',  status:'STANDBY' },
+    alpha:   { name:'α CEN-01',   dist:'4.37 ly',     transitSec: 5.0, color:'#ffdd44', sdcExit:'0.0.d.d',  status:'BLIND GATE' }
+};
+
+// ═══ STATE ═══
+const S = {
+    running: true,
+    time: 0,
+    dest: 'mars',
+
+    // Transit phases: 0=approach, 1=sync, 2=casimir, 3=throat, 4=transit, 5=exit
+    phase: -1,  // -1 = idle
+    phaseTime: 0,
+    phaseProgress: 0,
+    transitActive: false,
+    autoMode: false,
+
+    // Ship position (normalized 0-1 for approach to gate)
+    shipPos: 0,
+    shipSpeed: 0,
+    shipInThroat: false,
+    shipExited: false,
+
+    // Gate systems
+    modulatorsOnline: 144,
+    casimirPower: 0,
+    exoticDensity: 0,
+    throatRadius: 0,
+    reactorPower: 100,
+    capCharge: 100,
+    entangleCoherence: 1.0,
+
+    // Gate visual
+    gateRotation: 0,
+    gateNodes: [],
+    throatParticles: [],
+    warpStreaks: [],
+    ringPulse: 0,
+
+    // Blind gate
+    blindGateDeployed: false,
+    blindGateProgress: 0,
+
+    // DRO
+    dro: {
+        currentBase: 32,
+        switches: 0,
+        history: [],
+        avgBase: 32,
+        pillars: { dist:0.1, vel:0.1, int:0.2, phs:0.9, per:0.8 }
+    },
+
+    stars: []
+};
+
+// Phase durations in seconds
+const PHASE_DURATIONS = [3, 2.5, 3, 2, 0, 2]; // phase 4 depends on dest
+
+// ═══ INIT ═══
+function initScene() {
+    S.stars = [];
+    for (let i = 0; i < 400; i++) {
+        S.stars.push({
+            x: Math.random(), y: Math.random(),
+            z: Math.random() * 2 + 0.3,
+            brightness: Math.random() * 0.5 + 0.2
+        });
+    }
+
+    // 144 QV modulator nodes on toroidal ring
+    S.gateNodes = [];
+    for (let i = 0; i < 144; i++) {
+        const angle = (i / 144) * Math.PI * 2;
+        S.gateNodes.push({ angle, phase: Math.random() * Math.PI * 2, active: false });
+    }
+}
+
+// ═══ PHYSICS ═══
+function updatePhysics(dt) {
+    S.gateRotation += dt * 0.15;
+
+    if (S.phase >= 0) {
+        S.phaseTime += dt;
+        const dur = S.phase === 4 ? GATES[S.dest].transitSec : PHASE_DURATIONS[S.phase];
+        S.phaseProgress = Math.min(1, S.phaseTime / dur);
+
+        // Phase-specific updates
+        switch(S.phase) {
+            case 0: // Approach
+                S.shipPos = S.phaseProgress * 0.6;
+                S.shipSpeed = 2.5 + S.phaseProgress * 5;
+                break;
+
+            case 1: // Gate sync
+                S.shipPos = 0.6 + S.phaseProgress * 0.15;
+                S.shipSpeed = 1.0 - S.phaseProgress * 0.5;
+                // Activate modulators in sequence
+                const activeCount = Math.floor(S.phaseProgress * 144);
+                S.gateNodes.forEach((n, i) => n.active = i < activeCount);
+                S.modulatorsOnline = activeCount;
+                S.entangleCoherence = 0.7 + S.phaseProgress * 0.3;
+                break;
+
+            case 2: // Casimir cascade
+                S.shipPos = 0.75;
+                S.shipSpeed = 0.2;
+                S.casimirPower = S.phaseProgress * 100;
+                S.exoticDensity = -S.phaseProgress * 1e-6;
+                S.capCharge = 100 - S.phaseProgress * 60;
+                S.reactorPower = 100 - S.phaseProgress * 30;
+                S.ringPulse = S.phaseProgress;
+                break;
+
+            case 3: // Throat formation
+                S.shipPos = 0.75;
+                S.throatRadius = S.phaseProgress * 250;
+                S.exoticDensity = -1e-6 * (1 + S.phaseProgress);
+                S.ringPulse = 1;
+                // Spawn throat particles
+                if (Math.random() < 0.3) {
+                    S.throatParticles.push({
+                        angle: Math.random() * Math.PI * 2,
+                        radius: 0.3 + Math.random() * 0.7,
+                        speed: 0.5 + Math.random() * 2,
+                        life: 1.5,
+                        size: 1 + Math.random() * 2,
+                        color: Math.random() > 0.5 ? '#cc66ff' : '#44ffcc'
+                    });
+                }
+                break;
+
+            case 4: // Transit
+                S.shipInThroat = true;
+                S.shipPos = 0.75 + S.phaseProgress * 0.25;
+                S.shipSpeed = 50 + S.phaseProgress * 200;
+                // Warp streaks
+                if (Math.random() < 0.5) {
+                    S.warpStreaks.push({
+                        x: Math.random(), y: Math.random(),
+                        len: 0.05 + Math.random() * 0.15,
+                        speed: 3 + Math.random() * 5,
+                        life: 0.5,
+                        color: ['#cc66ff','#44ffcc','#8844ff','#ffffff'][Math.floor(Math.random()*4)]
+                    });
+                }
+                break;
+
+            case 5: // Exit stabilization
+                S.shipInThroat = false;
+                S.shipExited = true;
+                S.shipSpeed = Math.max(1, 50 * (1 - S.phaseProgress));
+                S.throatRadius = 250 * (1 - S.phaseProgress);
+                S.casimirPower = 100 * (1 - S.phaseProgress);
+                S.ringPulse = 1 - S.phaseProgress;
+                break;
+        }
+
+        // Phase completion
+        if (S.phaseProgress >= 1) {
+            advancePhase();
+        }
+    }
+
+    // Update throat particles
+    S.throatParticles = S.throatParticles.filter(p => {
+        p.angle += p.speed * dt;
+        p.life -= dt;
+        return p.life > 0;
+    });
+
+    // Update warp streaks
+    S.warpStreaks = S.warpStreaks.filter(s => {
+        s.x -= s.speed * dt;
+        s.life -= dt;
+        return s.life > 0 && s.x > -0.2;
+    });
+}
+
+function advancePhase() {
+    if (S.phase >= 5) {
+        // Transit complete
+        S.transitActive = false;
+        S.phase = -1;
+        const gate = GATES[S.dest];
+        log(`Transit complete — arrived at ${gate.name}`, 'success');
+        log(`SDC: ${gate.sdcExit}`, 'warp');
+        S.autoMode = false;
+        return;
+    }
+
+    S.phase++;
+    S.phaseTime = 0;
+    S.phaseProgress = 0;
+
+    const phaseNames = ['APPROACH', 'GATE SYNC', 'CASIMIR CASCADE', 'THROAT FORMATION', 'TRANSIT', 'EXIT STABILIZATION'];
+    const phaseBases = [32, 48, 48, 64, 64, 48];
+
+    log(`Phase ${S.phase+1}: ${phaseNames[S.phase]}`, 'warp');
+
+    // Update phase indicators
+    for (let i = 0; i <= 5; i++) {
+        const el = document.getElementById('phase' + i);
+        el.classList.remove('active', 'done');
+        if (i < S.phase) el.classList.add('done');
+        else if (i === S.phase) el.classList.add('active');
+    }
+}
+
+function computeDRO() {
+    const p = S.dro.pillars;
+
+    // Pillars based on transit phase
+    if (S.phase < 0) {
+        p.dist = 0.1; p.vel = 0.1; p.int = 0.2; p.phs = 0.5; p.per = 0.4;
+    } else if (S.phase === 0) {
+        p.dist = 0.3 + S.phaseProgress * 0.3; p.vel = 0.3; p.int = 0.2; p.phs = 0.6; p.per = 0.5;
+    } else if (S.phase <= 2) {
+        p.dist = 0.7; p.vel = 0.2; p.int = 0.5 + S.casimirPower/200; p.phs = 0.8; p.per = 0.7;
+    } else if (S.phase <= 4) {
+        p.dist = 0.95; p.vel = 0.9; p.int = 0.95; p.phs = 0.95; p.per = 0.95;
+    } else {
+        p.dist = 0.6; p.vel = 0.5; p.int = 0.4; p.phs = 0.7; p.per = 0.6;
+    }
+
+    const composite = p.dist*0.2 + p.vel*0.15 + p.int*0.25 + p.phs*0.25 + p.per*0.15;
+    let newBase;
+    if (composite > 0.8) newBase = 64;
+    else if (composite > 0.6) newBase = 48;
+    else if (composite > 0.35) newBase = 32;
+    else if (composite > 0.15) newBase = 16;
+    else newBase = 8;
+
+    if (newBase !== S.dro.currentBase) {
+        S.dro.switches++;
+        S.dro.currentBase = newBase;
+    }
+    S.dro.history.push(newBase);
+    if (S.dro.history.length > 120) S.dro.history.shift();
+    S.dro.avgBase = S.dro.history.reduce((a,b)=>a+b,0)/S.dro.history.length;
+}
+
+// ═══ RENDER ═══
+function render() {
+    const W = canvas.width, H = canvas.height;
+    const cx = W/2, cy = H/2;
+
+    // Background
+    ctx.fillStyle = '#020208';
+    ctx.fillRect(0, 0, W, H);
+
+    // Nebula
+    const neb = ctx.createRadialGradient(W*0.4, H*0.5, 0, W*0.4, H*0.5, W*0.5);
+    neb.addColorStop(0, 'rgba(30,10,50,0.12)');
+    neb.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = neb;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    S.stars.forEach(s => {
+        const sx = s.x * W;
+        const sy = s.y * H;
+        // Warp stretch during transit
+        let stretchX = 0;
+        if (S.phase === 4) stretchX = s.z * 20 * S.phaseProgress;
+        const twinkle = 0.6 + Math.sin(S.time * 2 + s.x * 100) * 0.4;
+        ctx.fillStyle = `rgba(180,190,255,${s.brightness * twinkle})`;
+        if (stretchX > 1) {
+            ctx.fillRect(sx - stretchX, sy, stretchX * 2 + s.z, s.z * 0.5);
+        } else {
+            ctx.fillRect(sx, sy, s.z, s.z);
+        }
+    });
+
+    if (S.phase === 4) {
+        // Warp tunnel
+        drawWarpTunnel(W, H);
+    } else {
+        // Normal space view with gate
+        drawGate(W, H);
+        drawShip(W, H);
+    }
+
+    // Warp streaks overlay
+    S.warpStreaks.forEach(s => {
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = s.life * 2;
+        ctx.beginPath();
+        ctx.moveTo(s.x * W, s.y * H);
+        ctx.lineTo((s.x + s.len) * W, s.y * H);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+    });
+}
+
+function drawGate(W, H) {
+    const cx = W * 0.65;
+    const cy = H * 0.5;
+    const gateRadius = Math.min(W, H) * 0.22;
+
+    // Gate glow
+    if (S.ringPulse > 0) {
+        const glowGrad = ctx.createRadialGradient(cx, cy, gateRadius*0.3, cx, cy, gateRadius*1.5);
+        glowGrad.addColorStop(0, `rgba(136,68,255,${S.ringPulse * 0.15})`);
+        glowGrad.addColorStop(0.5, `rgba(100,40,200,${S.ringPulse * 0.05})`);
+        glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath(); ctx.arc(cx, cy, gateRadius*1.5, 0, Math.PI*2); ctx.fill();
+    }
+
+    // Throat aperture (when forming/open)
+    if (S.throatRadius > 0) {
+        const throatPct = S.throatRadius / 250;
+        const apRadius = gateRadius * 0.7 * throatPct;
+
+        // Wormhole interior — swirling vortex
+        for (let r = apRadius; r > 2; r -= 3) {
+            const hue = 270 + (apRadius - r) * 2;
+            const alpha = 0.15 + (1 - r/apRadius) * 0.4;
+            const spin = S.time * 2 + r * 0.05;
+            ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${alpha})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, spin, spin + Math.PI * 1.5);
+            ctx.stroke();
+        }
+
+        // Center bright spot
+        const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, apRadius*0.3);
+        coreGrad.addColorStop(0, 'rgba(255,255,255,0.6)');
+        coreGrad.addColorStop(1, 'rgba(200,100,255,0)');
+        ctx.fillStyle = coreGrad;
+        ctx.beginPath(); ctx.arc(cx, cy, apRadius*0.3, 0, Math.PI*2); ctx.fill();
+    }
+
+    // Toroidal ring
+    ctx.strokeStyle = `rgba(136,68,255,${0.4 + S.ringPulse * 0.4})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, gateRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Inner ring
+    ctx.strokeStyle = `rgba(100,40,200,${0.3 + S.ringPulse * 0.3})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, gateRadius * 0.92, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 144 QV Modulator nodes
+    S.gateNodes.forEach((n, i) => {
+        const a = n.angle + S.gateRotation;
+        const nx = cx + Math.cos(a) * gateRadius;
+        const ny = cy + Math.sin(a) * gateRadius;
+
+        if (n.active) {
+            const pulse = Math.sin(S.time * 6 + n.phase) * 0.3 + 0.7;
+            ctx.fillStyle = `rgba(68,255,204,${pulse})`;
+            ctx.shadowColor = '#44ffcc';
+            ctx.shadowBlur = 4;
+            ctx.beginPath(); ctx.arc(nx, ny, 2.5, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+        } else {
+            ctx.fillStyle = 'rgba(100,60,160,0.3)';
+            ctx.beginPath(); ctx.arc(nx, ny, 1.5, 0, Math.PI*2); ctx.fill();
+        }
+    });
+
+    // 12 Casimir Cascade Generators (evenly spaced)
+    for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2 + S.gateRotation * 0.5;
+        const gx = cx + Math.cos(a) * (gateRadius + 10);
+        const gy = cy + Math.sin(a) * (gateRadius + 10);
+
+        ctx.fillStyle = S.casimirPower > 0 ? `rgba(255,68,204,${0.4 + S.casimirPower/200})` : 'rgba(100,40,100,0.3)';
+        ctx.beginPath(); ctx.arc(gx, gy, 4, 0, Math.PI*2); ctx.fill();
+
+        if (S.casimirPower > 50) {
+            ctx.strokeStyle = `rgba(255,68,204,${S.casimirPower/300})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(gx, gy, 8 + Math.sin(S.time*4+i)*3, 0, Math.PI*2); ctx.stroke();
+        }
+    }
+
+    // Throat particles
+    S.throatParticles.forEach(p => {
+        const px = cx + Math.cos(p.angle) * gateRadius * p.radius * 0.7;
+        const py = cy + Math.sin(p.angle) * gateRadius * p.radius * 0.7;
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath(); ctx.arc(px, py, p.size, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1;
+    });
+
+    // Entanglement beam (connecting to destination)
+    if (S.phase >= 1 && S.phase <= 3) {
+        ctx.strokeStyle = `rgba(255,170,0,${0.1 + Math.sin(S.time*3)*0.05})`;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([8, 12]);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + 200, cy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label
+        ctx.fillStyle = 'rgba(255,170,0,0.4)';
+        ctx.font = '9px "Share Tech Mono"';
+        ctx.fillText('ENTANGLEMENT LINK → ' + GATES[S.dest].name, cx + 20, cy - 8);
+    }
+
+    // Gate label
+    ctx.fillStyle = 'rgba(136,68,255,0.5)';
+    ctx.font = '10px "Orbitron"';
+    ctx.textAlign = 'center';
+    ctx.fillText('EARTH-01', cx, cy + gateRadius + 24);
+    ctx.fillText('500m TOROIDAL RING', cx, cy + gateRadius + 36);
+    ctx.textAlign = 'left';
+}
+
+function drawShip(W, H) {
+    // Ship position: 0 = far left, 1 = through gate
+    const gateX = W * 0.65;
+    const gateY = H * 0.5;
+    const startX = W * 0.1;
+
+    const sx = startX + S.shipPos * (gateX - startX);
+    const sy = gateY + Math.sin(S.time * 0.8) * 3;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+
+    // Engine trail
+    if (S.shipSpeed > 1) {
+        const trailLen = Math.min(40, S.shipSpeed * 2);
+        const trailGrad = ctx.createLinearGradient(-trailLen - 12, 0, -12, 0);
+        trailGrad.addColorStop(0, 'rgba(0,180,255,0)');
+        trailGrad.addColorStop(1, `rgba(0,180,255,${Math.min(0.4, S.shipSpeed/50)})`);
+        ctx.fillStyle = trailGrad;
+        ctx.fillRect(-trailLen - 12, -3, trailLen, 6);
+    }
+
+    // Ship body
+    ctx.fillStyle = '#aabbdd';
+    ctx.beginPath();
+    ctx.moveTo(12, 0);
+    ctx.lineTo(4, -6);
+    ctx.lineTo(-8, -8);
+    ctx.lineTo(-10, 0);
+    ctx.lineTo(-8, 8);
+    ctx.lineTo(4, 6);
+    ctx.closePath();
+    ctx.fill();
+
+    // Cockpit
+    ctx.fillStyle = '#44aaff';
+    ctx.beginPath();
+    ctx.moveTo(11, 0);
+    ctx.lineTo(4, -3);
+    ctx.lineTo(4, 3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+
+    // Alignment indicator line
+    if (S.phase === 0) {
+        ctx.strokeStyle = `rgba(136,68,255,${0.1 + S.phaseProgress * 0.2})`;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 8]);
+        ctx.beginPath();
+        ctx.moveTo(sx + 15, sy);
+        ctx.lineTo(gateX, gateY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+}
+
+function drawWarpTunnel(W, H) {
+    const cx = W/2, cy = H/2;
+    const progress = S.phaseProgress;
+
+    // Tunnel rings
+    for (let i = 0; i < 30; i++) {
+        const depth = (i / 30 + S.time * 1.5) % 1;
+        const scale = 0.05 + depth * 1.2;
+        const radius = Math.min(W, H) * 0.4 * scale;
+        const alpha = (1 - depth) * 0.4;
+        const hue = 260 + i * 4 + S.time * 60;
+
+        ctx.strokeStyle = `hsla(${hue}, 70%, 55%, ${alpha})`;
+        ctx.lineWidth = 2 - depth * 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // Exotic matter streaks
+    for (let i = 0; i < 20; i++) {
+        const angle = (i / 20) * Math.PI * 2 + S.time * 2;
+        const innerR = 20;
+        const outerR = Math.min(W, H) * 0.45;
+        const x1 = cx + Math.cos(angle) * innerR;
+        const y1 = cy + Math.sin(angle) * innerR;
+        const x2 = cx + Math.cos(angle) * outerR;
+        const y2 = cy + Math.sin(angle) * outerR;
+
+        const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+        grad.addColorStop(0, 'rgba(200,100,255,0.3)');
+        grad.addColorStop(0.5, 'rgba(68,255,204,0.1)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    // Central ship dot
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#44aaff';
+    ctx.shadowBlur = 15;
+    ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Transit info
+    ctx.fillStyle = 'rgba(200,100,255,0.6)';
+    ctx.font = '12px "Orbitron"';
+    ctx.textAlign = 'center';
+    ctx.fillText('MORRIS-THORNE WORMHOLE TRANSIT', cx, cy - 40);
+    ctx.font = '10px "Share Tech Mono"';
+    ctx.fillStyle = 'rgba(68,255,204,0.5)';
+    ctx.fillText(`Proper length: ~1 km · Throat b₀ = 250m · ρ = ${S.exoticDensity.toExponential(2)} kg/m³`, cx, cy + 50);
+    ctx.fillText(`${GATES[S.dest].name} · ${GATES[S.dest].dist} · SDC: ${GATES[S.dest].sdcExit}`, cx, cy + 65);
+    ctx.textAlign = 'left';
+}
+
+// ═══ UI ═══
+function updateUI() {
+    const bc = baseColor(S.dro.currentBase);
+    const prec = basePrecision(S.dro.currentBase);
+    const gate = GATES[S.dest];
+
+    // Header
+    document.getElementById('gateStatus').textContent = S.transitActive ? 'ACTIVE' : 'STANDBY';
+    document.getElementById('gateStatus').style.color = S.transitActive ? '#8844ff' : '#4a5068';
+    document.getElementById('throatStatus').textContent = S.throatRadius > 0 ? `OPEN ${S.throatRadius.toFixed(0)}m` : 'CLOSED';
+    document.getElementById('throatStatus').style.color = S.throatRadius > 0 ? '#cc66ff' : '#4a5068';
+    document.getElementById('sdcCoord').textContent = S.shipExited ? gate.sdcExit : '0.0.0.0';
+
+    // Gate systems
+    document.getElementById('originGate').textContent = 'EARTH-01';
+    document.getElementById('destGate').textContent = gate.name;
+    document.getElementById('gateDist').textContent = gate.dist;
+    document.getElementById('transitTime').textContent = `~${gate.transitSec.toFixed(1)} sec`;
+    document.getElementById('modulators').textContent = `${S.modulatorsOnline} / 144`;
+    document.getElementById('modulators').style.color = S.modulatorsOnline >= 144 ? '#00ff88' : S.modulatorsOnline > 0 ? '#ffd000' : '#4a5068';
+    document.getElementById('casimirPwr').textContent = S.casimirPower > 0 ? `${S.casimirPower.toFixed(0)}%` : 'IDLE';
+    document.getElementById('casimirPwr').style.color = S.casimirPower > 50 ? '#ff44cc' : S.casimirPower > 0 ? '#ffd000' : '#4a5068';
+    document.getElementById('entangleSync').textContent = S.entangleCoherence >= 0.99 ? 'LOCKED' : `${(S.entangleCoherence*100).toFixed(1)}%`;
+    document.getElementById('entangleSync').style.color = S.entangleCoherence >= 0.99 ? '#ffaa00' : '#ffd000';
+    document.getElementById('exoticDensity').textContent = S.exoticDensity !== 0 ? `${S.exoticDensity.toExponential(2)} kg/m³` : '0.00 kg/m³';
+    document.getElementById('exoticDensity').style.color = S.exoticDensity < 0 ? '#ff44cc' : '#4a5068';
+
+    // Reactor
+    document.getElementById('reactorPwr').textContent = S.reactorPower.toFixed(0) + '%';
+    document.getElementById('reactorBar').style.width = S.reactorPower + '%';
+    document.getElementById('reactorBar').style.background = S.reactorPower > 50 ? '#00ff88' : '#ff3344';
+    document.getElementById('throatRadius').textContent = S.throatRadius > 0 ? S.throatRadius.toFixed(0) + ' m' : '—';
+
+    // Ship
+    document.getElementById('shipSpeed').textContent = S.shipSpeed.toFixed(1) + ' km/s';
+    document.getElementById('alignment').textContent = S.phase === 0 ? `${(S.phaseProgress*100).toFixed(0)}%` : S.phase > 0 ? 'LOCKED' : '—';
+    document.getElementById('alignment').style.color = S.phase > 0 ? '#00ff88' : '#4a5068';
+
+    // DRO
+    document.getElementById('hudBase').textContent = 'BASE-' + S.dro.currentBase;
+    document.getElementById('hudBase').style.color = bc;
+    document.getElementById('hudPrec').textContent = prec.str;
+    document.getElementById('hudOps').textContent = prec.ops.toLocaleString();
+    document.getElementById('droBase').textContent = S.dro.currentBase;
+    document.getElementById('droBase').style.color = bc;
+    document.getElementById('droPrecision').textContent = prec.str;
+    document.getElementById('droSwitches').textContent = S.dro.switches;
+    document.getElementById('droAvg').textContent = S.dro.avgBase.toFixed(1);
+    const savings = ((4096 - prec.ops) / 4096 * 100).toFixed(0);
+    document.getElementById('droSavings').textContent = savings + '%';
+
+    [8,16,32,48,64].forEach(b => {
+        const el = document.getElementById('seg' + b);
+        el.style.opacity = b === S.dro.currentBase ? 1 : 0.15;
+        el.classList.toggle('lit', b === S.dro.currentBase);
+    });
+
+    const p = S.dro.pillars;
+    document.getElementById('pillarDist').textContent = p.dist.toFixed(2);
+    document.getElementById('pillarVel').textContent = p.vel.toFixed(2);
+    document.getElementById('pillarInt').textContent = p.int.toFixed(2);
+    document.getElementById('pillarPhs').textContent = p.phs.toFixed(2);
+    document.getElementById('pillarPer').textContent = p.per.toFixed(2);
+
+    // HUD
+    document.getElementById('hudQgwts').textContent = S.transitActive ? 'ACTIVE' : 'STANDBY';
+    document.getElementById('hudThroat').textContent = S.throatRadius > 0 ? 'OPEN' : 'CLOSED';
+    document.getElementById('hudThroat').style.color = S.throatRadius > 0 ? '#cc66ff' : '#4a5068';
+    document.getElementById('hudPhase').textContent = S.phase >= 0 ? `${S.phase+1} / 6` : '0 / 6';
+    document.getElementById('hudOrigin').textContent = 'EARTH-01';
+    document.getElementById('hudDest').textContent = gate.name;
+}
+
+function baseColor(b) {
+    return b >= 64 ? '#00ff88' : b >= 48 ? '#00ccff' : b >= 32 ? '#ffd000' : b >= 16 ? '#ff8800' : '#ff3344';
+}
+
+function basePrecision(b) {
+    const map = {
+        8:{str:'±10.0 mm',ops:256}, 16:{str:'±5.0 mm',ops:512},
+        32:{str:'±1.0 mm',ops:1024}, 48:{str:'±0.01 mm',ops:2847}, 64:{str:'±0.001 mm',ops:4096}
+    };
+    return map[b] || map[32];
+}
+
+// ═══ CONTROLS ═══
+function setDest(dest) {
+    if (S.transitActive) return;
+    S.dest = dest;
+    document.querySelectorAll('.gate-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector(`[data-dest="${dest}"]`).classList.add('selected');
+    log(`Destination: ${GATES[dest].name} · ${GATES[dest].dist}`, 'info');
+}
+
+function initiateTransit() {
+    if (S.transitActive) return;
+    const gate = GATES[S.dest];
+    if (gate.status === 'BLIND GATE' && !S.blindGateDeployed) {
+        log('Cannot transit — blind gate not yet deployed!', 'error');
+        return;
+    }
+    S.transitActive = true;
+    S.shipPos = 0;
+    S.shipSpeed = 0;
+    S.shipInThroat = false;
+    S.shipExited = false;
+    S.modulatorsOnline = 0;
+    S.casimirPower = 0;
+    S.exoticDensity = 0;
+    S.throatRadius = 0;
+    S.reactorPower = 100;
+    S.capCharge = 100;
+    S.ringPulse = 0;
+    S.throatParticles = [];
+    S.warpStreaks = [];
+    S.gateNodes.forEach(n => n.active = false);
+
+    S.phase = -1;
+    advancePhase(); // Start phase 0
+
+    log(`QGWTS transit initiated → ${gate.name}`, 'warp');
+    log(`Transit distance: ${gate.dist}`, 'info');
+}
+
+function autoSequence() {
+    S.autoMode = true;
+    initiateTransit();
+}
+
+function deployBlindGate() {
+    if (S.blindGateDeployed) { log('Blind gate already deployed', 'warn'); return; }
+    log('Deploying blind gate seed probe → α Centauri...', 'warp');
+    log('Probe-Anchor System: Phase 1 launch', 'info');
+    S.blindGateDeployed = true;
+    S.blindGateProgress = 0;
+
+    // Simulate deployment over a few seconds
+    const deployInterval = setInterval(() => {
+        S.blindGateProgress += 2;
+        if (S.blindGateProgress >= 100) {
+            clearInterval(deployInterval);
+            log('Blind gate seed arrived — constructing remote mouth', 'success');
+            log('Entanglement anchors synchronized', 'warp');
+            log('α CEN-01 gate ONLINE', 'success');
+            GATES.alpha.status = 'ONLINE';
+        }
+    }, 200);
+}
+
+function abortTransit() {
+    if (!S.transitActive) return;
+    S.transitActive = false;
+    S.phase = -1;
+    S.throatRadius = 0;
+    S.casimirPower = 0;
+    S.ringPulse = 0;
+    S.shipInThroat = false;
+    S.warpStreaks = [];
+    S.throatParticles = [];
+    log('TRANSIT ABORTED', 'error');
+}
+
+function toggleSim() {
+    S.running = !S.running;
+    document.getElementById('btnPlay').textContent = S.running ? '⏸ PAUSE' : '▶ RESUME';
+    document.getElementById('btnPlay').classList.toggle('active', S.running);
+}
+
+function resetSim() {
+    S.time = 0; S.phase = -1; S.phaseTime = 0; S.phaseProgress = 0;
+    S.transitActive = false; S.autoMode = false;
+    S.shipPos = 0; S.shipSpeed = 0; S.shipInThroat = false; S.shipExited = false;
+    S.modulatorsOnline = 144; S.casimirPower = 0; S.exoticDensity = 0;
+    S.throatRadius = 0; S.reactorPower = 100; S.capCharge = 100; S.entangleCoherence = 1;
+    S.ringPulse = 0; S.throatParticles = []; S.warpStreaks = [];
+    S.blindGateDeployed = false; S.blindGateProgress = 0;
+    GATES.alpha.status = 'BLIND GATE';
+    S.dro = { currentBase:32, switches:0, history:[], avgBase:32, pillars:{dist:0.1,vel:0.1,int:0.2,phs:0.9,per:0.8} };
+    S.running = true;
+    S.dest = 'mars';
+    document.querySelectorAll('.gate-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector('[data-dest="mars"]').classList.add('selected');
+    for (let i = 0; i <= 5; i++) {
+        document.getElementById('phase' + i).classList.remove('active','done');
+    }
+    document.getElementById('phase0').classList.add('active');
+    initScene();
+    document.getElementById('logWrap').innerHTML = '';
+    log('QGWTS systems initialized', 'info');
+    log('Gate network: 5 online, 1 standby, 1 blind gate', 'info');
+}
+
+function log(msg, type='info') {
+    const wrap = document.getElementById('logWrap');
+    const mins = String(Math.floor(S.time/60)).padStart(2,'0');
+    const secs = String(Math.floor(S.time%60)).padStart(2,'0');
+    const el = document.createElement('div');
+    el.className = 'log-entry';
+    el.innerHTML = `<span class="log-time">${mins}:${secs}</span> <span class="log-msg ${type}">${msg}</span>`;
+    wrap.appendChild(el);
+    wrap.scrollTop = wrap.scrollHeight;
+    while (wrap.children.length > 60) wrap.removeChild(wrap.firstChild);
+}
+
+// ═══ LOOP ═══
+let lastTime = 0;
+function gameLoop(ts) {
+    const dt = Math.min((ts - lastTime) / 1000, 0.05);
+    lastTime = ts;
+    if (S.running) {
+        S.time += dt;
+        updatePhysics(dt);
+        computeDRO();
+    }
+    render();
+    updateUI();
+    requestAnimationFrame(gameLoop);
+}
+
+initScene();
+log('QGWTS — Quantum Gate Warp Transit System', 'warp');
+log('Gate network: 5 online, 1 standby, 1 blind gate', 'info');
+log('Select destination and initiate transit', 'info');
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BASE-X ENGINE | SBX-001: World Prompt Engine</title>
+<style>
+:root{--bg:#080a06;--panel:rgba(10,14,8,.95);--green:#33cc55;--dkgreen:#228833;--gold:#d4a017;--cyan:#00ccee;--amber:#ee8833;--red:#cc3333;--txt:#e0e8d8;--dim:#668866}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);overflow:hidden;height:100vh;display:flex;flex-direction:column}
+.hdr{height:44px;background:linear-gradient(180deg,rgba(51,204,85,.08),transparent);border-bottom:1px solid rgba(51,204,85,.2);display:flex;justify-content:space-between;align-items:center;padding:0 14px;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:8px}
+.badge{background:linear-gradient(135deg,var(--green),var(--dkgreen));color:#000;padding:3px 7px;border-radius:3px;font-weight:900;font-size:9px;letter-spacing:1px}
+.ltxt{font-size:12px;font-weight:700;letter-spacing:1.5px}
+.lsub{font-size:9px;color:var(--dim);margin-left:6px}
+.hstats{display:flex;gap:14px;font-size:10px}.hstats span{color:var(--dim)}.hstats b{color:var(--gold)}
+.main{display:flex;flex:1;overflow:hidden}
+.cw{flex:1;position:relative}
+canvas{width:100%;height:100%;display:block}
+.sp{width:268px;background:var(--panel);border-left:1px solid rgba(51,204,85,.12);overflow-y:auto;padding:10px;flex-shrink:0}
+.ps{margin-bottom:10px}
+.pt{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--green);border-bottom:1px solid rgba(51,204,85,.2);padding-bottom:3px;margin-bottom:6px}
+.cr{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.cl{font-size:8px;color:var(--dim)}.cv{font-size:9px;font-weight:600;min-width:44px;text-align:right}
+.prompt-area{width:100%;height:60px;background:rgba(51,204,85,.04);border:1px solid rgba(51,204,85,.15);border-radius:6px;color:var(--txt);font-family:inherit;font-size:10px;padding:8px;resize:none;outline:none;margin-bottom:6px}
+.prompt-area:focus{border-color:var(--green)}
+.prompt-area::placeholder{color:rgba(102,136,102,.5)}
+.preset-sel{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:6px}
+.ptb{padding:5px 4px;border-radius:4px;font-size:7.5px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);color:var(--dim);transition:.2s;text-align:center}
+.ptb:hover{border-color:rgba(51,204,85,.3);color:#fff}.ptb.active{background:rgba(51,204,85,.1);border-color:var(--green);color:#fff}
+.tag-row{display:flex;flex-wrap:wrap;gap:3px;margin:4px 0}
+.tag{padding:2px 6px;border-radius:3px;font-size:7px;font-weight:700;background:rgba(51,204,85,.08);border:1px solid rgba(51,204,85,.15);color:var(--green)}
+.tag.biome{color:var(--amber);border-color:rgba(238,136,51,.15);background:rgba(238,136,51,.06)}
+.tag.struct{color:var(--cyan);border-color:rgba(0,204,238,.15);background:rgba(0,204,238,.06)}
+.tag.weather{color:#aaaadd;border-color:rgba(170,170,221,.15);background:rgba(170,170,221,.06)}
+.gen-bar{width:100%;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin:4px 0}
+.gen-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--gold));border-radius:3px;transition:width .3s;width:0%}
+.contact-data{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin:4px 0}
+.cd{background:rgba(51,204,85,.04);border:1px solid rgba(51,204,85,.08);border-radius:3px;padding:4px 6px;text-align:center}
+.cd .v{font-size:11px;font-weight:700;color:var(--gold)}.cd .k{font-size:7px;color:var(--dim);text-transform:uppercase}
+.dro-r{display:flex;align-items:center;gap:5px;margin-bottom:2px}
+.dro-l{font-size:8px;color:var(--dim);min-width:62px}
+.dro-t{flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.dro-f{height:100%;border-radius:3px;transition:width .3s,background .3s}
+.dro-v{font-size:8px;font-weight:700;min-width:28px;text-align:right}
+.sg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px}
+.sb{background:rgba(51,204,85,.04);border:1px solid rgba(51,204,85,.08);border-radius:3px;padding:5px;text-align:center}
+.sb .n{font-size:14px;font-weight:700;color:var(--gold)}.sb .l{font-size:7px;color:var(--dim);text-transform:uppercase}
+.btn{width:100%;padding:9px;border:none;border-radius:4px;font-weight:700;font-size:11px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;transition:.2s}
+.btn-k{background:linear-gradient(135deg,var(--green),var(--dkgreen));color:#000}.btn-k:hover{filter:brightness(1.2)}.btn-k:disabled{opacity:.5}
+.btn-r{background:rgba(255,255,255,.06);color:var(--dim);border:1px solid rgba(255,255,255,.08)}.btn-r:hover{background:rgba(255,255,255,.1)}
+.ftr{height:24px;background:rgba(6,10,4,.9);border-top:1px solid rgba(51,204,85,.1);display:flex;justify-content:space-between;align-items:center;padding:0 14px;font-size:8px;color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="hdr">
+ <div class="logo"><div class="badge">BASE-X</div><span class="ltxt">SBX-001: WORLD PROMPT ENGINE</span><span class="lsub">Sandbox RPG VR · NLWG</span></div>
+ <div class="hstats"><span>Demo <b>84/108</b></span><span>Track <b>SBX 1/6</b></span><span>DRO <b id="hDro">B-64</b></span></div>
+</div>
+<div class="main">
+<div class="cw"><canvas id="c"></canvas></div>
+<div class="sp">
+ <div class="ps"><div class="pt">💬 World Prompt</div>
+  <textarea class="prompt-area" id="promptIn" placeholder="Describe your world... e.g. 'A volcanic island with obsidian beaches and a crystal spire in the center'"></textarea>
+  <button class="btn btn-k" id="goBtn" onclick="generate()">🌍 GENERATE WORLD</button>
+  <button class="btn btn-r" onclick="resetWorld()">↺ CLEAR</button>
+ </div>
+ <div class="ps"><div class="pt">📋 Presets</div>
+  <div class="preset-sel">
+   <div class="ptb" onclick="setPreset(0)">🌋 Volcanic Island</div>
+   <div class="ptb" onclick="setPreset(1)">🏔️ Frozen Peaks</div>
+   <div class="ptb" onclick="setPreset(2)">🌲 Enchanted Forest</div>
+   <div class="ptb" onclick="setPreset(3)">🏜️ Desert Ruins</div>
+   <div class="ptb" onclick="setPreset(4)">🌊 Floating Archipelago</div>
+   <div class="ptb" onclick="setPreset(5)">💀 Necropolis</div>
+   <div class="ptb" onclick="setPreset(6)">⚙️ Steampunk City</div>
+   <div class="ptb" onclick="setPreset(7)">🔮 Crystal Caverns</div>
+  </div>
+ </div>
+ <div class="ps"><div class="pt">🔍 NLP Parse Result</div>
+  <div class="cr"><span class="cl">Terrain Keywords</span></div>
+  <div class="tag-row" id="terrainTags"></div>
+  <div class="cr"><span class="cl">Biome/Material</span></div>
+  <div class="tag-row" id="biomeTags"></div>
+  <div class="cr"><span class="cl">Structures</span></div>
+  <div class="tag-row" id="structTags"></div>
+  <div class="cr"><span class="cl">Weather/Mood</span></div>
+  <div class="tag-row" id="weatherTags"></div>
+ </div>
+ <div class="ps"><div class="pt">⏳ Generation Progress</div>
+  <div class="cr"><span class="cl">Heightmap</span><span class="cv" id="gH">—</span></div>
+  <div class="gen-bar"><div class="gen-fill" id="gHb"></div></div>
+  <div class="cr"><span class="cl">Biome Paint</span><span class="cv" id="gB">—</span></div>
+  <div class="gen-bar"><div class="gen-fill" id="gBb"></div></div>
+  <div class="cr"><span class="cl">Structures</span><span class="cv" id="gS">—</span></div>
+  <div class="gen-bar"><div class="gen-fill" id="gSb"></div></div>
+  <div class="cr"><span class="cl">Weather/Light</span><span class="cv" id="gW">—</span></div>
+  <div class="gen-bar"><div class="gen-fill" id="gWb"></div></div>
+ </div>
+ <div class="ps"><div class="pt">📊 World Stats</div>
+  <div class="contact-data">
+   <div class="cd"><div class="v" id="wTiles">—</div><div class="k">Terrain Tiles</div></div>
+   <div class="cd"><div class="v" id="wStruct">—</div><div class="k">Structures</div></div>
+   <div class="cd"><div class="v" id="wBiomes">—</div><div class="k">Biomes</div></div>
+   <div class="cd"><div class="v" id="wElev">—</div><div class="k">Max Elevation</div></div>
+  </div>
+ </div>
+ <div class="ps"><div class="pt">🎯 Session</div>
+  <div class="sg">
+   <div class="sb"><div class="n" id="sGen">0</div><div class="l">Generated</div></div>
+   <div class="sb"><div class="n" id="sTiles">0</div><div class="l">Total Tiles</div></div>
+   <div class="sb"><div class="n" id="sStruct">0</div><div class="l">Structures</div></div>
+  </div>
+ </div>
+ <div class="ps"><div class="pt">📊 DRO Precision</div>
+  <div class="dro-r"><span class="dro-l">Near Player</span><div class="dro-t"><div class="dro-f" id="d0" style="width:100%;background:#00dd66"></div></div><span class="dro-v" id="d0v">B-64</span></div>
+  <div class="dro-r"><span class="dro-l">Gen Frontier</span><div class="dro-t"><div class="dro-f" id="d1" style="width:75%;background:#d4a017"></div></div><span class="dro-v" id="d1v">B-48</span></div>
+  <div class="dro-r"><span class="dro-l">Heightmap</span><div class="dro-t"><div class="dro-f" id="d2" style="width:50%;background:#3388cc"></div></div><span class="dro-v" id="d2v">B-32</span></div>
+  <div class="dro-r"><span class="dro-l">Biome Paint</span><div class="dro-t"><div class="dro-f" id="d3" style="width:37%;background:#3388cc"></div></div><span class="dro-v" id="d3v">B-24</span></div>
+  <div class="dro-r"><span class="dro-l">Structures</span><div class="dro-t"><div class="dro-f" id="d4" style="width:75%;background:#d4a017"></div></div><span class="dro-v" id="d4v">B-48</span></div>
+  <div class="dro-r"><span class="dro-l">Atmosphere</span><div class="dro-t"><div class="dro-f" id="d5" style="width:12%;background:#778877"></div></div><span class="dro-v" id="d5v">B-8</span></div>
+ </div>
+</div>
+</div>
+<div class="ftr"><span>© 2026 Keenan Wallace Dunham · Troll Hunter Gaming LLC · Patent Pending</span><span>Base-X Engine v0.9 · DRO: Dynamic Radix Optimization · B-4→B-64</span></div>
+
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d');
+let W,H;function rsz(){W=C.width=C.parentElement.clientWidth;H=C.height=C.parentElement.clientHeight}
+rsz();window.onresize=rsz;
+
+let t=0,generating=false,genPhase=0,genPct=0;
+let heightmap=[],biomeMap=[],structures=[],particles=[];
+let parsed={terrain:[],biome:[],struct:[],weather:[]};
+let worldData={tiles:0,structs:0,biomes:0,maxElev:0};
+let stats={gen:0,tiles:0,structs:0};
+const GS=64; // grid size
+
+const PRESETS=[
+ 'A volcanic island with obsidian beaches, lava flows, and a crystal spire at the center surrounded by ash clouds',
+ 'Frozen mountain peaks with glacial valleys, ice caves, an ancient stone fortress, and aurora borealis overhead',
+ 'A dense enchanted forest with glowing mushrooms, a fairy circle clearing, twisted ancient trees, and soft mist',
+ 'Vast desert with sandstone ruins, a buried pyramid half-exposed, oasis with palms, and a scorching sun',
+ 'Floating islands connected by rope bridges above an endless ocean, waterfalls cascading into the void below',
+ 'A crumbling necropolis of dark stone tombs, skeletal trees, rivers of green mist, and a towering black cathedral',
+ 'Steampunk city with brass towers, gear-driven bridges, smoke stacks, airship docks, and a clockwork cathedral',
+ 'Underground crystal caverns with bioluminescent pools, amethyst pillars, a crystal throne, and dripping stalactites'
+];
+
+const TERRAIN_KW={mountain:[.9,.7],hill:[.5,.4],valley:[.2,.15],island:[.6,.3],flat:[.1,.05],canyon:[.8,.6],peak:[1,.8],cliff:[.85,.7],plateau:[.4,.35],ridge:[.7,.55],cave:[.3,.2],crater:[.6,.5],volcano:[.95,.8],mesa:[.45,.4]};
+const BIOME_KW={volcanic:'#cc3311',obsidian:'#222233',lava:'#ff4400',ash:'#555544',ice:'#aaccee',snow:'#ddeeff',glacial:'#88bbdd',frozen:'#99bbcc',forest:'#226633',enchanted:'#44aa55',mushroom:'#884488',fairy:'#88cc88',desert:'#ccaa55',sand:'#ddbb66',sandstone:'#cc9944',oasis:'#44aa77',floating:'#6688cc',ocean:'#224488',water:'#3366aa',crystal:'#88aadd',necro:'#334422',dark:'#222222',tomb:'#443333',skeletal:'#888866',steam:'#887744',brass:'#aa8833',gear:'#998855',smoke:'#666666',cave:'#333344',amethyst:'#8844aa',biolum:'#44ddaa',underground:'#222233'};
+const STRUCT_KW=['spire','fortress','cathedral','castle','tower','pyramid','ruins','temple','bridge','dock','throne','tomb','gate','wall','altar','shrine','palace','citadel','lighthouse','windmill','hut','tavern','well','statue','obelisk','arch'];
+const WEATHER_KW=['storm','rain','snow','mist','fog','aurora','sun','cloud','ash','lightning','wind','clear','overcast','blizzard','scorching','moonlit','twilight','dawn','dusk'];
+
+function parsePrompt(text){
+ let lower=text.toLowerCase();
+ parsed={terrain:[],biome:[],struct:[],weather:[]};
+ Object.keys(TERRAIN_KW).forEach(k=>{if(lower.includes(k))parsed.terrain.push(k);});
+ Object.keys(BIOME_KW).forEach(k=>{if(lower.includes(k))parsed.biome.push(k);});
+ STRUCT_KW.forEach(k=>{if(lower.includes(k))parsed.struct.push(k);});
+ WEATHER_KW.forEach(k=>{if(lower.includes(k))parsed.weather.push(k);});
+ // Defaults
+ if(!parsed.terrain.length)parsed.terrain.push('hill');
+ if(!parsed.biome.length)parsed.biome.push('forest');
+ if(!parsed.weather.length)parsed.weather.push('clear');
+ renderTags();
+}
+
+function renderTags(){
+ ['terrainTags','biomeTags','structTags','weatherTags'].forEach(id=>document.getElementById(id).innerHTML='');
+ parsed.terrain.forEach(t=>{document.getElementById('terrainTags').innerHTML+=`<span class="tag">${t}</span>`;});
+ parsed.biome.forEach(b=>{document.getElementById('biomeTags').innerHTML+=`<span class="tag biome">${b}</span>`;});
+ parsed.struct.forEach(s=>{document.getElementById('structTags').innerHTML+=`<span class="tag struct">${s}</span>`;});
+ parsed.weather.forEach(w=>{document.getElementById('weatherTags').innerHTML+=`<span class="tag weather">${w}</span>`;});
+}
+
+function generateHeightmap(){
+ heightmap=[];
+ // Get terrain params
+ let maxH=.5,roughness=.4;
+ parsed.terrain.forEach(tk=>{let kw=TERRAIN_KW[tk];if(kw){maxH=Math.max(maxH,kw[0]);roughness=Math.max(roughness,kw[1]);}});
+ // Perlin-like noise via multiple octaves
+ for(let y=0;y<GS;y++){heightmap[y]=[];for(let x=0;x<GS;x++){
+  let h=0;
+  h+=Math.sin(x*.15)*Math.cos(y*.12)*.3;
+  h+=Math.sin(x*.3+2.7)*Math.cos(y*.25+1.3)*.15;
+  h+=Math.sin(x*.6+5.1)*Math.cos(y*.5+3.7)*.08;
+  h+=Math.sin((x-GS/2)*.05)*Math.cos((y-GS/2)*.05)*.2;
+  // Island shape — fade edges
+  let dx=(x-GS/2)/(GS/2),dy=(y-GS/2)/(GS/2);
+  let edgeFade=1-Math.sqrt(dx*dx+dy*dy)*.8;
+  edgeFade=Math.max(0,Math.min(1,edgeFade));
+  if(parsed.terrain.includes('island'))h*=edgeFade;
+  // Volcano center peak
+  let cd=Math.sqrt(dx*dx+dy*dy);
+  if(parsed.terrain.includes('volcano')){h+=Math.max(0,(1-cd*2))*maxH*.8;if(cd<.15)h-=.2;}
+  h=h*roughness+.3;h=Math.max(0,Math.min(1,h*maxH));
+  heightmap[y][x]=h;
+ }}
+ worldData.maxElev=Math.round(maxH*3200);
+ worldData.tiles=GS*GS;
+}
+
+function generateBiomes(){
+ biomeMap=[];
+ let biomeColors=parsed.biome.map(b=>BIOME_KW[b]||'#448833');
+ for(let y=0;y<GS;y++){biomeMap[y]=[];for(let x=0;x<GS;x++){
+  let h=heightmap[y][x];
+  let ci=Math.floor((h*2+Math.sin(x*.2+y*.3)*.3)*biomeColors.length)%biomeColors.length;
+  ci=Math.max(0,Math.min(biomeColors.length-1,ci));
+  biomeMap[y][x]=biomeColors[ci];
+ }}
+ worldData.biomes=biomeColors.length;
+}
+
+function generateStructures(){
+ structures=[];
+ parsed.struct.forEach((s,i)=>{
+  let placed=false,attempts=0;
+  while(!placed&&attempts<50){
+   let gx=Math.floor(Math.random()*(GS-4)+2);
+   let gy=Math.floor(Math.random()*(GS-4)+2);
+   let h=heightmap[gy]?heightmap[gy][gx]:0;
+   if(h>.15&&h<.85){
+    structures.push({type:s,gx,gy,h,size:8+Math.random()*12,
+     color:['#ccaa66','#888888','#aaaacc','#cc8844','#88aadd','#aa7744'][i%6]});
+    placed=true;
+   }
+   attempts++;
+  }
+ });
+ worldData.structs=structures.length;
+}
+
+function setPreset(i){document.getElementById('promptIn').value=PRESETS[i];}
+
+function generate(){
+ if(generating)return;
+ let prompt=document.getElementById('promptIn').value.trim();
+ if(!prompt)return;
+ parsePrompt(prompt);
+ generating=true;genPhase=0;genPct=0;
+ document.getElementById('goBtn').disabled=true;
+ document.getElementById('goBtn').textContent='⏳ GENERATING...';
+ stats.gen++;
+}
+
+function resetWorld(){
+ generating=false;genPhase=0;genPct=0;heightmap=[];biomeMap=[];structures=[];particles=[];
+ parsed={terrain:[],biome:[],struct:[],weather:[]};
+ renderTags();
+ document.getElementById('goBtn').disabled=false;
+ document.getElementById('goBtn').textContent='🌍 GENERATE WORLD';
+ ['gH','gB','gS','gW'].forEach(id=>{document.getElementById(id).textContent='—';document.getElementById(id+'b').style.width='0%';});
+ ['wTiles','wStruct','wBiomes','wElev'].forEach(id=>document.getElementById(id).textContent='—');
+}
+
+function updateGeneration(dt){
+ if(!generating)return;
+ genPct+=dt*(genPhase<2?80:50);
+ if(genPhase===0){// Heightmap
+  document.getElementById('gH').textContent=Math.min(100,Math.round(genPct))+'%';
+  document.getElementById('gHb').style.width=Math.min(100,genPct)+'%';
+  if(genPct>=100){generateHeightmap();genPhase=1;genPct=0;}
+ }else if(genPhase===1){// Biomes
+  document.getElementById('gB').textContent=Math.min(100,Math.round(genPct))+'%';
+  document.getElementById('gBb').style.width=Math.min(100,genPct)+'%';
+  if(genPct>=100){generateBiomes();genPhase=2;genPct=0;}
+ }else if(genPhase===2){// Structures
+  document.getElementById('gS').textContent=Math.min(100,Math.round(genPct))+'%';
+  document.getElementById('gSb').style.width=Math.min(100,genPct)+'%';
+  if(genPct>=100){generateStructures();genPhase=3;genPct=0;}
+ }else if(genPhase===3){// Weather
+  document.getElementById('gW').textContent=Math.min(100,Math.round(genPct))+'%';
+  document.getElementById('gWb').style.width=Math.min(100,genPct)+'%';
+  if(genPct>=100){genPhase=4;generating=false;showResults();}
+ }
+}
+
+function showResults(){
+ document.getElementById('goBtn').disabled=false;
+ document.getElementById('goBtn').textContent='🌍 GENERATE WORLD';
+ document.getElementById('wTiles').textContent=worldData.tiles;
+ document.getElementById('wStruct').textContent=worldData.structs;
+ document.getElementById('wBiomes').textContent=worldData.biomes;
+ document.getElementById('wElev').textContent=worldData.maxElev+'m';
+ stats.tiles+=worldData.tiles;stats.structs+=worldData.structs;
+ document.getElementById('sGen').textContent=stats.gen;
+ document.getElementById('sTiles').textContent=stats.tiles;
+ document.getElementById('sStruct').textContent=stats.structs;
+}
+
+// ========== RENDERING ==========
+function drawWorld(){
+ // Sky
+ let skyColors=parsed.weather.includes('storm')?['#1a1a2a','#2a2a3a']:
+  parsed.weather.includes('dawn')?['#1a0a2a','#cc6633']:
+  parsed.weather.includes('moonlit')?['#060818','#0a1028']:
+  parsed.weather.includes('scorching')?['#2a1a08','#cc8833']:['#0a1020','#1a2a44'];
+ let sg=X.createLinearGradient(0,0,0,H*.4);sg.addColorStop(0,skyColors[0]);sg.addColorStop(1,skyColors[1]);
+ X.fillStyle=sg;X.fillRect(0,0,W,H);
+
+ if(!heightmap.length){// Idle state
+  X.fillStyle='rgba(51,204,85,.05)';
+  for(let i=0;i<20;i++){let x=Math.sin(i*1.7+t*.3)*W*.3+W*.5;let y=Math.cos(i*2.1+t*.2)*H*.3+H*.5;
+   X.beginPath();X.arc(x,y,30+Math.sin(t+i)* 10,0,6.28);X.fill();}
+  X.fillStyle='rgba(51,204,85,.3)';X.font='bold 14px sans-serif';X.textAlign='center';
+  X.fillText('Enter a prompt to generate your world',W*.5,H*.45);
+  X.fillStyle='rgba(51,204,85,.15)';X.font='10px sans-serif';
+  X.fillText('Natural Language → Procedural Terrain → Real-Time Generation',W*.5,H*.5);
+  return;
+ }
+
+ // Isometric terrain rendering
+ let tileW=W/(GS+10);let tileH=tileW*.5;
+ let ox=W*.5,oy=H*.15;
+ let zoom=Math.min(W,H)/(GS*8);
+
+ // Render pass: back to front for proper overlap
+ for(let y=0;y<GS;y++){for(let x=0;x<GS;x++){
+  let h=heightmap[y]?heightmap[y][x]:0;
+  let genProgress=genPhase===0?(genPct/100*GS):GS;
+  if(genPhase===0&&(x+y)>genProgress*2)continue;
+
+  // Iso projection
+  let ix=(x-y)*tileW*.5*zoom+ox;
+  let iy=(x+y)*tileH*.5*zoom+oy-h*80*zoom;
+
+  // Color from biome
+  let baseCol=biomeMap[y]&&biomeMap[y][x]?biomeMap[y][x]:'#448833';
+  // Height shading
+  let brightness=.6+h*.5;
+  X.fillStyle=baseCol;X.globalAlpha=brightness;
+
+  // Draw diamond tile
+  X.beginPath();
+  X.moveTo(ix,iy);
+  X.lineTo(ix+tileW*.5*zoom,iy+tileH*.5*zoom);
+  X.lineTo(ix,iy+tileH*zoom);
+  X.lineTo(ix-tileW*.5*zoom,iy+tileH*.5*zoom);
+  X.closePath();X.fill();
+
+  // Side faces for height
+  if(h>.1){
+   X.fillStyle=baseCol;X.globalAlpha=brightness*.5;
+   let sideH=h*40*zoom;
+   X.beginPath();
+   X.moveTo(ix,iy+tileH*zoom);
+   X.lineTo(ix+tileW*.5*zoom,iy+tileH*.5*zoom);
+   X.lineTo(ix+tileW*.5*zoom,iy+tileH*.5*zoom+sideH);
+   X.lineTo(ix,iy+tileH*zoom+sideH);
+   X.closePath();X.fill();
+   X.beginPath();
+   X.moveTo(ix,iy+tileH*zoom);
+   X.lineTo(ix-tileW*.5*zoom,iy+tileH*.5*zoom);
+   X.lineTo(ix-tileW*.5*zoom,iy+tileH*.5*zoom+sideH);
+   X.lineTo(ix,iy+tileH*zoom+sideH);
+   X.closePath();X.globalAlpha=brightness*.35;X.fill();
+  }
+  X.globalAlpha=1;
+ }}
+
+ // Structures
+ structures.forEach(s=>{
+  let ix=(s.gx-s.gy)*tileW*.5*zoom+ox;
+  let iy=(s.gx+s.gy)*tileH*.5*zoom+oy-s.h*80*zoom;
+  let sz=s.size*zoom;
+  // Building body
+  X.fillStyle=s.color;X.globalAlpha=.8;
+  X.fillRect(ix-sz/2,iy-sz*1.5,sz,sz*1.5);
+  // Roof
+  X.fillStyle='#ffffff';X.globalAlpha=.15;
+  X.beginPath();X.moveTo(ix-sz*.6,iy-sz*1.5);X.lineTo(ix,iy-sz*2.2);
+  X.lineTo(ix+sz*.6,iy-sz*1.5);X.closePath();X.fill();
+  // Label
+  X.fillStyle='rgba(255,255,255,.4)';X.globalAlpha=1;X.font=`bold ${Math.max(6,7*zoom)}px sans-serif`;
+  X.textAlign='center';X.fillText(s.type.toUpperCase(),ix,iy-sz*2.4);
+ });
+
+ // Weather particles
+ if(parsed.weather.includes('rain')||parsed.weather.includes('storm')){
+  for(let i=0;i<3;i++)particles.push({x:Math.random()*W,y:-5,vx:-1,vy:8+Math.random()*4,life:1.5,size:1,color:'rgba(150,180,220,.3)'});
+ }
+ if(parsed.weather.includes('snow')||parsed.weather.includes('blizzard')){
+  for(let i=0;i<2;i++)particles.push({x:Math.random()*W,y:-5,vx:(Math.random()-.5)*2,vy:1+Math.random()*2,life:3,size:2,color:'rgba(220,230,255,.4)'});
+ }
+ if(parsed.weather.includes('ash')){
+  if(Math.random()<.3)particles.push({x:W*.5+(Math.random()-.5)*100,y:H*.2,vx:(Math.random()-.5)*2,vy:-1-Math.random(),life:2,size:1.5,color:'rgba(150,140,130,.3)'});
+ }
+ if(parsed.weather.includes('mist')||parsed.weather.includes('fog')){
+  X.fillStyle='rgba(180,190,200,.04)';
+  for(let i=0;i<5;i++){let mx=Math.sin(t*.2+i*2)*W*.3+W*.5;
+   X.beginPath();X.arc(mx,H*.6+Math.sin(t*.3+i)*30,80+Math.sin(t+i)*20,0,6.28);X.fill();}
+ }
+ if(parsed.weather.includes('aurora')){
+  for(let i=0;i<5;i++){
+   let ax=W*.2+i*W*.15+Math.sin(t+i)* 30;
+   let hue=120+i*30+Math.sin(t*.5)*20;
+   X.strokeStyle=`hsla(${hue},70%,50%,.08)`;X.lineWidth=20+Math.sin(t+i)*10;
+   X.beginPath();X.moveTo(ax,0);X.quadraticCurveTo(ax+Math.sin(t*.3+i)*50,H*.15,ax+30,H*.3);X.stroke();
+  }
+ }
+
+ particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=1/60;
+  X.fillStyle=p.color;X.globalAlpha=Math.min(1,p.life);
+  X.beginPath();X.arc(p.x,p.y,p.size,0,6.28);X.fill();});
+ X.globalAlpha=1;
+ particles=particles.filter(p=>p.life>0&&p.y<H+10);
+
+ // Generation frontier glow
+ if(generating&&genPhase<4){
+  let frontY=genPct/100;
+  X.strokeStyle='rgba(51,204,85,.3)';X.lineWidth=2;X.setLineDash([4,4]);
+  let fy=oy+frontY*GS*tileH*zoom;
+  X.beginPath();X.moveTo(0,fy);X.lineTo(W,fy);X.stroke();X.setLineDash([]);
+  // Glow
+  let gg=X.createLinearGradient(0,fy-20,0,fy+20);
+  gg.addColorStop(0,'transparent');gg.addColorStop(.5,'rgba(51,204,85,.1)');gg.addColorStop(1,'transparent');
+  X.fillStyle=gg;X.fillRect(0,fy-20,W,40);
+ }
+}
+
+function updateDRO(){
+ let b=[64,48,32,24,48,8];
+ if(generating){
+  if(genPhase===0)b=[32,64,64,8,16,8]; // Heightmap gen: frontier+heightmap max
+  if(genPhase===1)b=[32,48,32,48,16,8]; // Biome: biome paint rises
+  if(genPhase===2)b=[48,32,16,16,64,8]; // Structures: structure precision max
+  if(genPhase===3)b=[48,24,16,16,32,24]; // Weather: atmosphere rises
+ }
+ let cols={64:'#00dd66',48:'#d4a017',32:'#3388cc',24:'#3388cc',16:'#778877',8:'#778877'};
+ for(let i=0;i<6;i++){document.getElementById('d'+i).style.width=(b[i]/64*100)+'%';
+  document.getElementById('d'+i).style.background=cols[b[i]]||'#778877';
+  document.getElementById('d'+i+'v').textContent='B-'+b[i];}
+ document.getElementById('hDro').textContent='B-'+(generating?64:heightmap.length?48:32);
+}
+
+function frame(){
+ let dt=1/60;t+=dt;
+ X.clearRect(0,0,W,H);
+ updateGeneration(dt);
+ drawWorld();
+ updateDRO();
+ requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

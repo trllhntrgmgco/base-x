@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLD-004: Arch Interface | Base-X Engine Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --lcars-orange: #ff9900;
+            --lcars-blue: #9999ff;
+            --lcars-pink: #cc6699;
+            --lcars-tan: #ffcc99;
+            --lcars-red: #cc4444;
+            --lcars-green: #33cc66;
+            --lcars-yellow: #ffcc00;
+            --lcars-purple: #9977dd;
+            --lcars-teal: #33cccc;
+            --lcars-salmon: #ff9966;
+            --panel-bg: rgba(0, 0, 0, 0.92);
+            --arch-glow: rgba(255, 153, 0, 0.15);
+            --grid-color: rgba(255, 153, 0, 0.08);
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #000;
+            color: var(--lcars-orange);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Holodeck Grid Background */
+        .holodeck-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background:
+                repeating-linear-gradient(0deg, transparent, transparent 39px, var(--grid-color) 39px, var(--grid-color) 40px),
+                repeating-linear-gradient(90deg, transparent, transparent 39px, var(--grid-color) 39px, var(--grid-color) 40px);
+            animation: gridPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes gridPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Active Environment Backdrop */
+        .env-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            transition: opacity 1.5s ease, background 2s ease;
+            pointer-events: none;
+        }
+
+        .env-backdrop.victorian {
+            background: radial-gradient(ellipse at 50% 80%, #3d2b1f 0%, #1a0f08 40%, #000 80%);
+            opacity: 0.6;
+        }
+        .env-backdrop.jungle {
+            background: radial-gradient(ellipse at 50% 80%, #0a3d0a 0%, #051f05 40%, #000 80%);
+            opacity: 0.6;
+        }
+        .env-backdrop.ocean {
+            background: radial-gradient(ellipse at 50% 80%, #0a2d4d 0%, #051525 40%, #000 80%);
+            opacity: 0.6;
+        }
+        .env-backdrop.desert {
+            background: radial-gradient(ellipse at 50% 80%, #4d3a0a 0%, #251d05 40%, #000 80%);
+            opacity: 0.6;
+        }
+        .env-backdrop.space {
+            background: radial-gradient(ellipse at 50% 50%, #0a0a2d 0%, #050515 40%, #000 80%);
+            opacity: 0.6;
+        }
+        .env-backdrop.medieval {
+            background: radial-gradient(ellipse at 50% 80%, #2d1a0a 0%, #150d05 40%, #000 80%);
+            opacity: 0.6;
+        }
+        .env-backdrop.none { opacity: 0; }
+
+        /* Arch Structure */
+        .arch-frame {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .arch-left, .arch-right {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 18px;
+            pointer-events: auto;
+        }
+        .arch-left {
+            left: 0;
+            background: linear-gradient(180deg, var(--lcars-orange) 0%, var(--lcars-pink) 35%, var(--lcars-blue) 65%, var(--lcars-tan) 100%);
+            border-radius: 0 0 30px 0;
+        }
+        .arch-right {
+            right: 0;
+            background: linear-gradient(180deg, var(--lcars-tan) 0%, var(--lcars-blue) 35%, var(--lcars-pink) 65%, var(--lcars-orange) 100%);
+            border-radius: 0 0 0 30px;
+        }
+
+        .arch-top {
+            position: absolute;
+            top: 0;
+            left: 18px;
+            right: 18px;
+            height: 55px;
+            display: flex;
+            align-items: stretch;
+            pointer-events: auto;
+        }
+
+        .arch-top-cap {
+            width: 140px;
+            background: var(--lcars-orange);
+            border-radius: 0 0 0 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            color: #000;
+            font-size: 0.65em;
+            letter-spacing: 1px;
+        }
+
+        .arch-top-bar {
+            flex: 1;
+            display: flex;
+            gap: 3px;
+            padding: 0 3px;
+        }
+
+        .arch-top-segment {
+            flex: 1;
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.55em;
+            font-weight: 600;
+            color: #000;
+            cursor: pointer;
+            transition: filter 0.2s, transform 0.1s;
+            letter-spacing: 0.5px;
+        }
+        .arch-top-segment:hover {
+            filter: brightness(1.3);
+            transform: scaleY(1.05);
+        }
+        .arch-top-segment:active { transform: scaleY(0.95); }
+
+        .arch-top-end {
+            width: 100px;
+            background: var(--lcars-tan);
+            border-radius: 0 0 30px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-weight: 600;
+            color: #000;
+            font-size: 0.55em;
+        }
+
+        /* Main Content Area */
+        .main-area {
+            position: relative;
+            z-index: 3;
+            padding: 70px 35px 25px 35px;
+            min-height: 100vh;
+        }
+
+        /* Arch Materialization Overlay */
+        .arch-materialize {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: radial-gradient(ellipse at center, rgba(255, 153, 0, 0.3) 0%, transparent 70%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        .arch-materialize.active {
+            opacity: 1;
+            animation: archFlash 1.2s ease-out;
+        }
+        @keyframes archFlash {
+            0% { opacity: 0; }
+            15% { opacity: 1; }
+            30% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+
+        /* Panel Grid Layout */
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr 280px;
+            grid-template-rows: auto auto auto;
+            gap: 12px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* LCARS Panel Styling */
+        .lcars-panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255, 153, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: stretch;
+            height: 32px;
+        }
+
+        .panel-header-cap {
+            width: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.55em;
+            font-weight: 700;
+            color: #000;
+            border-radius: 0 0 16px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .panel-header-title {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7em;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .panel-header-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: auto 10px;
+            animation: indicatorPulse 2s ease-in-out infinite;
+        }
+        @keyframes indicatorPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .panel-body {
+            padding: 12px;
+        }
+
+        /* Active Program Panel */
+        .program-display {
+            grid-column: 1;
+            grid-row: 1 / 3;
+        }
+
+        .program-card {
+            background: rgba(255, 153, 0, 0.05);
+            border: 1px solid rgba(255, 153, 0, 0.15);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .program-card:hover {
+            background: rgba(255, 153, 0, 0.1);
+            border-color: rgba(255, 153, 0, 0.4);
+        }
+        .program-card.active {
+            background: rgba(255, 153, 0, 0.12);
+            border-color: var(--lcars-orange);
+            box-shadow: 0 0 12px rgba(255, 153, 0, 0.15);
+        }
+
+        .program-card-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.72em;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .program-card-desc {
+            font-size: 0.75em;
+            color: rgba(255, 153, 0, 0.6);
+            line-height: 1.3;
+        }
+        .program-card-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+        }
+        .meta-tag {
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: rgba(255, 153, 0, 0.1);
+            border: 1px solid rgba(255, 153, 0, 0.2);
+        }
+
+        /* Main Viewport - Environment Preview */
+        .viewport-panel {
+            grid-column: 2;
+            grid-row: 1;
+            min-height: 340px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .viewport-canvas {
+            width: 100%;
+            height: 280px;
+            position: relative;
+            background: #0a0a0a;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .viewport-scene {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8em;
+            transition: all 1.5s ease;
+        }
+
+        /* Scene-specific styles */
+        .scene-victorian {
+            background: linear-gradient(180deg, #1a0a00 0%, #3d2b1f 50%, #1a0f08 100%);
+        }
+        .scene-victorian::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 30% 40%, rgba(255, 180, 80, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 60%, rgba(200, 120, 50, 0.1) 0%, transparent 40%);
+        }
+        .scene-jungle {
+            background: linear-gradient(180deg, #0a2a0a 0%, #1a4d1a 40%, #0d330d 100%);
+        }
+        .scene-jungle::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 70%, rgba(50, 200, 50, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 30%, rgba(100, 255, 100, 0.08) 0%, transparent 40%);
+        }
+        .scene-ocean {
+            background: linear-gradient(180deg, #051525 0%, #0a3d5d 40%, #062035 100%);
+        }
+        .scene-ocean::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 50% 80%, rgba(50, 150, 255, 0.15) 0%, transparent 50%);
+            animation: oceanWave 4s ease-in-out infinite;
+        }
+        @keyframes oceanWave {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .scene-desert {
+            background: linear-gradient(180deg, #2a1a00 0%, #5d4a1a 50%, #3d2a08 100%);
+        }
+        .scene-space {
+            background: radial-gradient(ellipse at 50% 50%, #0a0a3d 0%, #050515 60%, #000 100%);
+        }
+        .scene-space::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(1px 1px at 20% 30%, #fff 50%, transparent 100%),
+                        radial-gradient(1px 1px at 60% 20%, #fff 50%, transparent 100%),
+                        radial-gradient(1px 1px at 80% 70%, #fff 50%, transparent 100%),
+                        radial-gradient(1px 1px at 40% 80%, #fff 50%, transparent 100%),
+                        radial-gradient(1px 1px at 10% 60%, #aaf 50%, transparent 100%),
+                        radial-gradient(1px 1px at 90% 40%, #ffa 50%, transparent 100%);
+            animation: starTwinkle 3s ease-in-out infinite alternate;
+        }
+        @keyframes starTwinkle { 0% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        .scene-medieval {
+            background: linear-gradient(180deg, #1a0d00 0%, #3d2510 50%, #1a0d00 100%);
+        }
+        .scene-grid {
+            background: #0a0a0a;
+        }
+        .scene-grid::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(255,153,0,0.12) 19px, rgba(255,153,0,0.12) 20px),
+                repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(255,153,0,0.12) 19px, rgba(255,153,0,0.12) 20px);
+        }
+
+        .scene-label {
+            position: absolute;
+            bottom: 10px;
+            left: 12px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6em;
+            color: rgba(255, 153, 0, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .scene-status {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: indicatorPulse 1.5s ease-in-out infinite;
+        }
+        .status-dot.running { background: var(--lcars-green); }
+        .status-dot.paused { background: var(--lcars-yellow); }
+        .status-dot.stopped { background: var(--lcars-red); }
+
+        /* Parameter Sliders */
+        .param-group {
+            margin-bottom: 10px;
+        }
+        .param-label {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7em;
+            margin-bottom: 4px;
+        }
+        .param-value {
+            color: var(--lcars-teal);
+        }
+
+        .lcars-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 153, 0, 0.15);
+            outline: none;
+            cursor: pointer;
+        }
+        .lcars-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--lcars-orange);
+            border: 2px solid #000;
+            box-shadow: 0 0 8px rgba(255, 153, 0, 0.4);
+            cursor: pointer;
+        }
+        .lcars-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--lcars-orange);
+            border: 2px solid #000;
+            box-shadow: 0 0 8px rgba(255, 153, 0, 0.4);
+            cursor: pointer;
+        }
+
+        /* LCARS Buttons */
+        .lcars-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 14px;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6em;
+            font-weight: 600;
+            color: #000;
+            cursor: pointer;
+            transition: filter 0.2s, transform 0.1s;
+            letter-spacing: 0.5px;
+        }
+        .lcars-btn:hover { filter: brightness(1.3); }
+        .lcars-btn:active { transform: scale(0.96); }
+        .lcars-btn.orange { background: var(--lcars-orange); }
+        .lcars-btn.blue { background: var(--lcars-blue); }
+        .lcars-btn.pink { background: var(--lcars-pink); }
+        .lcars-btn.green { background: var(--lcars-green); }
+        .lcars-btn.red { background: var(--lcars-red); color: #fff; }
+        .lcars-btn.tan { background: var(--lcars-tan); }
+        .lcars-btn.teal { background: var(--lcars-teal); }
+        .lcars-btn.purple { background: var(--lcars-purple); }
+        .lcars-btn.yellow { background: var(--lcars-yellow); }
+
+        .btn-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        /* Parameters Panel */
+        .params-panel {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        /* DRO Monitor */
+        .dro-panel {
+            grid-column: 3;
+            grid-row: 1;
+        }
+
+        .dro-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.68em;
+        }
+        .dro-bar-label {
+            width: 90px;
+            text-align: right;
+            color: rgba(255, 153, 0, 0.7);
+        }
+        .dro-bar-track {
+            flex: 1;
+            height: 10px;
+            background: rgba(255, 153, 0, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        .dro-bar-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.8s ease, background 0.5s ease;
+        }
+        .dro-bar-value {
+            width: 50px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        /* Log Terminal */
+        .log-panel {
+            grid-column: 3;
+            grid-row: 2 / 4;
+        }
+
+        .log-terminal {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 153, 0, 0.1);
+            border-radius: 4px;
+            padding: 8px;
+            height: 280px;
+            overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+            line-height: 1.5;
+        }
+        .log-terminal::-webkit-scrollbar { width: 4px; }
+        .log-terminal::-webkit-scrollbar-track { background: transparent; }
+        .log-terminal::-webkit-scrollbar-thumb { background: rgba(255, 153, 0, 0.3); border-radius: 2px; }
+
+        .log-entry { margin-bottom: 2px; }
+        .log-time { color: rgba(255, 153, 0, 0.4); }
+        .log-system { color: var(--lcars-blue); }
+        .log-arch { color: var(--lcars-orange); }
+        .log-dro { color: var(--lcars-teal); }
+        .log-warning { color: var(--lcars-yellow); }
+        .log-error { color: var(--lcars-red); }
+        .log-success { color: var(--lcars-green); }
+
+        /* Command Input */
+        .command-panel {
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        .command-input-wrap {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .command-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 153, 0, 0.3);
+            border-radius: 4px;
+            padding: 6px 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75em;
+            color: var(--lcars-orange);
+            outline: none;
+        }
+        .command-input::placeholder { color: rgba(255, 153, 0, 0.3); }
+        .command-input:focus { border-color: var(--lcars-orange); box-shadow: 0 0 8px rgba(255, 153, 0, 0.2); }
+
+        /* NPC List */
+        .npc-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: rgba(255, 153, 0, 0.04);
+            border: 1px solid rgba(255, 153, 0, 0.1);
+            border-radius: 4px;
+            margin-bottom: 4px;
+            font-size: 0.75em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .npc-item:hover {
+            background: rgba(255, 153, 0, 0.08);
+            border-color: rgba(255, 153, 0, 0.3);
+        }
+        .npc-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .npc-dot.active { background: var(--lcars-green); }
+        .npc-dot.paused { background: var(--lcars-yellow); }
+        .npc-dot.deleted { background: var(--lcars-red); }
+
+        .npc-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .npc-type {
+            color: rgba(255, 153, 0, 0.5);
+            font-size: 0.85em;
+            margin-left: auto;
+        }
+
+        /* Arch Call Button */
+        .arch-call-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            padding: 10px 30px;
+            background: linear-gradient(135deg, var(--lcars-orange), #cc7700);
+            border: 2px solid rgba(255, 200, 100, 0.4);
+            border-radius: 24px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75em;
+            font-weight: 700;
+            color: #000;
+            cursor: pointer;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(255, 153, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
+        }
+        .arch-call-btn:hover {
+            box-shadow: 0 0 30px rgba(255, 153, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transform: translateX(-50%) scale(1.05);
+        }
+        .arch-call-btn:active { transform: translateX(-50%) scale(0.97); }
+        .arch-call-btn.hidden { display: none; }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .panel-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .program-display { grid-column: 1; grid-row: 1; }
+            .viewport-panel { grid-column: 2; grid-row: 1; }
+            .params-panel { grid-column: 1 / 3; grid-row: 2; }
+            .dro-panel { grid-column: 1; grid-row: 3; }
+            .log-panel { grid-column: 2; grid-row: 3; }
+            .command-panel { grid-column: 1 / 3; grid-row: 4; }
+        }
+        @media (max-width: 768px) {
+            .panel-grid {
+                grid-template-columns: 1fr;
+            }
+            .program-display, .viewport-panel, .params-panel,
+            .dro-panel, .log-panel, .command-panel {
+                grid-column: 1;
+                grid-row: auto;
+            }
+            .arch-top-cap { width: 80px; font-size: 0.5em; }
+            .arch-top-segment { font-size: 0.45em; }
+        }
+
+        /* Scan line effect */
+        .scanline {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,153,0,0.15) 50%, transparent 100%);
+            z-index: 200;
+            pointer-events: none;
+            animation: scanDown 6s linear infinite;
+        }
+        @keyframes scanDown {
+            0% { top: -2px; }
+            100% { top: 100vh; }
+        }
+
+        /* Transition overlay for environment changes */
+        .transition-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 90;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+        }
+        .transition-overlay.flash {
+            animation: envFlash 0.6s ease-out;
+        }
+        @keyframes envFlash {
+            0% { opacity: 0; }
+            10% { opacity: 0.4; }
+            100% { opacity: 0; }
+        }
+
+        /* Holodeck status bar at bottom */
+        .holodeck-status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 18px;
+            right: 18px;
+            height: 22px;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.85);
+            border-top: 1px solid rgba(255, 153, 0, 0.15);
+            padding: 0 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.58em;
+            color: rgba(255, 153, 0, 0.5);
+            gap: 20px;
+        }
+        .status-item { display: flex; align-items: center; gap: 5px; }
+        .status-item .val { color: var(--lcars-teal); }
+    </style>
+</head>
+<body>
+    <div class="holodeck-bg"></div>
+    <div class="env-backdrop none" id="envBackdrop"></div>
+    <div class="scanline"></div>
+    <div class="arch-materialize" id="archFlash"></div>
+    <div class="transition-overlay" id="transitionOverlay"></div>
+
+    <!-- Arch Frame -->
+    <div class="arch-frame">
+        <div class="arch-left"></div>
+        <div class="arch-right"></div>
+        <div class="arch-top">
+            <div class="arch-top-cap">HLD-004</div>
+            <div class="arch-top-bar">
+                <div class="arch-top-segment" style="background:var(--lcars-orange)" onclick="navTab('programs')">PROGRAMS</div>
+                <div class="arch-top-segment" style="background:var(--lcars-pink)" onclick="navTab('environment')">ENVIRONMENT</div>
+                <div class="arch-top-segment" style="background:var(--lcars-blue)" onclick="navTab('characters')">CHARACTERS</div>
+                <div class="arch-top-segment" style="background:var(--lcars-teal)" onclick="navTab('physics')">PHYSICS</div>
+                <div class="arch-top-segment" style="background:var(--lcars-purple)" onclick="navTab('narrative')">NARRATIVE</div>
+                <div class="arch-top-segment" style="background:var(--lcars-salmon)" onclick="navTab('safety')">SAFETY</div>
+            </div>
+            <div class="arch-top-end">ARCH</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-area">
+        <div class="panel-grid">
+
+            <!-- LEFT: Program Library -->
+            <div class="lcars-panel program-display">
+                <div class="panel-header">
+                    <div class="panel-header-cap" style="background:var(--lcars-orange)">PROGRAMS</div>
+                    <div class="panel-header-title">HOLODECK LIBRARY</div>
+                    <div class="panel-header-indicator" style="background:var(--lcars-green)"></div>
+                </div>
+                <div class="panel-body" id="programList"></div>
+            </div>
+
+            <!-- CENTER TOP: Viewport -->
+            <div class="lcars-panel viewport-panel">
+                <div class="panel-header">
+                    <div class="panel-header-cap" style="background:var(--lcars-blue)">VIEWPORT</div>
+                    <div class="panel-header-title" id="viewportTitle">ENVIRONMENT PREVIEW</div>
+                    <div class="panel-header-indicator" id="viewportIndicator" style="background:var(--lcars-green)"></div>
+                </div>
+                <div class="panel-body">
+                    <div class="viewport-canvas">
+                        <div class="viewport-scene scene-grid" id="viewportScene">
+                            <span style="opacity:0.3">AWAITING PROGRAM SELECTION</span>
+                            <div class="scene-label" id="sceneLabel">HOLODECK 2 — DECK 6</div>
+                            <div class="scene-status">
+                                <div class="status-dot stopped" id="sceneDot"></div>
+                                <span id="sceneStatusText">STANDBY</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTER BOTTOM: Parameters -->
+            <div class="lcars-panel params-panel">
+                <div class="panel-header">
+                    <div class="panel-header-cap" style="background:var(--lcars-pink)">PARAMS</div>
+                    <div class="panel-header-title">SIMULATION PARAMETERS</div>
+                </div>
+                <div class="panel-body" id="paramsBody">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px" id="paramsGrid">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="btn-row" style="margin-top:12px">
+                        <button class="lcars-btn green" onclick="applyParams()">APPLY CHANGES</button>
+                        <button class="lcars-btn blue" onclick="resetParams()">RESET DEFAULTS</button>
+                        <button class="lcars-btn yellow" onclick="saveSnapshot()">SAVE SNAPSHOT</button>
+                        <button class="lcars-btn pink" onclick="togglePause()">PAUSE / RESUME</button>
+                        <button class="lcars-btn red" onclick="endProgram()">END PROGRAM</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT TOP: DRO Monitor -->
+            <div class="lcars-panel dro-panel">
+                <div class="panel-header">
+                    <div class="panel-header-cap" style="background:var(--lcars-teal)">DRO</div>
+                    <div class="panel-header-title">BASE-X MONITOR</div>
+                </div>
+                <div class="panel-body" id="droBody">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- RIGHT BOTTOM: System Log -->
+            <div class="lcars-panel log-panel">
+                <div class="panel-header">
+                    <div class="panel-header-cap" style="background:var(--lcars-tan)">LOG</div>
+                    <div class="panel-header-title">SYSTEM LOG</div>
+                </div>
+                <div class="panel-body">
+                    <div class="log-terminal" id="logTerminal"></div>
+                </div>
+            </div>
+
+            <!-- LEFT BOTTOM: Command Interface -->
+            <div class="lcars-panel command-panel">
+                <div class="panel-header">
+                    <div class="panel-header-cap" style="background:var(--lcars-purple)">VOICE</div>
+                    <div class="panel-header-title">COMMAND INTERFACE</div>
+                </div>
+                <div class="panel-body">
+                    <div id="npcList"></div>
+                    <div class="command-input-wrap">
+                        <input type="text" class="command-input" id="cmdInput" placeholder="Computer, ..." onkeydown="if(event.key==='Enter')execCommand()">
+                        <button class="lcars-btn orange" onclick="execCommand()">EXEC</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="holodeck-status-bar">
+        <div class="status-item">HOLODECK <span class="val">2</span></div>
+        <div class="status-item">DECK <span class="val">6</span></div>
+        <div class="status-item">POWER <span class="val" id="sbPower">100%</span></div>
+        <div class="status-item">MATRIX <span class="val" id="sbMatrix">STABLE</span></div>
+        <div class="status-item">SAFETY <span class="val" id="sbSafety">ONLINE</span></div>
+        <div class="status-item">BASE-X <span class="val" id="sbBaseX">—</span></div>
+        <div class="status-item" style="margin-left:auto">STARDATE <span class="val" id="sbStardate"></span></div>
+    </div>
+
+    <script>
+        // ─── Data ────────────────────────────────────────────────
+        const PROGRAMS = [
+            {
+                id: 'janeway-lambda-1',
+                name: 'Janeway Lambda One',
+                desc: 'Victorian gothic novel — governess mystery on the moors',
+                env: 'victorian',
+                category: 'FICTION',
+                difficulty: 'ADAPTIVE',
+                npcs: [
+                    { name: 'Lord Burleigh', type: 'Antagonist', status: 'active' },
+                    { name: 'Mrs. Templeton', type: 'Guide NPC', status: 'active' },
+                    { name: 'Beatrice', type: 'Child NPC', status: 'active' },
+                ],
+                params: {
+                    timeOfDay: 72, weather: 85, difficulty: 55, npcIntelligence: 70,
+                    detailLevel: 80, gravity: 50, lightIntensity: 35, fogDensity: 65
+                },
+                dro: { environment: 32, characters: 48, physics: 24, lighting: 32, audio: 16 }
+            },
+            {
+                id: 'paris-resort',
+                name: 'Paris Resort Program',
+                desc: 'Tropical island — surfing, swimming, relaxation',
+                env: 'ocean',
+                category: 'RECREATION',
+                difficulty: 'CASUAL',
+                npcs: [
+                    { name: 'Sandrine', type: 'Bartender', status: 'active' },
+                    { name: 'Lifeguard', type: 'Safety NPC', status: 'active' },
+                ],
+                params: {
+                    timeOfDay: 55, weather: 20, difficulty: 20, npcIntelligence: 40,
+                    detailLevel: 90, gravity: 50, lightIntensity: 85, fogDensity: 5
+                },
+                dro: { environment: 48, characters: 24, physics: 32, lighting: 48, audio: 24 }
+            },
+            {
+                id: 'insurrection-alpha',
+                name: 'Insurrection Alpha',
+                desc: 'Maquis resistance — jungle guerrilla warfare simulation',
+                env: 'jungle',
+                category: 'TACTICAL',
+                difficulty: 'HARD',
+                npcs: [
+                    { name: 'Commander Katal', type: 'Squad Leader', status: 'active' },
+                    { name: 'Pvt. Doyle', type: 'Squadmate', status: 'active' },
+                    { name: 'Enemy Patrol', type: 'Hostile Group', status: 'active' },
+                    { name: 'Civilian Contact', type: 'Intel NPC', status: 'paused' },
+                ],
+                params: {
+                    timeOfDay: 30, weather: 60, difficulty: 80, npcIntelligence: 85,
+                    detailLevel: 75, gravity: 50, lightIntensity: 25, fogDensity: 40
+                },
+                dro: { environment: 32, characters: 64, physics: 48, lighting: 24, audio: 32 }
+            },
+            {
+                id: 'vulcan-monastery',
+                name: 'Vulcan Monastery',
+                desc: 'Meditation temple — desert highlands of Mount Seleya',
+                env: 'desert',
+                category: 'TRAINING',
+                difficulty: 'MEDITATIVE',
+                npcs: [
+                    { name: "T'Pau", type: 'Elder', status: 'active' },
+                    { name: 'Acolyte', type: 'Guide', status: 'active' },
+                ],
+                params: {
+                    timeOfDay: 45, weather: 10, difficulty: 30, npcIntelligence: 90,
+                    detailLevel: 95, gravity: 45, lightIntensity: 75, fogDensity: 10
+                },
+                dro: { environment: 64, characters: 48, physics: 16, lighting: 48, audio: 32 }
+            },
+            {
+                id: 'borg-encounter-7',
+                name: 'Borg Encounter 7',
+                desc: 'Tactical simulation — starship combat in deep space',
+                env: 'space',
+                category: 'TACTICAL',
+                difficulty: 'EXTREME',
+                npcs: [
+                    { name: 'Borg Drone Alpha', type: 'Hostile', status: 'active' },
+                    { name: 'Borg Drone Beta', type: 'Hostile', status: 'active' },
+                    { name: 'Resistance Ally', type: 'Support', status: 'active' },
+                ],
+                params: {
+                    timeOfDay: 50, weather: 0, difficulty: 95, npcIntelligence: 95,
+                    detailLevel: 70, gravity: 0, lightIntensity: 20, fogDensity: 0
+                },
+                dro: { environment: 16, characters: 64, physics: 64, lighting: 16, audio: 48 }
+            },
+            {
+                id: 'kh-medieval',
+                name: 'Knights of Honour',
+                desc: 'Medieval castle siege — trebuchets, cavalry, swordplay',
+                env: 'medieval',
+                category: 'FICTION',
+                difficulty: 'HARD',
+                npcs: [
+                    { name: 'Sir Galahad', type: 'Ally Knight', status: 'active' },
+                    { name: 'Dark Knight', type: 'Boss', status: 'active' },
+                    { name: 'Squire Thomas', type: 'Support', status: 'active' },
+                    { name: 'Castle Healer', type: 'Medic', status: 'paused' },
+                ],
+                params: {
+                    timeOfDay: 60, weather: 45, difficulty: 75, npcIntelligence: 65,
+                    detailLevel: 85, gravity: 50, lightIntensity: 50, fogDensity: 30
+                },
+                dro: { environment: 32, characters: 48, physics: 48, lighting: 32, audio: 24 }
+            }
+        ];
+
+        const PARAM_DEFS = {
+            timeOfDay:      { label: 'TIME OF DAY',       unit: '', format: v => { let h = Math.floor(v/100*24), m = Math.floor((v/100*24-h)*60); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; } },
+            weather:        { label: 'WEATHER INTENSITY',  unit: '%', format: v => v + '%' },
+            difficulty:     { label: 'DIFFICULTY',         unit: '%', format: v => v + '%' },
+            npcIntelligence:{ label: 'NPC INTELLIGENCE',   unit: '%', format: v => v + '%' },
+            detailLevel:    { label: 'DETAIL LEVEL',       unit: '%', format: v => v + '%' },
+            gravity:        { label: 'GRAVITY',            unit: 'G', format: v => (v/50).toFixed(2) + 'G' },
+            lightIntensity: { label: 'LIGHT INTENSITY',    unit: '%', format: v => v + '%' },
+            fogDensity:     { label: 'FOG DENSITY',        unit: '%', format: v => v + '%' },
+        };
+
+        // ─── State ───────────────────────────────────────────────
+        let state = {
+            activeProgram: null,
+            running: false,
+            paused: false,
+            safetyProtocols: true,
+            params: {},
+            archVisible: true,
+            logEntries: [],
+            snapshots: [],
+            stardate: 54312.4,
+        };
+
+        // ─── Init ────────────────────────────────────────────────
+        function init() {
+            updateStardate();
+            renderProgramList();
+            renderDRO(null);
+            renderParams(null);
+            renderNPCs(null);
+            log('ARCH', 'Arch interface materialized', 'arch');
+            log('SYSTEM', 'Holodeck 2, Deck 6 — standing by', 'system');
+            log('DRO', 'Base-X precision engine online', 'dro');
+            log('SYSTEM', 'Safety protocols: ONLINE', 'success');
+
+            // Flash the arch on load
+            setTimeout(() => {
+                document.getElementById('archFlash').classList.add('active');
+                setTimeout(() => document.getElementById('archFlash').classList.remove('active'), 1300);
+            }, 300);
+        }
+
+        function updateStardate() {
+            state.stardate += 0.1;
+            document.getElementById('sbStardate').textContent = state.stardate.toFixed(1);
+            setTimeout(updateStardate, 5000);
+        }
+
+        // ─── Render Functions ────────────────────────────────────
+
+        function renderProgramList() {
+            const el = document.getElementById('programList');
+            el.innerHTML = PROGRAMS.map(p => `
+                <div class="program-card ${state.activeProgram?.id === p.id ? 'active' : ''}"
+                     onclick="loadProgram('${p.id}')">
+                    <div class="program-card-title" style="color:${state.activeProgram?.id === p.id ? 'var(--lcars-orange)' : 'rgba(255,153,0,0.8)'}">
+                        ${p.name}
+                    </div>
+                    <div class="program-card-desc">${p.desc}</div>
+                    <div class="program-card-meta">
+                        <span class="meta-tag">${p.category}</span>
+                        <span class="meta-tag">${p.difficulty}</span>
+                        <span class="meta-tag">${p.npcs.length} NPCs</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderDRO(prog) {
+            const el = document.getElementById('droBody');
+            if (!prog) {
+                el.innerHTML = '<div style="opacity:0.3;font-family:Share Tech Mono,monospace;font-size:0.75em;text-align:center;padding:20px">NO PROGRAM LOADED</div>';
+                document.getElementById('sbBaseX').textContent = '—';
+                return;
+            }
+            const colors = {
+                environment: 'var(--lcars-green)',
+                characters: 'var(--lcars-orange)',
+                physics: 'var(--lcars-teal)',
+                lighting: 'var(--lcars-yellow)',
+                audio: 'var(--lcars-purple)',
+            };
+            el.innerHTML = Object.entries(prog.dro).map(([k, v]) => `
+                <div class="dro-bar">
+                    <span class="dro-bar-label">${k.toUpperCase()}</span>
+                    <div class="dro-bar-track">
+                        <div class="dro-bar-fill" style="width:${v/64*100}%;background:${colors[k] || 'var(--lcars-orange)'}"></div>
+                    </div>
+                    <span class="dro-bar-value" style="color:${colors[k]}">B-${v}</span>
+                </div>
+            `).join('');
+
+            // Compute dominant base for status bar
+            const vals = Object.values(prog.dro);
+            const max = Math.max(...vals);
+            document.getElementById('sbBaseX').textContent = `B-${max} peak`;
+        }
+
+        function renderParams(prog) {
+            const grid = document.getElementById('paramsGrid');
+            if (!prog) {
+                grid.innerHTML = '<div style="grid-column:1/-1;opacity:0.3;font-family:Share Tech Mono,monospace;font-size:0.75em;text-align:center;padding:20px">SELECT A PROGRAM TO VIEW PARAMETERS</div>';
+                return;
+            }
+            state.params = { ...prog.params };
+            grid.innerHTML = Object.entries(PARAM_DEFS).map(([key, def]) => `
+                <div class="param-group">
+                    <div class="param-label">
+                        <span>${def.label}</span>
+                        <span class="param-value" id="pv-${key}">${def.format(state.params[key])}</span>
+                    </div>
+                    <input type="range" class="lcars-slider" min="0" max="100" value="${state.params[key]}"
+                        oninput="updateParam('${key}', this.value)" id="ps-${key}">
+                </div>
+            `).join('');
+        }
+
+        function renderNPCs(prog) {
+            const el = document.getElementById('npcList');
+            if (!prog) {
+                el.innerHTML = '<div style="opacity:0.3;font-family:Share Tech Mono,monospace;font-size:0.7em;padding:8px">No characters loaded</div>';
+                return;
+            }
+            el.innerHTML = prog.npcs.map((n, i) => `
+                <div class="npc-item" onclick="toggleNPC(${i})">
+                    <div class="npc-dot ${n.status}"></div>
+                    <span class="npc-name">${n.name}</span>
+                    <span class="npc-type">${n.type}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderScene(prog) {
+            const scene = document.getElementById('viewportScene');
+            const dot = document.getElementById('sceneDot');
+            const statusText = document.getElementById('sceneStatusText');
+            const backdrop = document.getElementById('envBackdrop');
+            const title = document.getElementById('viewportTitle');
+
+            if (!prog) {
+                scene.className = 'viewport-scene scene-grid';
+                scene.innerHTML = '<span style="opacity:0.3">AWAITING PROGRAM SELECTION</span>';
+                dot.className = 'status-dot stopped';
+                statusText.textContent = 'STANDBY';
+                backdrop.className = 'env-backdrop none';
+                title.textContent = 'ENVIRONMENT PREVIEW';
+                return;
+            }
+
+            // Flash transition
+            const overlay = document.getElementById('transitionOverlay');
+            overlay.classList.remove('flash');
+            void overlay.offsetWidth;
+            overlay.classList.add('flash');
+
+            scene.className = `viewport-scene scene-${prog.env}`;
+            scene.innerHTML = `
+                <div style="text-align:center;z-index:1;position:relative">
+                    <div style="font-family:Orbitron,monospace;font-size:1.1em;font-weight:700;text-shadow:0 0 20px rgba(255,153,0,0.5)">${prog.name.toUpperCase()}</div>
+                    <div style="font-size:0.7em;opacity:0.6;margin-top:4px">${prog.desc}</div>
+                    <div style="font-family:Share Tech Mono,monospace;font-size:0.6em;opacity:0.4;margin-top:8px">ENVIRONMENT: ${prog.env.toUpperCase()} | CATEGORY: ${prog.category}</div>
+                </div>
+                <div class="scene-label">HOLODECK 2 — DECK 6</div>
+                <div class="scene-status">
+                    <div class="status-dot ${state.paused ? 'paused' : 'running'}" id="sceneDot"></div>
+                    <span id="sceneStatusText">${state.paused ? 'PAUSED' : 'RUNNING'}</span>
+                </div>
+            `;
+
+            backdrop.className = `env-backdrop ${prog.env}`;
+            title.textContent = prog.name.toUpperCase();
+        }
+
+        // ─── Actions ─────────────────────────────────────────────
+
+        function loadProgram(id) {
+            const prog = PROGRAMS.find(p => p.id === id);
+            if (!prog) return;
+
+            state.activeProgram = prog;
+            state.running = true;
+            state.paused = false;
+
+            log('ARCH', `Loading program: ${prog.name}`, 'arch');
+            log('SYSTEM', `Environment: ${prog.env.toUpperCase()}`, 'system');
+            log('DRO', `Base allocation — ENV:B-${prog.dro.environment} CHR:B-${prog.dro.characters} PHY:B-${prog.dro.physics}`, 'dro');
+            log('SYSTEM', `${prog.npcs.length} character matrices initialized`, 'system');
+            log('SUCCESS', 'Program running', 'success');
+
+            renderProgramList();
+            renderDRO(prog);
+            renderParams(prog);
+            renderNPCs(prog);
+            renderScene(prog);
+
+            document.getElementById('sbPower').textContent = Math.floor(85 + Math.random() * 15) + '%';
+            document.getElementById('sbMatrix').textContent = 'STABLE';
+        }
+
+        function updateParam(key, val) {
+            state.params[key] = parseInt(val);
+            const def = PARAM_DEFS[key];
+            document.getElementById(`pv-${key}`).textContent = def.format(parseInt(val));
+        }
+
+        function applyParams() {
+            if (!state.activeProgram) return;
+            log('ARCH', 'Applying parameter changes...', 'arch');
+
+            const changed = [];
+            Object.keys(state.params).forEach(k => {
+                if (state.params[k] !== state.activeProgram.params[k]) {
+                    changed.push(PARAM_DEFS[k].label);
+                    state.activeProgram.params[k] = state.params[k];
+                }
+            });
+
+            if (changed.length === 0) {
+                log('SYSTEM', 'No changes detected', 'system');
+            } else {
+                log('SUCCESS', `Updated: ${changed.join(', ')}`, 'success');
+                log('DRO', 'Recalculating precision allocation...', 'dro');
+
+                // Simulate DRO rebalance
+                const prog = state.activeProgram;
+                if (state.params.difficulty > 80) {
+                    prog.dro.characters = Math.min(64, prog.dro.characters + 8);
+                    prog.dro.physics = Math.min(64, prog.dro.physics + 8);
+                }
+                if (state.params.detailLevel > 85) {
+                    prog.dro.environment = Math.min(64, prog.dro.environment + 8);
+                    prog.dro.lighting = Math.min(64, prog.dro.lighting + 8);
+                }
+                if (state.params.fogDensity > 70) {
+                    prog.dro.lighting = Math.min(64, prog.dro.lighting + 4);
+                }
+                renderDRO(prog);
+                log('DRO', 'Precision rebalanced', 'dro');
+            }
+        }
+
+        function resetParams() {
+            if (!state.activeProgram) return;
+            const orig = PROGRAMS.find(p => p.id === state.activeProgram.id);
+            state.activeProgram.params = { ...orig.params };
+            state.activeProgram.dro = { ...orig.dro };
+            renderParams(state.activeProgram);
+            renderDRO(state.activeProgram);
+            log('ARCH', 'Parameters reset to defaults', 'arch');
+        }
+
+        function saveSnapshot() {
+            if (!state.activeProgram) return;
+            const snap = {
+                id: Date.now(),
+                program: state.activeProgram.name,
+                params: { ...state.params },
+            };
+            state.snapshots.push(snap);
+            log('SUCCESS', `Snapshot saved: ${state.activeProgram.name} #${state.snapshots.length}`, 'success');
+        }
+
+        function togglePause() {
+            if (!state.running) return;
+            state.paused = !state.paused;
+
+            const dot = document.getElementById('sceneDot');
+            const text = document.getElementById('sceneStatusText');
+            if (dot) {
+                dot.className = `status-dot ${state.paused ? 'paused' : 'running'}`;
+            }
+            if (text) {
+                text.textContent = state.paused ? 'PAUSED' : 'RUNNING';
+            }
+
+            log('ARCH', state.paused ? 'Program PAUSED' : 'Program RESUMED', 'arch');
+            document.getElementById('sbMatrix').textContent = state.paused ? 'PAUSED' : 'STABLE';
+        }
+
+        function endProgram() {
+            if (!state.running) return;
+            log('ARCH', `Ending program: ${state.activeProgram.name}`, 'warning');
+            log('SYSTEM', 'Decompiling character matrices...', 'system');
+            log('SYSTEM', 'Releasing holographic emitters...', 'system');
+            log('DRO', 'All subsystems returning to Base-8 standby', 'dro');
+            log('SUCCESS', 'Program terminated. Holodeck clear.', 'success');
+
+            state.activeProgram = null;
+            state.running = false;
+            state.paused = false;
+
+            renderProgramList();
+            renderDRO(null);
+            renderParams(null);
+            renderNPCs(null);
+            renderScene(null);
+
+            document.getElementById('sbPower').textContent = '100%';
+            document.getElementById('sbMatrix').textContent = 'STANDBY';
+            document.getElementById('sbBaseX').textContent = '—';
+        }
+
+        function toggleNPC(index) {
+            if (!state.activeProgram) return;
+            const npc = state.activeProgram.npcs[index];
+            const cycle = { active: 'paused', paused: 'deleted', deleted: 'active' };
+            npc.status = cycle[npc.status];
+            renderNPCs(state.activeProgram);
+
+            const msgs = {
+                active: `Reactivated character: ${npc.name}`,
+                paused: `Suspended character: ${npc.name}`,
+                deleted: `Removed character: ${npc.name}`,
+            };
+            log('ARCH', msgs[npc.status], npc.status === 'deleted' ? 'warning' : 'arch');
+        }
+
+        function toggleSafety() {
+            state.safetyProtocols = !state.safetyProtocols;
+            document.getElementById('sbSafety').textContent = state.safetyProtocols ? 'ONLINE' : 'OFFLINE';
+            document.getElementById('sbSafety').style.color = state.safetyProtocols ? 'var(--lcars-teal)' : 'var(--lcars-red)';
+            log(state.safetyProtocols ? 'SUCCESS' : 'WARNING',
+                `Safety protocols: ${state.safetyProtocols ? 'ENABLED' : 'DISABLED — PROCEED WITH CAUTION'}`,
+                state.safetyProtocols ? 'success' : 'error');
+        }
+
+        // ─── Command Parser ──────────────────────────────────────
+
+        function execCommand() {
+            const input = document.getElementById('cmdInput');
+            const raw = input.value.trim();
+            if (!raw) return;
+            input.value = '';
+
+            const cmd = raw.toLowerCase().replace(/^computer,?\s*/, '');
+
+            log('VOICE', `"${raw}"`, 'system');
+
+            if (cmd.includes('end program') || cmd.includes('exit')) {
+                endProgram();
+            } else if (cmd.includes('pause') || cmd.includes('freeze')) {
+                if (!state.paused) togglePause();
+                else log('SYSTEM', 'Program already paused', 'system');
+            } else if (cmd.includes('resume') || cmd.includes('continue') || cmd.includes('unfreeze')) {
+                if (state.paused) togglePause();
+                else log('SYSTEM', 'Program already running', 'system');
+            } else if (cmd.includes('arch') || cmd.includes('display arch')) {
+                log('ARCH', 'Arch interface is active', 'arch');
+                document.getElementById('archFlash').classList.add('active');
+                setTimeout(() => document.getElementById('archFlash').classList.remove('active'), 1300);
+            } else if (cmd.includes('safety') && cmd.includes('off')) {
+                if (state.safetyProtocols) toggleSafety();
+            } else if (cmd.includes('safety') && cmd.includes('on')) {
+                if (!state.safetyProtocols) toggleSafety();
+            } else if (cmd.includes('save') || cmd.includes('snapshot')) {
+                saveSnapshot();
+            } else if (cmd.includes('reset')) {
+                resetParams();
+            } else if (cmd.includes('status') || cmd.includes('report')) {
+                if (state.activeProgram) {
+                    log('SYSTEM', `Active: ${state.activeProgram.name}`, 'system');
+                    log('SYSTEM', `State: ${state.paused ? 'PAUSED' : 'RUNNING'}`, 'system');
+                    log('SYSTEM', `NPCs: ${state.activeProgram.npcs.filter(n => n.status === 'active').length} active`, 'system');
+                    log('SYSTEM', `Safety: ${state.safetyProtocols ? 'ON' : 'OFF'}`, state.safetyProtocols ? 'success' : 'error');
+                } else {
+                    log('SYSTEM', 'No program loaded', 'system');
+                }
+            } else if (cmd.startsWith('load ') || cmd.startsWith('run ')) {
+                const name = cmd.replace(/^(load|run)\s+/, '');
+                const match = PROGRAMS.find(p => p.name.toLowerCase().includes(name));
+                if (match) loadProgram(match.id);
+                else log('ERROR', `Program not found: "${name}"`, 'error');
+            } else if (cmd.includes('time') && cmd.includes('night')) {
+                if (state.activeProgram) {
+                    state.params.timeOfDay = 5;
+                    document.getElementById('ps-timeOfDay').value = 5;
+                    document.getElementById('pv-timeOfDay').textContent = PARAM_DEFS.timeOfDay.format(5);
+                    log('ARCH', 'Time of day set to night', 'arch');
+                }
+            } else if (cmd.includes('time') && cmd.includes('day')) {
+                if (state.activeProgram) {
+                    state.params.timeOfDay = 50;
+                    document.getElementById('ps-timeOfDay').value = 50;
+                    document.getElementById('pv-timeOfDay').textContent = PARAM_DEFS.timeOfDay.format(50);
+                    log('ARCH', 'Time of day set to midday', 'arch');
+                }
+            } else if (cmd.includes('rain') || cmd.includes('storm')) {
+                if (state.activeProgram) {
+                    state.params.weather = 90;
+                    state.params.fogDensity = 60;
+                    document.getElementById('ps-weather').value = 90;
+                    document.getElementById('ps-fogDensity').value = 60;
+                    document.getElementById('pv-weather').textContent = '90%';
+                    document.getElementById('pv-fogDensity').textContent = '60%';
+                    log('ARCH', 'Weather set to storm conditions', 'arch');
+                }
+            } else if (cmd.includes('gravity') && cmd.includes('off')) {
+                if (state.activeProgram) {
+                    state.params.gravity = 0;
+                    document.getElementById('ps-gravity').value = 0;
+                    document.getElementById('pv-gravity').textContent = '0.00G';
+                    log('ARCH', 'Gravity disabled', 'warning');
+                }
+            } else {
+                log('SYSTEM', `Command not recognized: "${cmd}"`, 'warning');
+                log('SYSTEM', 'Try: load, pause, resume, end program, arch, safety, status, save, reset', 'system');
+            }
+        }
+
+        // ─── Nav Tabs (top bar shortcuts) ────────────────────────
+        function navTab(tab) {
+            const msgs = {
+                programs: 'Navigating to Program Library',
+                environment: 'Navigating to Environment Controls',
+                characters: 'Navigating to Character Matrix',
+                physics: 'Navigating to Physics Parameters',
+                narrative: 'Navigating to Narrative Engine',
+                safety: 'Toggling Safety Protocols',
+            };
+            if (tab === 'safety') {
+                toggleSafety();
+            } else {
+                log('ARCH', msgs[tab] || 'Navigation', 'arch');
+            }
+        }
+
+        // ─── Logger ──────────────────────────────────────────────
+        function log(prefix, msg, cls) {
+            const terminal = document.getElementById('logTerminal');
+            const now = new Date();
+            const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-time">${ts}</span> <span class="log-${cls}">[${prefix}]</span> ${msg}`;
+            terminal.appendChild(entry);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // ─── Boot ────────────────────────────────────────────────
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASE-X ENGINE | SPB-001: Free Throw Precision</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0808;
+            --bg-panel: rgba(15, 12, 10, 0.95);
+            --court-orange: #dd6622;
+            --ball-orange: #ee7733;
+            --hoop-red: #cc3322;
+            --net-white: #ddccbb;
+            --swish-green: #00dd66;
+            --miss-red: #dd3344;
+            --backboard-white: #eeeedd;
+            --text-primary: #e8e4e0;
+            --text-dim: #887766;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            height: 50px;
+            background: linear-gradient(180deg, rgba(221, 102, 34, 0.12), transparent);
+            border-bottom: 1px solid rgba(221, 102, 34, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-badge {
+            background: linear-gradient(135deg, var(--court-orange), #aa4400);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 10px;
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        
+        .logo-sub {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-left: 10px;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .stat-value.good { color: var(--swish-green); }
+        .stat-value.bad { color: var(--miss-red); }
+        
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .control-panel {
+            width: 260px;
+            background: var(--bg-panel);
+            border-right: 1px solid rgba(221, 102, 34, 0.2);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .panel-section {
+            margin-bottom: 18px;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--court-orange);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(221, 102, 34, 0.3);
+        }
+        
+        .shot-type-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .shot-btn {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 11px;
+            text-align: left;
+        }
+        
+        .shot-btn:hover { background: rgba(221, 102, 34, 0.1); }
+        .shot-btn.active {
+            border-color: var(--court-orange);
+            background: rgba(221, 102, 34, 0.15);
+        }
+        
+        .shot-title { font-weight: 600; }
+        .shot-desc { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+        
+        .base-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        
+        .base-btn {
+            padding: 8px 5px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            text-align: center;
+            transition: all 0.15s;
+        }
+        
+        .base-btn:hover { background: rgba(255, 255, 255, 0.06); }
+        .base-btn.active {
+            border-color: var(--swish-green);
+            background: rgba(0, 221, 102, 0.15);
+            color: var(--swish-green);
+        }
+        
+        .slider-group {
+            margin-bottom: 12px;
+        }
+        
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 10px;
+        }
+        
+        .slider-label { color: var(--text-dim); }
+        .slider-value { font-family: 'Share Tech Mono', monospace; color: var(--court-orange); }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--court-orange);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .shot-stats {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .shot-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .shot-row:last-child { border-bottom: none; }
+        .shot-key { color: var(--text-dim); }
+        .shot-val { font-family: 'Share Tech Mono', monospace; color: var(--court-orange); }
+        
+        .action-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        
+        .action-btn {
+            padding: 12px;
+            background: rgba(221, 102, 34, 0.2);
+            border: 1px solid rgba(221, 102, 34, 0.5);
+            border-radius: 5px;
+            color: var(--text-primary);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .action-btn:hover { background: rgba(221, 102, 34, 0.3); }
+        .action-btn.full { grid-column: span 2; }
+        .action-btn.shoot {
+            background: rgba(221, 102, 34, 0.4);
+            font-size: 14px;
+        }
+        
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .canvas-row {
+            flex: 1;
+            display: flex;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .canvas-wrapper canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .canvas-label {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            z-index: 10;
+        }
+        
+        .canvas-label.high { color: var(--swish-green); border: 1px solid var(--swish-green); }
+        .canvas-label.low { color: var(--miss-red); border: 1px solid var(--miss-red); }
+        
+        .result-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 900;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        
+        .result-popup.show { opacity: 1; }
+        .result-popup.swish { background: rgba(0, 221, 102, 0.3); border: 3px solid var(--swish-green); color: var(--swish-green); }
+        .result-popup.made { background: rgba(221, 170, 0, 0.3); border: 3px solid #ddaa00; color: #ddaa00; }
+        .result-popup.miss { background: rgba(221, 51, 68, 0.3); border: 3px solid var(--miss-red); color: var(--miss-red); }
+        
+        .score-display {
+            position: absolute;
+            top: 50px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .score-made {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            color: var(--swish-green);
+        }
+        
+        .score-total {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        
+        .info-panel {
+            width: 240px;
+            background: var(--bg-panel);
+            border-left: 1px solid rgba(221, 102, 34, 0.2);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .trajectory-info {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .metrics-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .metric-row:last-child { border-bottom: none; }
+        .metric-key { color: var(--text-dim); }
+        .metric-val { font-family: 'Share Tech Mono', monospace; }
+        .metric-val.good { color: var(--swish-green); }
+        .metric-val.warn { color: #ddaa00; }
+        .metric-val.bad { color: var(--miss-red); }
+        
+        .shot-chart {
+            height: 120px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-badge">SPB-001</div>
+            <div class="logo-text">FREE THROW PRECISION</div>
+            <div class="logo-sub">Basketball Trajectory Physics</div>
+        </div>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-value good" id="madeDisplay">0</div>
+                <div class="stat-label">Made</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="attemptDisplay">0</div>
+                <div class="stat-label">Attempts</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="pctDisplay">0%</div>
+                <div class="stat-label">FT%</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="swishDisplay">0</div>
+                <div class="stat-label">Swishes</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="control-panel">
+            <div class="panel-section">
+                <div class="section-title">Shot Type</div>
+                <div class="shot-type-list">
+                    <button class="shot-btn active" data-shot="freethrow">
+                        <div class="shot-title">Free Throw</div>
+                        <div class="shot-desc">15 ft, standard form</div>
+                    </button>
+                    <button class="shot-btn" data-shot="midrange">
+                        <div class="shot-title">Mid-Range</div>
+                        <div class="shot-desc">15-20 ft, higher arc</div>
+                    </button>
+                    <button class="shot-btn" data-shot="three">
+                        <div class="shot-title">Three Pointer</div>
+                        <div class="shot-desc">23.75 ft, max power</div>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Base</div>
+                <div class="base-grid">
+                    <button class="base-btn" data-base="16">B-16</button>
+                    <button class="base-btn" data-base="24">B-24</button>
+                    <button class="base-btn active" data-base="32">B-32</button>
+                    <button class="base-btn" data-base="40">B-40</button>
+                    <button class="base-btn" data-base="48">B-48</button>
+                    <button class="base-btn" data-base="64">B-64</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Shot Parameters</div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Release Angle</span>
+                        <span class="slider-value" id="angleVal">52°</span>
+                    </div>
+                    <input type="range" id="angleSlider" min="35" max="70" value="52">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Release Power</span>
+                        <span class="slider-value" id="powerVal">75%</span>
+                    </div>
+                    <input type="range" id="powerSlider" min="50" max="100" value="75">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Backspin</span>
+                        <span class="slider-value" id="spinVal">3 rev/s</span>
+                    </div>
+                    <input type="range" id="spinSlider" min="0" max="6" value="3">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Side Aim</span>
+                        <span class="slider-value" id="aimVal">Center</span>
+                    </div>
+                    <input type="range" id="aimSlider" min="-10" max="10" value="0">
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Shot Physics</div>
+                <div class="shot-stats">
+                    <div class="shot-row">
+                        <span class="shot-key">Distance</span>
+                        <span class="shot-val" id="distanceVal">15 ft</span>
+                    </div>
+                    <div class="shot-row">
+                        <span class="shot-key">Release Height</span>
+                        <span class="shot-val">7 ft</span>
+                    </div>
+                    <div class="shot-row">
+                        <span class="shot-key">Rim Height</span>
+                        <span class="shot-val">10 ft</span>
+                    </div>
+                    <div class="shot-row">
+                        <span class="shot-key">Ball Diameter</span>
+                        <span class="shot-val">9.43 in</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Actions</div>
+                <div class="action-btns">
+                    <button class="action-btn shoot full" id="btnShoot">🏀 SHOOT</button>
+                    <button class="action-btn" id="btnAuto">Auto (10x)</button>
+                    <button class="action-btn" id="btnReset">Reset Stats</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-area">
+            <div class="canvas-row">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasHigh"></canvas>
+                    <div class="canvas-label high">HIGH PRECISION (Base-32)</div>
+                    <div class="result-popup" id="resultHigh"></div>
+                    <div class="score-display">
+                        <div class="score-made" id="scoreHigh">0/0</div>
+                        <div class="score-total">Made/Att</div>
+                    </div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="canvasLow"></canvas>
+                    <div class="canvas-label low">LOW PRECISION (Base-16)</div>
+                    <div class="result-popup" id="resultLow"></div>
+                    <div class="score-display">
+                        <div class="score-made" id="scoreLow">0/0</div>
+                        <div class="score-total">Made/Att</div>
+                    </div>
+                </div>
+            </div>
+            <div class="canvas-row" style="flex: 0.35">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasTop"></canvas>
+                    <div class="canvas-label" style="color: var(--court-orange); border: 1px solid var(--court-orange);">
+                        TOP VIEW — Entry Angle & Rim Contact
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="panel-section">
+                <div class="section-title">Last Shot Analysis</div>
+                <div class="trajectory-info">
+                    <div class="metric-row">
+                        <span class="metric-key">Entry Angle</span>
+                        <span class="metric-val" id="entryAngle">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Entry Point</span>
+                        <span class="metric-val" id="entryPoint">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Rim Contact</span>
+                        <span class="metric-val" id="rimContact">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Flight Time</span>
+                        <span class="metric-val" id="flightTime">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Impact</div>
+                <div class="metrics-box">
+                    <div class="metric-row">
+                        <span class="metric-key">High (B-32)</span>
+                        <span class="metric-val good" id="pctHigh">0%</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Low (B-16)</span>
+                        <span class="metric-val bad" id="pctLow">0%</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Angle Error</span>
+                        <span class="metric-val" id="angleError">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Position Error</span>
+                        <span class="metric-val" id="posError">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Shot Chart</div>
+                <div class="shot-chart">
+                    <canvas id="chartCanvas" width="200" height="120"></canvas>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Optimal Window</div>
+                <div class="metrics-box" style="font-size: 9px; line-height: 1.5; color: var(--text-dim);">
+                    <strong style="color: var(--court-orange);">Free Throw:</strong><br>
+                    • Entry angle: 45-55°<br>
+                    • Center entry for swish<br>
+                    • Backspin helps on rim<br><br>
+                    <strong style="color: var(--swish-green);">Rim tolerance:</strong><br>
+                    • Ball: 9.43" diameter<br>
+                    • Rim: 18" diameter<br>
+                    • Gap: ~4.3" each side
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvasHigh = document.getElementById('canvasHigh');
+        const ctxHigh = canvasHigh.getContext('2d');
+        const canvasLow = document.getElementById('canvasLow');
+        const ctxLow = canvasLow.getContext('2d');
+        const canvasTop = document.getElementById('canvasTop');
+        const ctxTop = canvasTop.getContext('2d');
+        const chartCanvas = document.getElementById('chartCanvas');
+        const chartCtx = chartCanvas.getContext('2d');
+        
+        // Precision (inches)
+        const BASE_PRECISION = {
+            16: 2.0,
+            24: 0.5,
+            32: 0.1,
+            40: 0.05,
+            48: 0.01,
+            64: 0.001
+        };
+        
+        // Shot types
+        const SHOTS = {
+            freethrow: { distance: 15, name: 'Free Throw' },
+            midrange: { distance: 17, name: 'Mid-Range' },
+            three: { distance: 23.75, name: 'Three Pointer' }
+        };
+        
+        // Court/ball constants (feet/inches)
+        const RIM_HEIGHT = 10; // feet
+        const RIM_DIAMETER = 18; // inches
+        const BALL_DIAMETER = 9.43; // inches
+        const RELEASE_HEIGHT = 7; // feet
+        const GRAVITY = 32.2; // ft/s²
+        
+        // State
+        let settings = {
+            shotType: 'freethrow',
+            baseHigh: 32,
+            baseLow: 16,
+            angle: 52,
+            power: 75,
+            spin: 3,
+            aim: 0
+        };
+        
+        let statsHigh = { made: 0, attempts: 0, swishes: 0 };
+        let statsLow = { made: 0, attempts: 0, swishes: 0 };
+        let shotHistory = [];
+        
+        let simHigh = null;
+        let simLow = null;
+        let lastShotData = null;
+        
+        function resize() {
+            [canvasHigh, canvasLow].forEach(c => {
+                c.width = c.parentElement.clientWidth;
+                c.height = c.parentElement.clientHeight;
+            });
+            canvasTop.width = canvasTop.parentElement.clientWidth;
+            canvasTop.height = canvasTop.parentElement.clientHeight;
+        }
+        
+        function shoot() {
+            const shot = SHOTS[settings.shotType];
+            
+            // Calculate required velocity for the shot
+            const dx = shot.distance; // feet
+            const dy = RIM_HEIGHT - RELEASE_HEIGHT; // feet
+            const angleRad = settings.angle * Math.PI / 180;
+            
+            // v = sqrt(g * dx² / (2 * cos²(θ) * (dx * tan(θ) - dy)))
+            const cosA = Math.cos(angleRad);
+            const tanA = Math.tan(angleRad);
+            const baseVelocity = Math.sqrt(
+                (GRAVITY * dx * dx) / 
+                (2 * cosA * cosA * (dx * tanA - dy))
+            );
+            
+            // Apply power modifier
+            const velocity = baseVelocity * (settings.power / 75);
+            
+            // Create shots with different precision
+            simHigh = createShot(velocity, angleRad, BASE_PRECISION[settings.baseHigh]);
+            simLow = createShot(velocity, angleRad, BASE_PRECISION[settings.baseLow]);
+            
+            statsHigh.attempts++;
+            statsLow.attempts++;
+        }
+        
+        function createShot(velocity, angle, precision) {
+            // Add precision error to initial conditions
+            const velError = (Math.random() - 0.5) * precision * 2;
+            const angleError = (Math.random() - 0.5) * precision * 0.02;
+            const aimError = (Math.random() - 0.5) * precision * 2;
+            
+            return {
+                x: 0,
+                y: RELEASE_HEIGHT,
+                z: settings.aim / 12 + aimError / 12, // Side position in feet
+                vx: (velocity + velError) * Math.cos(angle + angleError),
+                vy: (velocity + velError) * Math.sin(angle + angleError),
+                vz: aimError * 0.1,
+                spin: settings.spin,
+                trail: [],
+                active: true,
+                result: null,
+                precision: precision,
+                time: 0,
+                entryAngle: 0,
+                rimHits: 0
+            };
+        }
+        
+        function updateShot(sim, dt) {
+            if (!sim || !sim.active) return;
+            
+            sim.time += dt;
+            
+            // Store trail
+            sim.trail.push({ x: sim.x, y: sim.y, z: sim.z });
+            if (sim.trail.length > 100) sim.trail.shift();
+            
+            // Apply gravity
+            sim.vy -= GRAVITY * dt;
+            
+            // Quantize velocity to precision
+            sim.vx = Math.round(sim.vx / (sim.precision * 0.1)) * (sim.precision * 0.1);
+            sim.vy = Math.round(sim.vy / (sim.precision * 0.1)) * (sim.precision * 0.1);
+            
+            // Update position
+            sim.x += sim.vx * dt;
+            sim.y += sim.vy * dt;
+            sim.z += sim.vz * dt;
+            
+            // Quantize position to precision
+            sim.x = Math.round(sim.x * 12 / sim.precision) * sim.precision / 12;
+            sim.y = Math.round(sim.y * 12 / sim.precision) * sim.precision / 12;
+            
+            const shot = SHOTS[settings.shotType];
+            const rimX = shot.distance;
+            const rimY = RIM_HEIGHT;
+            const rimRadius = RIM_DIAMETER / 2 / 12; // feet
+            const ballRadius = BALL_DIAMETER / 2 / 12; // feet
+            
+            // Check rim collision
+            if (sim.x >= rimX - rimRadius - ballRadius && sim.x <= rimX + rimRadius + ballRadius) {
+                if (Math.abs(sim.y - rimY) < ballRadius * 2) {
+                    // Check if hitting rim edge
+                    const distFromCenter = Math.sqrt(
+                        Math.pow(sim.x - rimX, 2) + Math.pow(sim.z, 2)
+                    );
+                    
+                    // Rim collision (front or back)
+                    if (distFromCenter > rimRadius - ballRadius && distFromCenter < rimRadius + ballRadius) {
+                        sim.rimHits++;
+                        
+                        // Bounce physics with spin effect
+                        const spinEffect = sim.spin * 0.1;
+                        sim.vy = Math.abs(sim.vy) * (0.4 + spinEffect * 0.1);
+                        sim.vx *= -0.3;
+                        
+                        // Random deflection based on precision
+                        sim.vz += (Math.random() - 0.5) * sim.precision * 0.1;
+                    }
+                }
+            }
+            
+            // Check if ball goes through hoop
+            if (sim.y < rimY && sim.y > rimY - 1) {
+                const distFromCenter = Math.sqrt(Math.pow(sim.x - rimX, 2) + Math.pow(sim.z, 2));
+                
+                if (distFromCenter < rimRadius - ballRadius * 0.8) {
+                    // Made shot!
+                    sim.active = false;
+                    sim.result = sim.rimHits === 0 ? 'swish' : 'made';
+                    
+                    // Calculate entry angle
+                    sim.entryAngle = Math.atan2(-sim.vy, sim.vx) * 180 / Math.PI;
+                    
+                    return;
+                }
+            }
+            
+            // Check for miss (ball goes past hoop or hits ground)
+            if (sim.x > rimX + 3 || sim.y < 0) {
+                sim.active = false;
+                sim.result = 'miss';
+            }
+            
+            // Ball stuck bouncing too long
+            if (sim.time > 3) {
+                sim.active = false;
+                if (!sim.result) sim.result = 'miss';
+            }
+        }
+        
+        function showResult(id, result) {
+            const el = document.getElementById(id);
+            el.className = 'result-popup show ' + result;
+            el.textContent = result === 'swish' ? 'SWISH!' : result === 'made' ? 'MADE!' : 'MISS';
+            
+            setTimeout(() => el.classList.remove('show'), 1500);
+        }
+        
+        function updateStats() {
+            document.getElementById('madeDisplay').textContent = statsHigh.made + statsLow.made;
+            document.getElementById('attemptDisplay').textContent = statsHigh.attempts + statsLow.attempts;
+            
+            const totalMade = statsHigh.made + statsLow.made;
+            const totalAtt = statsHigh.attempts + statsLow.attempts;
+            const pct = totalAtt > 0 ? Math.round(totalMade / totalAtt * 100) : 0;
+            document.getElementById('pctDisplay').textContent = pct + '%';
+            document.getElementById('swishDisplay').textContent = statsHigh.swishes + statsLow.swishes;
+            
+            document.getElementById('scoreHigh').textContent = `${statsHigh.made}/${statsHigh.attempts}`;
+            document.getElementById('scoreLow').textContent = `${statsLow.made}/${statsLow.attempts}`;
+            
+            const pctHigh = statsHigh.attempts > 0 ? Math.round(statsHigh.made / statsHigh.attempts * 100) : 0;
+            const pctLow = statsLow.attempts > 0 ? Math.round(statsLow.made / statsLow.attempts * 100) : 0;
+            document.getElementById('pctHigh').textContent = pctHigh + '%';
+            document.getElementById('pctLow').textContent = pctLow + '%';
+        }
+        
+        function update() {
+            const dt = 0.016;
+            
+            if (simHigh && simHigh.active) {
+                updateShot(simHigh, dt);
+                
+                if (!simHigh.active && simHigh.result) {
+                    if (simHigh.result === 'swish') {
+                        statsHigh.made++;
+                        statsHigh.swishes++;
+                    } else if (simHigh.result === 'made') {
+                        statsHigh.made++;
+                    }
+                    showResult('resultHigh', simHigh.result);
+                    lastShotData = simHigh;
+                    updateShotAnalysis();
+                    updateStats();
+                }
+            }
+            
+            if (simLow && simLow.active) {
+                updateShot(simLow, dt);
+                
+                if (!simLow.active && simLow.result) {
+                    if (simLow.result === 'swish') {
+                        statsLow.made++;
+                        statsLow.swishes++;
+                    } else if (simLow.result === 'made') {
+                        statsLow.made++;
+                    }
+                    showResult('resultLow', simLow.result);
+                    updateStats();
+                }
+            }
+        }
+        
+        function updateShotAnalysis() {
+            if (!lastShotData) return;
+            
+            document.getElementById('entryAngle').textContent = 
+                lastShotData.entryAngle ? lastShotData.entryAngle.toFixed(1) + '°' : '--';
+            document.getElementById('rimContact').textContent = 
+                lastShotData.rimHits > 0 ? lastShotData.rimHits + ' hits' : 'None';
+            document.getElementById('flightTime').textContent = 
+                lastShotData.time.toFixed(2) + 's';
+            document.getElementById('entryPoint').textContent = 
+                lastShotData.result === 'miss' ? 'Missed' : 
+                lastShotData.rimHits === 0 ? 'Center' : 'Off-center';
+                
+            document.getElementById('angleError').textContent = 
+                '±' + (BASE_PRECISION[settings.baseLow] * 0.02 * 180 / Math.PI).toFixed(2) + '°';
+            document.getElementById('posError').textContent = 
+                '±' + BASE_PRECISION[settings.baseLow].toFixed(1) + ' in';
+        }
+        
+        function render() {
+            renderCourt(ctxHigh, canvasHigh, simHigh, 'high');
+            renderCourt(ctxLow, canvasLow, simLow, 'low');
+            renderTopView();
+            renderShotChart();
+        }
+        
+        function renderCourt(ctx, canvas, sim, type) {
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            // Background
+            ctx.fillStyle = '#1a1512';
+            ctx.fillRect(0, 0, w, h);
+            
+            // Court floor
+            ctx.fillStyle = '#cc8844';
+            ctx.fillRect(0, h - 60, w, 60);
+            
+            // Court lines
+            ctx.strokeStyle = '#ffffff40';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, h - 60);
+            ctx.lineTo(w, h - 60);
+            ctx.stroke();
+            
+            // Scale: map court to canvas
+            const shot = SHOTS[settings.shotType];
+            const scale = (w - 100) / (shot.distance + 5);
+            const groundY = h - 60;
+            
+            // Backboard
+            const backboardX = 50 + shot.distance * scale;
+            const backboardY = groundY - RIM_HEIGHT * scale * 1.2;
+            
+            ctx.fillStyle = '#eeeedd';
+            ctx.fillRect(backboardX - 5, backboardY - 40, 10, 50);
+            
+            // Rim
+            ctx.strokeStyle = '#cc3322';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(backboardX - 5, groundY - RIM_HEIGHT * scale);
+            ctx.lineTo(backboardX - 5 - RIM_DIAMETER / 12 * scale, groundY - RIM_HEIGHT * scale);
+            ctx.stroke();
+            
+            // Net (simplified)
+            ctx.strokeStyle = '#ddccbb40';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 5; i++) {
+                const nx = backboardX - 5 - (i + 1) * RIM_DIAMETER / 12 * scale / 5;
+                ctx.beginPath();
+                ctx.moveTo(nx, groundY - RIM_HEIGHT * scale);
+                ctx.lineTo(nx + (Math.random() - 0.5) * 5, groundY - RIM_HEIGHT * scale + 25);
+                ctx.stroke();
+            }
+            
+            // Pole
+            ctx.fillStyle = '#666';
+            ctx.fillRect(backboardX + 5, groundY - RIM_HEIGHT * scale - 40, 8, RIM_HEIGHT * scale + 40);
+            
+            // Player position
+            ctx.fillStyle = '#555';
+            ctx.beginPath();
+            ctx.arc(50, groundY - 10, 15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(40, groundY - 40, 20, 30);
+            
+            // Free throw line
+            const ftLineX = 50 + 15 * scale;
+            ctx.strokeStyle = '#ffffff60';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ftLineX, groundY);
+            ctx.lineTo(ftLineX, groundY - 20);
+            ctx.stroke();
+            
+            // Draw trajectory
+            if (sim && sim.trail.length > 1) {
+                ctx.strokeStyle = type === 'high' ? '#00dd8880' : '#ff445580';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (let i = 0; i < sim.trail.length; i++) {
+                    const p = sim.trail[i];
+                    const sx = 50 + p.x * scale;
+                    const sy = groundY - p.y * scale;
+                    
+                    if (i === 0) ctx.moveTo(sx, sy);
+                    else ctx.lineTo(sx, sy);
+                }
+                ctx.stroke();
+            }
+            
+            // Draw ball
+            if (sim) {
+                const ballX = 50 + sim.x * scale;
+                const ballY = groundY - sim.y * scale;
+                const ballR = BALL_DIAMETER / 12 * scale / 2;
+                
+                // Shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(ballX, groundY - 5, ballR, ballR * 0.3, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Ball
+                const ballGrad = ctx.createRadialGradient(
+                    ballX - ballR * 0.3, ballY - ballR * 0.3, 0,
+                    ballX, ballY, ballR
+                );
+                ballGrad.addColorStop(0, '#ff9955');
+                ballGrad.addColorStop(1, '#cc5500');
+                
+                ctx.fillStyle = ballGrad;
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballR, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Ball lines
+                ctx.strokeStyle = '#00000040';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, ballR * 0.8, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Spin indicator
+                if (sim.active) {
+                    const spinAngle = sim.time * sim.spin * Math.PI * 2;
+                    ctx.strokeStyle = '#00000060';
+                    ctx.beginPath();
+                    ctx.moveTo(ballX - Math.cos(spinAngle) * ballR * 0.6, 
+                               ballY - Math.sin(spinAngle) * ballR * 0.6);
+                    ctx.lineTo(ballX + Math.cos(spinAngle) * ballR * 0.6,
+                               ballY + Math.sin(spinAngle) * ballR * 0.6);
+                    ctx.stroke();
+                }
+            }
+            
+            // Precision indicator
+            ctx.fillStyle = type === 'high' ? '#00dd6680' : '#ff445580';
+            ctx.font = '10px "Share Tech Mono"';
+            const precision = type === 'high' ? BASE_PRECISION[settings.baseHigh] : BASE_PRECISION[settings.baseLow];
+            ctx.fillText(`Precision: ±${precision}" position`, 10, h - 70);
+        }
+        
+        function renderTopView() {
+            const w = canvasTop.width;
+            const h = canvasTop.height;
+            
+            ctxTop.fillStyle = '#1a1512';
+            ctxTop.fillRect(0, 0, w, h);
+            
+            // Court floor
+            ctxTop.fillStyle = '#cc884440';
+            ctxTop.fillRect(0, 0, w, h);
+            
+            const cx = w / 2;
+            const cy = h / 2;
+            const scale = 30;
+            
+            // Rim (top view)
+            ctxTop.strokeStyle = '#cc3322';
+            ctxTop.lineWidth = 4;
+            ctxTop.beginPath();
+            ctxTop.arc(cx, cy, RIM_DIAMETER / 2 / 12 * scale, 0, Math.PI * 2);
+            ctxTop.stroke();
+            
+            // Ball size reference
+            ctxTop.strokeStyle = '#ff664440';
+            ctxTop.lineWidth = 2;
+            ctxTop.beginPath();
+            ctxTop.arc(cx, cy, BALL_DIAMETER / 2 / 12 * scale, 0, Math.PI * 2);
+            ctxTop.stroke();
+            
+            // Draw shot entry points
+            const drawEntry = (sim, color) => {
+                if (!sim || sim.trail.length < 2) return;
+                
+                // Find point near rim height
+                for (let i = sim.trail.length - 1; i >= 0; i--) {
+                    const p = sim.trail[i];
+                    if (Math.abs(p.y - RIM_HEIGHT) < 0.5) {
+                        const ex = cx + p.z * scale * 12;
+                        const ey = cy;
+                        
+                        ctxTop.fillStyle = color;
+                        ctxTop.beginPath();
+                        ctxTop.arc(ex, ey, 6, 0, Math.PI * 2);
+                        ctxTop.fill();
+                        break;
+                    }
+                }
+            };
+            
+            drawEntry(simHigh, '#00dd88');
+            drawEntry(simLow, '#ff4455');
+            
+            // Labels
+            ctxTop.fillStyle = '#888';
+            ctxTop.font = '9px "Share Tech Mono"';
+            ctxTop.textAlign = 'center';
+            ctxTop.fillText('Rim (18")', cx, cy + RIM_DIAMETER / 2 / 12 * scale + 15);
+            ctxTop.fillText('Ball (9.43")', cx, cy - 25);
+            
+            // Legend
+            ctxTop.fillStyle = '#00dd88';
+            ctxTop.fillRect(10, 10, 10, 10);
+            ctxTop.fillStyle = '#888';
+            ctxTop.textAlign = 'left';
+            ctxTop.fillText('High', 25, 18);
+            
+            ctxTop.fillStyle = '#ff4455';
+            ctxTop.fillRect(10, 25, 10, 10);
+            ctxTop.fillStyle = '#888';
+            ctxTop.fillText('Low', 25, 33);
+        }
+        
+        function renderShotChart() {
+            const w = chartCanvas.width;
+            const h = chartCanvas.height;
+            
+            chartCtx.fillStyle = '#0a0808';
+            chartCtx.fillRect(0, 0, w, h);
+            
+            // Draw rim outline
+            const cx = w / 2;
+            const cy = h / 2;
+            const rimScale = 3;
+            
+            chartCtx.strokeStyle = '#cc332240';
+            chartCtx.lineWidth = 2;
+            chartCtx.beginPath();
+            chartCtx.arc(cx, cy, RIM_DIAMETER / 2 * rimScale, 0, Math.PI * 2);
+            chartCtx.stroke();
+            
+            // Ball reference
+            chartCtx.strokeStyle = '#ff664420';
+            chartCtx.beginPath();
+            chartCtx.arc(cx, cy, BALL_DIAMETER / 2 * rimScale, 0, Math.PI * 2);
+            chartCtx.stroke();
+            
+            // Draw shot history
+            // (Would store shot entry points for visualization)
+            
+            chartCtx.fillStyle = '#666';
+            chartCtx.font = '8px "Share Tech Mono"';
+            chartCtx.textAlign = 'center';
+            chartCtx.fillText('Shot Distribution', cx, h - 5);
+        }
+        
+        function mainLoop() {
+            update();
+            render();
+            requestAnimationFrame(mainLoop);
+        }
+        
+        // Event handlers
+        document.querySelectorAll('.shot-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.shot-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.shotType = btn.dataset.shot;
+                document.getElementById('distanceVal').textContent = 
+                    SHOTS[settings.shotType].distance + ' ft';
+            });
+        });
+        
+        document.querySelectorAll('.base-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.base-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.baseHigh = parseInt(btn.dataset.base);
+            });
+        });
+        
+        document.getElementById('angleSlider').addEventListener('input', (e) => {
+            settings.angle = parseInt(e.target.value);
+            document.getElementById('angleVal').textContent = settings.angle + '°';
+        });
+        
+        document.getElementById('powerSlider').addEventListener('input', (e) => {
+            settings.power = parseInt(e.target.value);
+            document.getElementById('powerVal').textContent = settings.power + '%';
+        });
+        
+        document.getElementById('spinSlider').addEventListener('input', (e) => {
+            settings.spin = parseInt(e.target.value);
+            document.getElementById('spinVal').textContent = settings.spin + ' rev/s';
+        });
+        
+        document.getElementById('aimSlider').addEventListener('input', (e) => {
+            settings.aim = parseInt(e.target.value);
+            const aimText = settings.aim === 0 ? 'Center' : 
+                           settings.aim < 0 ? Math.abs(settings.aim) + '" Left' : 
+                           settings.aim + '" Right';
+            document.getElementById('aimVal').textContent = aimText;
+        });
+        
+        document.getElementById('btnShoot').addEventListener('click', shoot);
+        
+        document.getElementById('btnAuto').addEventListener('click', () => {
+            let count = 0;
+            const interval = setInterval(() => {
+                shoot();
+                count++;
+                if (count >= 10) clearInterval(interval);
+            }, 500);
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            statsHigh = { made: 0, attempts: 0, swishes: 0 };
+            statsLow = { made: 0, attempts: 0, swishes: 0 };
+            simHigh = null;
+            simLow = null;
+            lastShotData = null;
+            shotHistory = [];
+            updateStats();
+        });
+        
+        // Keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                shoot();
+                e.preventDefault();
+            }
+        });
+        
+        // Initialize
+        window.addEventListener('resize', resize);
+        resize();
+        updateStats();
+        mainLoop();
+    </script>
+</body>
+</html>

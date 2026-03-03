@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BNT-004: Loaves & Fishes | The Way, The Truth and The Life — Base-X Engine</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Share+Tech+Mono&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --divine-gold: #d4a853;
+            --divine-light: #fff8e0;
+            --bread-warm: #c49a5c;
+            --bread-crust: #8b6332;
+            --fish-silver: #a0b8c8;
+            --fish-scale: #7090a8;
+            --basket-brown: #7a5c3a;
+            --grass-green: #5a8848;
+            --grass-dark: #3a5830;
+            --crowd-tan: #c0a080;
+            --bg-dark: #0a0806;
+            --bg-panel: rgba(12, 10, 8, 0.92);
+            --text-primary: #e8dcc8;
+            --text-dim: #887755;
+            --faith-purple: #aa88dd;
+            --miracle-blue: #6688cc;
+            --quantum-cyan: #55ccdd;
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .divine-bg {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                radial-gradient(ellipse at 50% 20%, rgba(212,168,83,0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 100%, rgba(90,136,72,0.08) 0%, transparent 40%);
+        }
+
+        .divine-rays {
+            position: fixed; top: -120px; left: 50%; transform: translateX(-50%);
+            width: 700px; height: 500px; z-index: 0; pointer-events: none;
+            background: conic-gradient(from 260deg,
+                transparent 0deg, rgba(212,168,83,0.03) 4deg, transparent 8deg,
+                transparent 18deg, rgba(212,168,83,0.04) 22deg, transparent 26deg,
+                transparent 38deg, rgba(212,168,83,0.02) 42deg, transparent 46deg,
+                transparent 58deg, rgba(212,168,83,0.05) 62deg, transparent 66deg,
+                transparent 78deg, rgba(212,168,83,0.03) 82deg, transparent 86deg,
+                transparent 100deg);
+            opacity: 0.4;
+            animation: rayRotate 35s linear infinite;
+        }
+        @keyframes rayRotate { to { transform: translateX(-50%) rotate(360deg); } }
+
+        /* Header */
+        .header {
+            position: relative; z-index: 2; height: 56px;
+            background: linear-gradient(180deg, rgba(212,168,83,0.08) 0%, transparent 100%);
+            border-bottom: 1px solid rgba(212,168,83,0.15);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 24px;
+        }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .header-badge {
+            background: linear-gradient(135deg, var(--divine-gold), #a07830);
+            padding: 4px 10px; border-radius: 3px;
+            font-family: 'Cinzel', serif; font-weight: 900; font-size: 0.6em;
+            color: #1a1008; letter-spacing: 1.5px;
+        }
+        .header-title { font-family: 'Cinzel', serif; font-size: 0.85em; font-weight: 600; color: var(--divine-gold); letter-spacing: 2px; }
+        .header-sub { font-size: 0.7em; color: var(--text-dim); font-style: italic; }
+        .header-right { display: flex; gap: 20px; font-family: 'Share Tech Mono', monospace; font-size: 0.65em; }
+        .hstat { display: flex; align-items: center; gap: 6px; }
+        .hstat-label { color: var(--text-dim); }
+        .hstat-val { color: var(--divine-gold); }
+
+        /* Main Grid */
+        .main {
+            position: relative; z-index: 2;
+            display: grid; grid-template-columns: 260px 1fr 250px;
+            gap: 12px; padding: 12px 20px; max-width: 1600px; margin: 0 auto;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid rgba(212,168,83,0.15);
+            border-radius: 6px; overflow: hidden;
+        }
+        .panel-head {
+            display: flex; align-items: center; height: 30px;
+            border-bottom: 1px solid rgba(212,168,83,0.1);
+        }
+        .panel-head-cap {
+            height: 100%; width: 70px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Cinzel', serif; font-size: 0.5em; font-weight: 700;
+            color: #1a1008; letter-spacing: 1px;
+        }
+        .panel-head-title {
+            padding: 0 10px; font-family: 'Cinzel', serif;
+            font-size: 0.65em; font-weight: 600; letter-spacing: 1px; color: var(--divine-gold);
+        }
+        .panel-body { padding: 10px; }
+
+        /* Multiplication Viewport */
+        .mult-viewport {
+            position: relative; background: #080604;
+            border-radius: 4px; overflow: hidden; height: 400px;
+        }
+        .mult-canvas { width: 100%; height: 100%; }
+
+        .vp-overlay {
+            position: absolute; top: 8px; left: 10px;
+            font-family: 'Share Tech Mono', monospace; font-size: 0.6em;
+            color: rgba(212,168,83,0.5);
+        }
+        .vp-phase {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            font-family: 'Cinzel', serif; font-size: 0.8em; font-weight: 600;
+            letter-spacing: 2px; text-shadow: 0 0 15px rgba(212,168,83,0.5);
+        }
+        .vp-count {
+            position: absolute; top: 8px; right: 10px;
+            font-family: 'Share Tech Mono', monospace; font-size: 0.6em;
+            text-align: right;
+        }
+
+        /* Inventory Display */
+        .inv-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+        }
+        .inv-item {
+            background: rgba(212,168,83,0.05);
+            border: 1px solid rgba(212,168,83,0.12);
+            border-radius: 4px; padding: 8px; text-align: center;
+        }
+        .inv-icon { font-size: 1.6em; margin-bottom: 2px; }
+        .inv-label { font-family: 'Share Tech Mono', monospace; font-size: 0.6em; color: var(--text-dim); }
+        .inv-count {
+            font-family: 'Cinzel', serif; font-size: 1.1em; font-weight: 700;
+            color: var(--divine-gold); margin-top: 2px;
+        }
+        .inv-count.mult { color: var(--quantum-cyan); }
+
+        /* Crowd Meter */
+        .crowd-meter {
+            margin-top: 10px; padding: 8px;
+            background: rgba(0,0,0,0.3); border-radius: 4px;
+            border: 1px solid rgba(212,168,83,0.08);
+        }
+        .cm-label {
+            font-family: 'Share Tech Mono', monospace; font-size: 0.6em;
+            color: var(--text-dim); display: flex; justify-content: space-between; margin-bottom: 4px;
+        }
+        .cm-track {
+            height: 10px; background: rgba(255,255,255,0.04);
+            border-radius: 5px; overflow: hidden; position: relative;
+        }
+        .cm-fill {
+            height: 100%; border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+        .cm-segments {
+            display: flex; justify-content: space-between;
+            font-family: 'Share Tech Mono', monospace; font-size: 0.5em;
+            color: var(--text-dim); margin-top: 3px;
+        }
+
+        /* Basket tracker */
+        .basket-row {
+            display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px;
+        }
+        .basket-icon {
+            width: 28px; height: 28px; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8em;
+            border: 1px solid rgba(212,168,83,0.15);
+            transition: all 0.3s;
+        }
+        .basket-icon.empty { background: rgba(0,0,0,0.3); opacity: 0.3; }
+        .basket-icon.filled { background: rgba(122,92,58,0.3); border-color: var(--basket-brown); opacity: 1; }
+
+        /* Controls */
+        .ctrl-group { margin-bottom: 8px; }
+        .ctrl-label {
+            font-family: 'Share Tech Mono', monospace; font-size: 0.62em;
+            color: var(--text-dim); display: flex; justify-content: space-between; margin-bottom: 3px;
+        }
+        .ctrl-val { color: var(--divine-gold); }
+
+        .divine-slider {
+            -webkit-appearance: none; appearance: none; width: 100%; height: 5px;
+            border-radius: 3px; background: rgba(212,168,83,0.12); outline: none; cursor: pointer;
+        }
+        .divine-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+            background: var(--divine-gold); border: 2px solid #1a1008;
+            box-shadow: 0 0 8px rgba(212,168,83,0.4); cursor: pointer;
+        }
+        .divine-slider::-moz-range-thumb {
+            width: 14px; height: 14px; border-radius: 50%;
+            background: var(--divine-gold); border: 2px solid #1a1008;
+            box-shadow: 0 0 8px rgba(212,168,83,0.4); cursor: pointer;
+        }
+
+        .btn-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .divine-btn {
+            padding: 5px 12px; border: 1px solid rgba(212,168,83,0.3); border-radius: 14px;
+            background: rgba(212,168,83,0.08); font-family: 'Cinzel', serif;
+            font-size: 0.6em; font-weight: 600; color: var(--divine-gold);
+            cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px;
+        }
+        .divine-btn:hover { background: rgba(212,168,83,0.15); border-color: var(--divine-gold); box-shadow: 0 0 10px rgba(212,168,83,0.15); }
+        .divine-btn:active { transform: scale(0.96); }
+        .divine-btn.primary { background: linear-gradient(135deg, var(--divine-gold), #a07830); color: #1a1008; border-color: transparent; }
+        .divine-btn.quantum { background: rgba(85,204,221,0.1); border-color: rgba(85,204,221,0.3); color: var(--quantum-cyan); }
+
+        /* DRO */
+        .dro-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; font-family: 'Share Tech Mono', monospace; font-size: 0.62em; }
+        .dro-lbl { width: 72px; text-align: right; color: var(--text-dim); }
+        .dro-track { flex: 1; height: 8px; background: rgba(212,168,83,0.08); border-radius: 4px; overflow: hidden; }
+        .dro-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease, background 0.4s; }
+        .dro-val { width: 40px; font-weight: 600; }
+
+        /* Log */
+        .log-box {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(212,168,83,0.08);
+            border-radius: 3px; padding: 6px; height: 180px; overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace; font-size: 0.6em; line-height: 1.5;
+        }
+        .log-box::-webkit-scrollbar { width: 3px; }
+        .log-box::-webkit-scrollbar-thumb { background: rgba(212,168,83,0.2); border-radius: 2px; }
+        .log-divine { color: var(--divine-gold); }
+        .log-mult { color: var(--quantum-cyan); }
+        .log-crowd { color: var(--grass-green); }
+        .log-dro { color: #66bbcc; }
+        .log-faith { color: var(--faith-purple); }
+        .log-dim { color: var(--text-dim); }
+        .log-scripture { color: #ccaa66; font-style: italic; }
+        .log-basket { color: var(--basket-brown); }
+
+        .scripture-banner {
+            position: relative; z-index: 2; text-align: center; padding: 8px 20px;
+            background: rgba(212,168,83,0.04); border-top: 1px solid rgba(212,168,83,0.1);
+            font-style: italic; font-size: 0.85em; color: rgba(212,168,83,0.6);
+        }
+
+        @media (max-width: 1100px) { .main { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 700px) { .main { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="divine-bg"></div>
+    <div class="divine-rays" id="divineRays"></div>
+
+    <div class="header">
+        <div class="header-left">
+            <div class="header-badge">BNT-004</div>
+            <div>
+                <div class="header-title">LOAVES &amp; FISHES</div>
+                <div class="header-sub">The Way, The Truth and The Life — Bible NT VR</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="hstat"><span class="hstat-label">FED:</span><span class="hstat-val" id="hFed" style="color:var(--grass-green)">0</span></div>
+            <div class="hstat"><span class="hstat-label">OF:</span><span class="hstat-val" id="hTotal">5,000</span></div>
+            <div class="hstat"><span class="hstat-label">BASKETS:</span><span class="hstat-val" id="hBaskets" style="color:var(--bread-warm)">0 / 12</span></div>
+            <div class="hstat"><span class="hstat-label">DIMENSION:</span><span class="hstat-val" id="hDim">4</span></div>
+            <div class="hstat"><span class="hstat-label">DEMO:</span><span class="hstat-val" style="color:#66eea0">35 / 91</span></div>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- LEFT -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:var(--bread-warm);color:#2a1a08">SOURCE</div>
+                    <div class="panel-head-title">ORIGINAL SUPPLY</div>
+                </div>
+                <div class="panel-body">
+                    <div class="inv-grid">
+                        <div class="inv-item">
+                            <div class="inv-icon">🍞</div>
+                            <div class="inv-label">BARLEY LOAVES</div>
+                            <div class="inv-count" id="loafOriginal">5</div>
+                        </div>
+                        <div class="inv-item">
+                            <div class="inv-icon">🐟</div>
+                            <div class="inv-label">SMALL FISH</div>
+                            <div class="inv-count" id="fishOriginal">2</div>
+                        </div>
+                        <div class="inv-item">
+                            <div class="inv-icon">🍞</div>
+                            <div class="inv-label">MULTIPLIED LOAVES</div>
+                            <div class="inv-count mult" id="loafMult">5</div>
+                        </div>
+                        <div class="inv-item">
+                            <div class="inv-icon">🐟</div>
+                            <div class="inv-label">MULTIPLIED FISH</div>
+                            <div class="inv-count mult" id="fishMult">2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:var(--crowd-tan);color:#2a1a08">CROWD</div>
+                    <div class="panel-head-title">FEEDING PROGRESS</div>
+                </div>
+                <div class="panel-body">
+                    <div class="crowd-meter">
+                        <div class="cm-label"><span>CROWD FED</span><span id="cmPercent">0%</span></div>
+                        <div class="cm-track">
+                            <div class="cm-fill" id="cmFill" style="width:0%;background:linear-gradient(90deg,var(--grass-green),var(--divine-gold))"></div>
+                        </div>
+                        <div class="cm-segments"><span>0</span><span>1,250</span><span>2,500</span><span>3,750</span><span>5,000</span></div>
+                    </div>
+                    <div class="crowd-meter" style="margin-top:6px">
+                        <div class="cm-label"><span>MATTER CREATED</span><span id="cmMatter">0 kg</span></div>
+                        <div class="cm-track">
+                            <div class="cm-fill" id="cmMatterFill" style="width:0%;background:linear-gradient(90deg,var(--quantum-cyan),var(--miracle-blue))"></div>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px">
+                        <div class="cm-label" style="font-family:'Share Tech Mono',monospace;font-size:0.6em;color:var(--text-dim)"><span>LEFTOVER BASKETS</span><span id="basketLabel">0 / 12</span></div>
+                        <div class="basket-row" id="basketRow"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel" style="flex:1">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:var(--quantum-cyan);color:#0a1a1a">QUANTUM</div>
+                    <div class="panel-head-title">DUPLICATION METRICS</div>
+                </div>
+                <div class="panel-body">
+                    <div style="font-family:'Share Tech Mono',monospace;font-size:0.62em;line-height:1.8" id="quantumStats">
+                        <div>Multiplication Factor: <span style="color:var(--quantum-cyan)">—</span></div>
+                        <div>Matter Conservation: <span style="color:var(--divine-gold)">TRANSCENDED</span></div>
+                        <div>Energy Source: <span style="color:var(--faith-purple)">DIVINE</span></div>
+                        <div>Quantum State: <span style="color:var(--text-dim)">STANDBY</span></div>
+                        <div>Atoms Created: <span style="color:var(--quantum-cyan)">0</span></div>
+                        <div>Dimensional Layer: <span style="color:var(--divine-gold)">4 (Physical)</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="panel" style="flex:1">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:var(--faith-purple);color:#fff">DIVINE</div>
+                    <div class="panel-head-title">MULTIPLICATION FIELD</div>
+                </div>
+                <div class="panel-body">
+                    <div class="mult-viewport">
+                        <canvas class="mult-canvas" id="multCanvas"></canvas>
+                        <div class="vp-overlay" id="vpOverlay">HILLSIDE — BETHSAIDA</div>
+                        <div class="vp-phase" id="vpPhase" style="color:var(--text-dim)">AWAITING BLESSING</div>
+                        <div class="vp-count" id="vpCount"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:#a07830;color:#1a1008">CTRL</div>
+                    <div class="panel-head-title">DIVINE PARAMETERS</div>
+                </div>
+                <div class="panel-body">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>DIVINE PRESENCE</span><span class="ctrl-val" id="cvPresence">0.5</span></div>
+                            <input type="range" class="divine-slider" min="0" max="100" value="50" oninput="setParam('presence',this.value)">
+                        </div>
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>MULTIPLICATION RATE</span><span class="ctrl-val" id="cvRate">1.0x</span></div>
+                            <input type="range" class="divine-slider" min="10" max="500" value="100" oninput="setParam('rate',this.value)">
+                        </div>
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>CROWD SIZE</span><span class="ctrl-val" id="cvCrowd">5,000</span></div>
+                            <input type="range" class="divine-slider" min="100" max="10000" value="5000" oninput="setParam('crowd',this.value)">
+                        </div>
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>VISUAL DETAIL</span><span class="ctrl-val" id="cvDetail">HIGH</span></div>
+                            <input type="range" class="divine-slider" min="0" max="100" value="75" oninput="setParam('detail',this.value)">
+                        </div>
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>DIVINE PARTICLES</span><span class="ctrl-val" id="cvParticles">ON</span></div>
+                            <input type="range" class="divine-slider" min="0" max="100" value="80" oninput="setParam('particles',this.value)">
+                        </div>
+                        <div class="ctrl-group">
+                            <div class="ctrl-label"><span>VIEW MODE</span><span class="ctrl-val" id="cvView">HILLSIDE</span></div>
+                            <input type="range" class="divine-slider" min="0" max="100" value="0" oninput="setParam('view',this.value)">
+                        </div>
+                    </div>
+                    <div class="btn-row">
+                        <button class="divine-btn primary" onclick="blessAndBreak()">✝ BLESS AND BREAK</button>
+                        <button class="divine-btn quantum" onclick="instantFeed()">INSTANT MULTIPLY</button>
+                        <button class="divine-btn" onclick="distributeRound()">DISTRIBUTE ROUND</button>
+                        <button class="divine-btn" onclick="collectBaskets()">COLLECT LEFTOVERS</button>
+                        <button class="divine-btn" onclick="resetMiracle()">RESET</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:#66bbcc;color:#0a1a1a">DRO</div>
+                    <div class="panel-head-title">BASE-X MONITOR</div>
+                </div>
+                <div class="panel-body" id="droPanel"></div>
+            </div>
+            <div class="panel" style="flex:1">
+                <div class="panel-head">
+                    <div class="panel-head-cap" style="background:var(--text-dim);color:#1a1008">LOG</div>
+                    <div class="panel-head-title">DIVINE PROCESS LOG</div>
+                </div>
+                <div class="panel-body">
+                    <div class="log-box" id="logBox"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scripture-banner" id="scriptureBanner">
+        "Taking the five loaves and the two fish, he looked up to heaven, and blessed and broke them." — Luke 9:16
+    </div>
+
+    <script>
+    // ─── State ───────────────────────────────────────────────
+    const S = {
+        phase: 'idle', // idle, blessing, multiplying, distributing, collecting, complete
+        crowdSize: 5000,
+        fed: 0,
+        loaves: 5,
+        fish: 2,
+        multLoaves: 5,
+        multFish: 2,
+        baskets: 0,
+        basketsFilled: Array(12).fill(false),
+        presence: 0.5,
+        rate: 1.0,
+        detail: 0.75,
+        particles: 0.8,
+        viewMode: 0, // 0=hillside, 50=quantum, 100=aerial
+        dimension: 4,
+        multFactor: 1,
+        matterKg: 0,
+        atomsCreated: 0,
+        time: 0,
+
+        // Animation
+        divineParticles: [],
+        foodItems: [],
+        crowdDots: [],
+        blessingGlow: 0,
+        breakFlash: 0,
+    };
+
+    const DRO = {
+        matter: 48, crowd: 16, divine: 48, quantum: 32, visual: 24
+    };
+
+    const PHASES = {
+        idle: 'AWAITING BLESSING',
+        blessing: 'DIVINE BLESSING',
+        multiplying: 'QUANTUM DUPLICATION',
+        distributing: 'DISTRIBUTION',
+        collecting: 'GATHERING LEFTOVERS',
+        complete: 'MIRACLE COMPLETE — ALL FED'
+    };
+
+    const canvas = document.getElementById('multCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // ─── Init ────────────────────────────────────────────────
+    function init() {
+        resizeCanvas();
+        generateCrowd();
+        generateInitialFood();
+        renderDRO();
+        renderBaskets();
+        updateStats();
+        log('SYSTEM', 'Loaves & Fishes demo initialized', 'dim');
+        log('DIVINE', 'Divine Multiplication Physics — online', 'divine');
+        log('SCRIPTURE', '"He looked up to heaven, and blessed and broke them." — Luke 9:16', 'scripture');
+        log('CROWD', `${S.crowdSize.toLocaleString()} gathered on hillside near Bethsaida`, 'crowd');
+        log('DRO', 'Matter:B-48 Crowd:B-16 Divine:B-48 Quantum:B-32', 'dro');
+        requestAnimationFrame(loop);
+    }
+
+    function resizeCanvas() {
+        const r = canvas.parentElement.getBoundingClientRect();
+        canvas.width = r.width;
+        canvas.height = r.height;
+    }
+    window.addEventListener('resize', () => { resizeCanvas(); generateCrowd(); });
+
+    function generateCrowd() {
+        S.crowdDots = [];
+        const W = canvas.width, H = canvas.height;
+        const count = Math.min(400, Math.floor(S.crowdSize / 12));
+        for (let i = 0; i < count; i++) {
+            // Crowd sits in arc below center
+            const angle = (Math.random() - 0.5) * Math.PI * 0.8;
+            const dist = 80 + Math.random() * (H * 0.35);
+            S.crowdDots.push({
+                x: W / 2 + Math.sin(angle) * dist * 1.5,
+                y: H * 0.55 + Math.cos(angle) * dist * 0.5,
+                fed: false,
+                size: 2 + Math.random() * 2,
+                hue: 25 + Math.random() * 20,
+            });
+        }
+        // Sort by y for depth
+        S.crowdDots.sort((a, b) => a.y - b.y);
+    }
+
+    function generateInitialFood() {
+        S.foodItems = [];
+        const W = canvas.width, H = canvas.height;
+        const cx = W / 2, cy = H * 0.35;
+        // 5 loaves
+        for (let i = 0; i < 5; i++) {
+            S.foodItems.push({
+                x: cx - 30 + i * 15 + (Math.random() - 0.5) * 6,
+                y: cy + (Math.random() - 0.5) * 10,
+                type: 'bread',
+                size: 6 + Math.random() * 2,
+                age: 0,
+                vx: 0, vy: 0,
+            });
+        }
+        // 2 fish
+        for (let i = 0; i < 2; i++) {
+            S.foodItems.push({
+                x: cx + 30 + i * 18 + (Math.random() - 0.5) * 6,
+                y: cy + (Math.random() - 0.5) * 10,
+                type: 'fish',
+                size: 7 + Math.random() * 2,
+                age: 0,
+                vx: 0, vy: 0,
+            });
+        }
+    }
+
+    // ─── Actions ─────────────────────────────────────────────
+
+    function blessAndBreak() {
+        if (S.phase !== 'idle') return;
+        S.phase = 'blessing';
+        S.blessingGlow = 0;
+        S.dimension = 24;
+        DRO.divine = 64;
+        DRO.quantum = 48;
+        renderDRO();
+
+        log('DIVINE', '✝ Jesus takes the five loaves and two fish', 'divine');
+        log('DIVINE', 'Looking up to heaven — blessing spoken', 'divine');
+        log('FAITH', `Dimension shift: 4 → ${S.dimension} (Multiplication Dimension)`, 'faith');
+        document.getElementById('hDim').textContent = S.dimension;
+        document.getElementById('divineRays').style.opacity = '0.8';
+
+        setTimeout(() => {
+            S.phase = 'multiplying';
+            S.breakFlash = 1;
+            log('DIVINE', '✝ Breaking the bread — matter multiplication begins', 'divine');
+            log('MULT', 'Quantum duplication field active', 'mult');
+            log('DRO', 'Matter precision → B-64 for atomic-level duplication', 'dro');
+            DRO.matter = 64;
+            renderDRO();
+        }, 2000);
+    }
+
+    function distributeRound() {
+        if (S.phase !== 'multiplying' && S.phase !== 'distributing') return;
+        S.phase = 'distributing';
+
+        const batchSize = Math.min(500, S.crowdSize - S.fed);
+        if (batchSize <= 0) return;
+
+        const perPerson = 0.3; // kg per person
+        const needed = batchSize * perPerson;
+
+        // Multiply food
+        const multRounds = Math.ceil(needed / 0.5);
+        S.multLoaves += multRounds * 2;
+        S.multFish += multRounds;
+        S.matterKg += needed;
+        S.atomsCreated += needed * 3.3e25; // rough atoms per kg
+        S.multFactor = S.multLoaves / 5;
+
+        S.fed += batchSize;
+
+        // Feed crowd dots
+        let toFeed = Math.floor((S.fed / S.crowdSize) * S.crowdDots.length);
+        S.crowdDots.forEach((d, i) => { d.fed = i < toFeed; });
+
+        // Spawn food particles outward
+        const W = canvas.width, H = canvas.height;
+        for (let i = 0; i < Math.min(batchSize / 10, 50); i++) {
+            const angle = (Math.random() - 0.5) * Math.PI * 0.8;
+            const speed = 1 + Math.random() * 3;
+            S.foodItems.push({
+                x: W / 2 + (Math.random() - 0.5) * 30,
+                y: H * 0.35,
+                type: Math.random() > 0.3 ? 'bread' : 'fish',
+                size: 3 + Math.random() * 3,
+                age: 0,
+                vx: Math.sin(angle) * speed * 2,
+                vy: Math.cos(angle) * speed + 1,
+            });
+        }
+
+        updateDisplays();
+        log('CROWD', `Distributed to ${batchSize.toLocaleString()} — Total fed: ${S.fed.toLocaleString()} / ${S.crowdSize.toLocaleString()}`, 'crowd');
+        log('MULT', `Multiplication ×${S.multFactor.toFixed(0)} — ${S.matterKg.toFixed(1)} kg matter created`, 'mult');
+
+        if (S.fed >= S.crowdSize) {
+            S.phase = 'collecting';
+            log('DIVINE', '✝ ALL 5,000 FED — "Gather up the fragments"', 'divine');
+            log('SCRIPTURE', '"Gather up the leftover fragments, that nothing may be lost." — John 6:12', 'scripture');
+        }
+    }
+
+    function collectBaskets() {
+        if (S.phase !== 'collecting' && S.fed < S.crowdSize) return;
+        S.phase = 'collecting';
+
+        let filled = S.basketsFilled.filter(b => b).length;
+        if (filled >= 12) {
+            S.phase = 'complete';
+            completeMiracle();
+            return;
+        }
+
+        // Fill baskets one by one with animation
+        const interval = setInterval(() => {
+            let idx = S.basketsFilled.indexOf(false);
+            if (idx === -1 || idx >= 12) {
+                clearInterval(interval);
+                S.phase = 'complete';
+                S.baskets = 12;
+                completeMiracle();
+                return;
+            }
+            S.basketsFilled[idx] = true;
+            S.baskets = S.basketsFilled.filter(b => b).length;
+            renderBaskets();
+            updateDisplays();
+            log('BASKET', `Basket ${S.baskets} of 12 filled with fragments`, 'basket');
+        }, 400);
+    }
+
+    function completeMiracle() {
+        S.dimension = 4;
+        DRO.matter = 48; DRO.divine = 48; DRO.quantum = 32;
+        renderDRO();
+        updateDisplays();
+        document.getElementById('hDim').textContent = '4';
+        document.getElementById('divineRays').style.opacity = '0.4';
+        log('DIVINE', '✝ MIRACLE COMPLETE — 5,000 fed from 5 loaves and 2 fish', 'divine');
+        log('BASKET', '12 baskets of leftovers collected — more remains than began', 'basket');
+        log('FAITH', '+500 faith generated. Matter conservation: TRANSCENDED via Dimension-30', 'faith');
+        log('DRO', 'Returning to physical dimension — Base-X normalizing', 'dro');
+        log('SCRIPTURE', '"They all ate and were satisfied." — Luke 9:17', 'scripture');
+        document.getElementById('scriptureBanner').textContent = '"They all ate and were satisfied, and twelve baskets of broken pieces were taken up." — Luke 9:17';
+    }
+
+    function instantFeed() {
+        if (S.phase === 'complete') return;
+        S.phase = 'multiplying';
+        S.blessingGlow = 1;
+        S.dimension = 30;
+        DRO.matter = 64; DRO.divine = 64; DRO.quantum = 64;
+        renderDRO();
+
+        S.fed = S.crowdSize;
+        S.multLoaves = 5000;
+        S.multFish = 2000;
+        S.multFactor = 1000;
+        S.matterKg = S.crowdSize * 0.3;
+        S.atomsCreated = S.matterKg * 3.3e25;
+        S.crowdDots.forEach(d => d.fed = true);
+
+        // Burst of food particles
+        const W = canvas.width, H = canvas.height;
+        for (let i = 0; i < 80; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 2 + Math.random() * 5;
+            S.foodItems.push({
+                x: W / 2, y: H * 0.35,
+                type: Math.random() > 0.3 ? 'bread' : 'fish',
+                size: 2 + Math.random() * 4, age: 0,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+            });
+        }
+
+        updateDisplays();
+        log('DIVINE', '✝ INSTANT MULTIPLICATION — Divine power at maximum', 'divine');
+
+        setTimeout(() => { S.phase = 'collecting'; collectBaskets(); }, 800);
+    }
+
+    function resetMiracle() {
+        S.phase = 'idle';
+        S.fed = 0;
+        S.loaves = 5; S.fish = 2;
+        S.multLoaves = 5; S.multFish = 2;
+        S.baskets = 0;
+        S.basketsFilled = Array(12).fill(false);
+        S.multFactor = 1;
+        S.matterKg = 0;
+        S.atomsCreated = 0;
+        S.dimension = 4;
+        S.blessingGlow = 0;
+        S.divineParticles = [];
+        DRO.matter = 48; DRO.divine = 48; DRO.quantum = 32; DRO.crowd = 16; DRO.visual = 24;
+        generateInitialFood();
+        S.crowdDots.forEach(d => d.fed = false);
+        renderDRO();
+        renderBaskets();
+        updateDisplays();
+        document.getElementById('hDim').textContent = '4';
+        document.getElementById('divineRays').style.opacity = '0.4';
+        document.getElementById('scriptureBanner').textContent = '"Taking the five loaves and the two fish, he looked up to heaven, and blessed and broke them." — Luke 9:16';
+        log('SYSTEM', 'Miracle reset — 5 loaves, 2 fish, 5000 hungry', 'dim');
+    }
+
+    // ─── Render Helpers ──────────────────────────────────────
+
+    function renderDRO() {
+        const colors = { matter: '#c49a5c', crowd: '#5a8848', divine: '#d4a853', quantum: '#55ccdd', visual: '#8899dd' };
+        document.getElementById('droPanel').innerHTML = Object.entries(DRO).map(([k, v]) => `
+            <div class="dro-row">
+                <span class="dro-lbl">${k.toUpperCase()}</span>
+                <div class="dro-track"><div class="dro-fill" style="width:${v/64*100}%;background:${colors[k]}"></div></div>
+                <span class="dro-val" style="color:${colors[k]}">B-${v}</span>
+            </div>
+        `).join('');
+    }
+
+    function renderBaskets() {
+        document.getElementById('basketRow').innerHTML = S.basketsFilled.map((filled, i) =>
+            `<div class="basket-icon ${filled ? 'filled' : 'empty'}">🧺</div>`
+        ).join('');
+    }
+
+    function updateDisplays() {
+        document.getElementById('loafMult').textContent = S.multLoaves.toLocaleString();
+        document.getElementById('fishMult').textContent = S.multFish.toLocaleString();
+        document.getElementById('hFed').textContent = S.fed.toLocaleString();
+        document.getElementById('hBaskets').textContent = `${S.baskets} / 12`;
+        document.getElementById('cmPercent').textContent = (S.fed / S.crowdSize * 100).toFixed(1) + '%';
+        document.getElementById('cmFill').style.width = (S.fed / S.crowdSize * 100) + '%';
+        document.getElementById('cmMatter').textContent = S.matterKg.toFixed(1) + ' kg';
+        document.getElementById('cmMatterFill').style.width = Math.min(100, S.matterKg / (S.crowdSize * 0.3) * 100) + '%';
+        document.getElementById('basketLabel').textContent = `${S.baskets} / 12`;
+        document.getElementById('vpPhase').textContent = PHASES[S.phase];
+        document.getElementById('vpPhase').style.color = S.phase === 'complete' ? '#66eea0' : 'var(--divine-gold)';
+        document.getElementById('vpCount').innerHTML = `
+            <div style="color:var(--bread-warm)">🍞 ${S.multLoaves.toLocaleString()}</div>
+            <div style="color:var(--fish-silver)">🐟 ${S.multFish.toLocaleString()}</div>
+            <div style="color:var(--grass-green)">${S.fed.toLocaleString()} fed</div>
+        `;
+
+        const atoms = S.atomsCreated > 0 ? S.atomsCreated.toExponential(2) : '0';
+        document.getElementById('quantumStats').innerHTML = `
+            <div>Multiplication Factor: <span style="color:var(--quantum-cyan)">×${S.multFactor.toLocaleString()}</span></div>
+            <div>Matter Conservation: <span style="color:var(--divine-gold)">${S.phase === 'idle' ? 'STANDBY' : 'TRANSCENDED'}</span></div>
+            <div>Energy Source: <span style="color:var(--faith-purple)">DIVINE</span></div>
+            <div>Quantum State: <span style="color:${S.phase === 'multiplying' || S.phase === 'distributing' ? 'var(--quantum-cyan)' : 'var(--text-dim)'}">${S.phase === 'idle' ? 'STANDBY' : S.phase === 'complete' ? 'COLLAPSED' : 'ACTIVE'}</span></div>
+            <div>Atoms Created: <span style="color:var(--quantum-cyan)">${atoms}</span></div>
+            <div>Dimensional Layer: <span style="color:var(--divine-gold)">${S.dimension} ${S.dimension <= 4 ? '(Physical)' : S.dimension <= 16 ? '(Spiritual)' : S.dimension <= 32 ? '(Angelic)' : '(Divine)'}</span></div>
+        `;
+    }
+
+    function updateStats() { updateDisplays(); renderBaskets(); }
+
+    function setParam(key, val) {
+        const v = parseInt(val);
+        switch (key) {
+            case 'presence':
+                S.presence = v / 100;
+                document.getElementById('cvPresence').textContent = S.presence.toFixed(2);
+                document.getElementById('divineRays').style.opacity = 0.2 + S.presence * 0.6;
+                break;
+            case 'rate':
+                S.rate = v / 100;
+                document.getElementById('cvRate').textContent = S.rate.toFixed(1) + 'x';
+                break;
+            case 'crowd':
+                S.crowdSize = v;
+                document.getElementById('cvCrowd').textContent = v.toLocaleString();
+                document.getElementById('hTotal').textContent = v.toLocaleString();
+                generateCrowd();
+                break;
+            case 'detail':
+                S.detail = v / 100;
+                document.getElementById('cvDetail').textContent = v > 66 ? 'HIGH' : v > 33 ? 'MED' : 'LOW';
+                break;
+            case 'particles':
+                S.particles = v / 100;
+                document.getElementById('cvParticles').textContent = v > 10 ? 'ON' : 'OFF';
+                break;
+            case 'view':
+                S.viewMode = v;
+                document.getElementById('cvView').textContent = v < 33 ? 'HILLSIDE' : v < 66 ? 'QUANTUM' : 'AERIAL';
+                break;
+        }
+    }
+
+    // ─── Game Loop ───────────────────────────────────────────
+
+    function loop(t) {
+        S.time = t;
+
+        // Blessing glow ramp
+        if (S.phase === 'blessing') {
+            S.blessingGlow = Math.min(1, S.blessingGlow + 0.008);
+        }
+        if (S.breakFlash > 0) S.breakFlash *= 0.95;
+
+        // Auto-multiply when in multiplying phase
+        if (S.phase === 'multiplying') {
+            const batch = Math.floor(20 * S.rate * (0.5 + S.presence * 0.5));
+            if (S.fed < S.crowdSize) {
+                S.fed = Math.min(S.crowdSize, S.fed + batch);
+                S.multLoaves += Math.ceil(batch * 0.6);
+                S.multFish += Math.ceil(batch * 0.25);
+                S.matterKg += batch * 0.3;
+                S.atomsCreated += batch * 0.3 * 3.3e25;
+                S.multFactor = S.multLoaves / 5;
+
+                let toFeed = Math.floor((S.fed / S.crowdSize) * S.crowdDots.length);
+                S.crowdDots.forEach((d, i) => { d.fed = i < toFeed; });
+
+                // Spawn food particles
+                if (Math.random() < 0.3) {
+                    const W = canvas.width, H = canvas.height;
+                    const angle = (Math.random() - 0.5) * Math.PI * 0.8;
+                    S.foodItems.push({
+                        x: W / 2 + (Math.random() - 0.5) * 20,
+                        y: H * 0.35,
+                        type: Math.random() > 0.3 ? 'bread' : 'fish',
+                        size: 2 + Math.random() * 3, age: 0,
+                        vx: Math.sin(angle) * (1 + Math.random() * 2),
+                        vy: 0.5 + Math.random() * 2,
+                    });
+                }
+
+                updateDisplays();
+
+                if (S.fed >= S.crowdSize) {
+                    S.phase = 'collecting';
+                    log('DIVINE', '✝ ALL FED — collecting leftovers', 'divine');
+                    setTimeout(collectBaskets, 1000);
+                }
+            }
+        }
+
+        // Divine particles
+        if ((S.phase === 'blessing' || S.phase === 'multiplying') && Math.random() < S.particles * 0.4) {
+            S.divineParticles.push({
+                x: canvas.width * 0.3 + Math.random() * canvas.width * 0.4,
+                y: -5,
+                vy: 0.5 + Math.random() * 2,
+                life: 1,
+                size: 1.5 + Math.random() * 3,
+            });
+        }
+
+        // Update particles
+        S.divineParticles = S.divineParticles.filter(p => {
+            p.y += p.vy; p.life -= 0.006;
+            return p.life > 0 && p.y < canvas.height;
+        });
+
+        // Update food items
+        S.foodItems.forEach(f => {
+            f.x += f.vx; f.y += f.vy;
+            f.vx *= 0.98; f.vy *= 0.98;
+            f.age++;
+        });
+        S.foodItems = S.foodItems.filter(f => f.age < 300 && f.y < canvas.height + 20 && f.x > -20 && f.x < canvas.width + 20);
+
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    function draw() {
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        // Sky gradient
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0, '#0c0a14');
+        sky.addColorStop(0.3, '#1a1520');
+        sky.addColorStop(0.5, '#2a2818');
+        sky.addColorStop(0.7, '#3a4828');
+        sky.addColorStop(1, '#2a3a1a');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+
+        // Hillside ground
+        ctx.fillStyle = '#2a3a1a';
+        ctx.beginPath();
+        ctx.moveTo(0, H * 0.55);
+        for (let x = 0; x <= W; x += 20) {
+            ctx.lineTo(x, H * 0.55 + Math.sin(x * 0.01) * 8 + Math.sin(x * 0.03) * 3);
+        }
+        ctx.lineTo(W, H); ctx.lineTo(0, H);
+        ctx.fill();
+
+        // Grass texture
+        if (S.detail > 0.3) {
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            for (let i = 0; i < 80 * S.detail; i++) {
+                const gx = Math.random() * W;
+                const gy = H * 0.56 + Math.random() * H * 0.44;
+                ctx.strokeStyle = `hsl(${100 + Math.random() * 30}, 40%, ${20 + Math.random() * 15}%)`;
+                ctx.lineWidth = 0.5;
+                ctx.beginPath();
+                ctx.moveTo(gx, gy);
+                ctx.lineTo(gx + (Math.random() - 0.5) * 4, gy - 3 - Math.random() * 5);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Blessing glow from center
+        if (S.blessingGlow > 0 || S.phase === 'multiplying' || S.phase === 'distributing') {
+            const glow = Math.max(S.blessingGlow, S.phase === 'multiplying' ? 0.6 : 0.3);
+            const gr = ctx.createRadialGradient(W/2, H*0.33, 0, W/2, H*0.33, 120 + glow * 100);
+            gr.addColorStop(0, `rgba(212,168,83,${glow * 0.3})`);
+            gr.addColorStop(0.4, `rgba(255,248,224,${glow * 0.1})`);
+            gr.addColorStop(1, 'transparent');
+            ctx.fillStyle = gr;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        // Break flash
+        if (S.breakFlash > 0.01) {
+            ctx.save();
+            ctx.globalAlpha = S.breakFlash * 0.5;
+            ctx.fillStyle = '#fff8e0';
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+
+        // Jesus figure (simplified)
+        const jx = W / 2, jy = H * 0.32;
+        ctx.save();
+        // Robe
+        ctx.fillStyle = '#e8e0d0';
+        ctx.beginPath();
+        ctx.moveTo(jx - 12, jy + 8);
+        ctx.lineTo(jx + 12, jy + 8);
+        ctx.lineTo(jx + 18, jy + 50);
+        ctx.lineTo(jx - 18, jy + 50);
+        ctx.fill();
+        // Head
+        ctx.fillStyle = '#d4a574';
+        ctx.beginPath();
+        ctx.arc(jx, jy, 8, 0, Math.PI * 2);
+        ctx.fill();
+        // Hair
+        ctx.fillStyle = '#4a3020';
+        ctx.beginPath();
+        ctx.arc(jx, jy - 1, 8, Math.PI, Math.PI * 2);
+        ctx.fill();
+        // Arms raised during blessing
+        if (S.phase === 'blessing' || S.blessingGlow > 0.3) {
+            ctx.strokeStyle = '#d4a574';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(jx - 12, jy + 15);
+            ctx.lineTo(jx - 28, jy - 5);
+            ctx.moveTo(jx + 12, jy + 15);
+            ctx.lineTo(jx + 28, jy - 5);
+            ctx.stroke();
+        }
+        // Divine aura
+        if (S.blessingGlow > 0.1 || S.phase !== 'idle') {
+            const intensity = S.phase === 'idle' ? 0 : 0.2 + S.presence * 0.3;
+            ctx.beginPath();
+            ctx.arc(jx, jy, 30, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(212,168,83,${intensity * 0.15})`;
+            ctx.fill();
+            ctx.strokeStyle = `rgba(212,168,83,${intensity * 0.3})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Food items
+        S.foodItems.forEach(f => {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, 1 - f.age / 300);
+            if (f.type === 'bread') {
+                ctx.fillStyle = S.phase === 'multiplying' ? '#dab06c' : '#c49a5c';
+                if (S.phase === 'multiplying') { ctx.shadowColor = '#d4a853'; ctx.shadowBlur = 4; }
+                ctx.beginPath();
+                ctx.ellipse(f.x, f.y, f.size, f.size * 0.6, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Crust line
+                ctx.strokeStyle = '#8b6332';
+                ctx.lineWidth = 0.5;
+                ctx.beginPath();
+                ctx.ellipse(f.x, f.y, f.size * 0.7, f.size * 0.35, 0, 0, Math.PI);
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = '#a0b8c8';
+                if (S.phase === 'multiplying') { ctx.shadowColor = '#55ccdd'; ctx.shadowBlur = 3; }
+                ctx.beginPath();
+                ctx.ellipse(f.x, f.y, f.size, f.size * 0.35, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Tail
+                ctx.beginPath();
+                ctx.moveTo(f.x + f.size, f.y);
+                ctx.lineTo(f.x + f.size + 4, f.y - 3);
+                ctx.lineTo(f.x + f.size + 4, f.y + 3);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        });
+
+        // Crowd
+        S.crowdDots.forEach(d => {
+            ctx.save();
+            if (d.fed) {
+                ctx.fillStyle = `hsl(${d.hue}, 50%, 55%)`;
+                ctx.globalAlpha = 0.7;
+            } else {
+                ctx.fillStyle = `hsl(${d.hue}, 30%, 35%)`;
+                ctx.globalAlpha = 0.5;
+            }
+            ctx.beginPath();
+            ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sitting body
+            ctx.fillStyle = d.fed ? `hsl(${d.hue + 10}, 40%, 45%)` : `hsl(${d.hue}, 20%, 25%)`;
+            ctx.fillRect(d.x - d.size * 0.6, d.y + d.size, d.size * 1.2, d.size * 1.5);
+            ctx.restore();
+        });
+
+        // Divine particles
+        S.divineParticles.forEach(p => {
+            ctx.save();
+            ctx.globalAlpha = p.life * 0.6;
+            ctx.fillStyle = '#d4a853';
+            ctx.shadowColor = '#d4a853';
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+    }
+
+    // ─── Logger ──────────────────────────────────────────────
+    function log(prefix, msg, cls) {
+        const box = document.getElementById('logBox');
+        const now = new Date();
+        const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+        const entry = document.createElement('div');
+        entry.innerHTML = `<span class="log-dim">${ts}</span> <span class="log-${cls}">[${prefix}]</span> ${msg}`;
+        box.appendChild(entry);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    init();
+    </script>
+</body>
+</html>

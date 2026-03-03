@@ -1,0 +1,29 @@
+﻿# Build artifacts
+cmake_build/
+build/
+*.exe
+*.dll
+*.lib
+*.obj
+*.pdb
+*.ilk
+*.log
+
+# vcpkg local
+vcpkg_installed/
+vcpkg/
+
+# IDE
+.vs/
+.vscode/
+*.suo
+*.user
+*.sln.docstates
+
+# UE artifacts in the unreal copy
+unreal/BaseXWorldGen/Intermediate/
+unreal/BaseXWorldGen/Binaries/
+
+# OS
+Thumbs.db
+.DS_Store

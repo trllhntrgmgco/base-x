@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.props" Condition="Exists('packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.props')" />
+  <Import Project="packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.props" Condition="Exists('packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.props')" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>BaseXEngine</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)build\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\intermediate\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)build\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\intermediate\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(VULKAN_SDK)\Include;$(ProjectDir)vcpkg\installed\x64-windows\include;$(ProjectDir)vcpkg\installed\x64-windows\include\bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(VULKAN_SDK)\Include;$(ProjectDir)vcpkg\installed\x64-windows\include;$(ProjectDir)vcpkg\installed\x64-windows\include\bullet;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="include\BaseX\BulletIntegration.h" />
+    <ClInclude Include="include\BaseX\DRO.h" />
+    <ClInclude Include="include\BaseX\Engine.h" />
+    <ClInclude Include="include\BaseX\Database.h" />
+    <ClInclude Include="include\BaseX\Demos\PrecisionTest.h" />
+    <ClInclude Include="include\BaseX\GLText.h" />
+    <ClInclude Include="include\BaseX\VRSystem.h" />
+    <ClInclude Include="include\BaseX\WorldPromptEngine.h" />
+    <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\ABaseXStructureSpawner.h" />
+    <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\ABaseXVRWorldBuilder.h" />
+    <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\ABaseXWorldMesh.h" />
+    <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\BaseXWorldGenModule.h" />
+    <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\FBaseXTypes.h" />
+    <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\UBaseXWeatherController.h" />
+    <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\UBaseXWorldBuilder.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\core\core.cpp" />
+    <ClCompile Include="src\demos\demo.cpp" />
+    <ClCompile Include="src\demos\DRO-LOD-SHOWCASE\DRO_LOD_BaseX_Showcase.cpp" />
+    <ClCompile Include="src\demos\FND-002\FND_002_LOD_Visualizer_glfw.cpp" />
+    <ClCompile Include="src\demos\FND-002\FND_002_LOD_Vulkan.cpp" />
+    <ClCompile Include="src\demos\FND-003\FND_003_DRO_Showcase.cpp" />
+    <ClCompile Include="src\demos\FND_001_DRO_Cascade_glfw.cpp" />
+    <ClCompile Include="src\demos\FND_003_LOD_Stress_glfw.cpp" />
+    <ClCompile Include="src\demos\golf_demo.cpp" />
+    <ClCompile Include="src\demos\graphical_demo_glfw.cpp" />
+    <ClCompile Include="src\demos\HLD_003_Safety_glfw.cpp" />
+    <ClCompile Include="src\demos\NEC_002_MeleeCombat_glfw.cpp" />
+    <ClCompile Include="src\demos\PhysicsShowcase.cpp" />
+    <ClCompile Include="src\demos\PhysicsShowcase_glfw.cpp" />
+    <ClCompile Include="src\demos\physics_demo.cpp" />
+    <ClCompile Include="src\demos\RAC_001_TirePatch_glfw.cpp" />
+    <ClCompile Include="src\demos\SBX_001_WorldPromptEngine_glfw.cpp" />
+    <ClCompile Include="src\demos\SCI_001_StarshipExplorer_glfw.cpp" />
+    <ClCompile Include="src\demos\SPB_001_FreeThrow_glfw.cpp" />
+    <ClCompile Include="src\demos\SPC_001_SolarSystem_glfw.cpp" />
+    <ClCompile Include="src\demos\SPC_002_TerraRingStation_glfw.cpp" />
+    <ClCompile Include="src\demos\SPC_006_ShipCombat_glfw.cpp" />
+    <ClCompile Include="src\demos\SPC_009_QuantumCaravan_glfw.cpp" />
+    <ClCompile Include="src\demos\SPG_001_GolfCourse_glfw.cpp" />
+    <ClCompile Include="src\demos\SRG_001_Scalpel_glfw.cpp" />
+    <ClCompile Include="src\demos\TornadoDemo.cpp" />
+    <ClCompile Include="src\demos\WLD_007_Tornado3D_glfw.cpp" />
+    <ClCompile Include="src\demos\WLD_010_WinterOlympics_glfw.cpp" />
+    <ClCompile Include="src\demos\WLD_011_WorldBuilder_glfw.cpp" />
+    <ClCompile Include="src\demos\WLD_012_Ecosystem_glfw.cpp" />
+    <ClCompile Include="src\demos\WPE_001_PromptWorld_glfw.cpp" />
+    <ClCompile Include="src\physics\BulletIntegration.cpp" />
+    <ClCompile Include="src\physics\DRO.cpp" />
+    <ClCompile Include="src\core\Database.cpp" />
+    <ClCompile Include="src\demos\PrecisionTest.cpp" />
+    <ClCompile Include="src\physics\physics.cpp" />
+    <ClCompile Include="src\rendering\rendering.cpp" />
+    <ClCompile Include="src\utils\utils.cpp" />
+    <ClCompile Include="src\vr\vr.cpp" />
+    <ClCompile Include="src\vr\VRSystem.cpp" />
+    <ClCompile Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Private\ABaseXStructureSpawner.cpp" />
+    <ClCompile Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Private\ABaseXVRWorldBuilder.cpp" />
+    <ClCompile Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Private\ABaseXWorldMesh.cpp" />
+    <ClCompile Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Private\BaseXWorldGenModule.cpp" />
+    <ClCompile Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Private\UBaseXWeatherController.cpp" />
+    <ClCompile Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Private\UBaseXWorldBuilder.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="README.md" />
+    <None Include="scripts\install_vcpkg_deps.cmake" />
+    <None Include="unreal\BaseXWorldGen\BaseXWorldGen.uplugin" />
+    <None Include="unreal\BaseXWorldGen\README.md" />
+    <None Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\BaseXWorldGen.Build.cs" />
+    <None Include="unreal\sync_to_ue.ps1" />
+    <None Include="vcpkg.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="src\core\CMakeLists.txt" />
+    <Text Include="src\demos\CMakeLists.txt" />
+    <Text Include="src\physics\CMakeLists.txt" />
+    <Text Include="src\rendering\CMakeLists.txt" />
+    <Text Include="src\utils\CMakeLists.txt" />
+    <Text Include="src\vr\CMakeLists.txt" />
+    <Text Include="unreal\BaseXWorldGen\ThirdParty\BaseX\README.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.props'))" />
+    <Error Condition="!Exists('packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.targets'))" />
+    <Error Condition="!Exists('packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.props'))" />
+    <Error Condition="!Exists('packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.targets'))" />
+  </Target>
+  <Import Project="packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.targets" Condition="Exists('packages\OpenXR.Headers.1.0.10.2\build\native\OpenXR.Headers.targets')" />
+  <Import Project="packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.targets" Condition="Exists('packages\OpenXR.Loader.1.0.10.2\build\native\OpenXR.Loader.targets')" />
+</Project>

@@ -1,0 +1,88 @@
+# ═══════════════════════════════════════════════════════════════════
+#  BASE-X GAME ENGINE — VULKAN 3D DEMO BUILD CONFIG
+#  Add these to your main CMakeLists.txt
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Dependencies ──────────────────────────────────────────────────
+# vcpkg install glfw3 glm vulkan
+# (Vulkan SDK must be installed: https://vulkan.lunarg.com/)
+
+find_package(Vulkan REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+
+# ── Shader Compilation ────────────────────────────────────────────
+# Finds glslangValidator from Vulkan SDK and compiles .vert/.frag → .spv
+
+find_program(GLSLANG_VALIDATOR glslangValidator 
+    HINTS "$ENV{VULKAN_SDK}/Bin" "$ENV{VULKAN_SDK}/bin")
+
+if(NOT GLSLANG_VALIDATOR)
+    message(WARNING "glslangValidator not found! Shaders must be compiled manually.")
+endif()
+
+function(compile_shader SHADER_SOURCE SHADER_OUTPUT)
+    if(GLSLANG_VALIDATOR)
+        add_custom_command(
+            OUTPUT ${SHADER_OUTPUT}
+            COMMAND ${GLSLANG_VALIDATOR} -V ${SHADER_SOURCE} -o ${SHADER_OUTPUT}
+            DEPENDS ${SHADER_SOURCE}
+            COMMENT "Compiling shader: ${SHADER_SOURCE}"
+        )
+    endif()
+endfunction()
+
+# ── FND-002 Vulkan Demo ──────────────────────────────────────────
+
+set(FND002_SHADER_DIR ${CMAKE_SOURCE_DIR}/demos/FND-002/shaders)
+set(FND002_SPV_DIR ${CMAKE_BINARY_DIR}/shaders/FND-002)
+file(MAKE_DIRECTORY ${FND002_SPV_DIR})
+
+compile_shader(
+    ${FND002_SHADER_DIR}/shader.vert
+    ${FND002_SPV_DIR}/vert.spv
+)
+compile_shader(
+    ${FND002_SHADER_DIR}/shader.frag
+    ${FND002_SPV_DIR}/frag.spv
+)
+
+add_custom_target(FND002_Shaders ALL
+    DEPENDS ${FND002_SPV_DIR}/vert.spv ${FND002_SPV_DIR}/frag.spv
+)
+
+add_executable(FND_002_LOD_Vulkan
+    demos/FND-002/FND_002_LOD_Vulkan.cpp
+)
+target_link_libraries(FND_002_LOD_Vulkan
+    PRIVATE
+        Vulkan::Vulkan
+        glfw
+        glm::glm
+)
+target_compile_definitions(FND_002_LOD_Vulkan PRIVATE
+    SHADER_DIR="${FND002_SPV_DIR}"
+    BASEX_ENGINE_VERSION="2.0.0"
+)
+add_dependencies(FND_002_LOD_Vulkan FND002_Shaders)
+
+# Copy shaders to executable directory for runtime
+add_custom_command(TARGET FND_002_LOD_Vulkan POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${FND002_SPV_DIR}
+        $<TARGET_FILE_DIR:FND_002_LOD_Vulkan>/shaders
+)
+
+# ── Console Demos (no GPU required) ──────────────────────────────
+
+add_executable(FND_002_LOD_Console
+    demos/FND-002/FND_002_LOD_Visualizer.cpp
+)
+
+add_executable(FND_003_DRO_Showcase
+    demos/FND-003/FND_003_DRO_Showcase.cpp
+)
+
+add_executable(DRO_LOD_BaseX_Showcase
+    demos/DRO-LOD-SHOWCASE/DRO_LOD_BaseX_Showcase.cpp
+)

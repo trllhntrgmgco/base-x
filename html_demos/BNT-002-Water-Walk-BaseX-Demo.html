@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BNT-002: Water Walk | Base-X Engine Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Orbitron:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --divine-gold: #ffd700;
+            --divine-light: #fff8dc;
+            --water-surface: #2d5a7b;
+            --water-deep: #0a2a4a;
+            --water-highlight: #5ba3d9;
+            --storm-dark: #1a1a2e;
+            --faith-green: #4ade80;
+            --doubt-red: #ef4444;
+            --base-64: #ffd700;
+            --base-48: #5ba3d9;
+            --base-32: #3b82f6;
+            --panel-bg: rgba(10, 20, 40, 0.95);
+            --text-light: #e0f0ff;
+        }
+        
+        body {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            background: linear-gradient(180deg, #0a0a1a 0%, #1a2a3a 50%, #0a1a2a 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            position: relative;
+        }
+        
+        .header::before,
+        .header::after {
+            content: '〰';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2em;
+            color: var(--water-highlight);
+            opacity: 0.6;
+        }
+        
+        .header::before { left: 18%; }
+        .header::after { right: 18%; }
+        
+        .demo-id {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8em;
+            color: var(--divine-gold);
+            letter-spacing: 4px;
+            margin-bottom: 5px;
+        }
+        
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 2.8em;
+            font-weight: 700;
+            background: linear-gradient(180deg, #fff8dc, #ffd700, #5ba3d9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+        }
+        
+        .subtitle {
+            font-style: italic;
+            font-size: 1.2em;
+            color: #8ab4d4;
+            margin-top: 5px;
+        }
+        
+        .scripture {
+            font-style: italic;
+            color: var(--divine-gold);
+            margin-top: 10px;
+            font-size: 0.95em;
+            opacity: 0.8;
+        }
+        
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Panels */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(91, 163, 217, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .panel-title {
+            font-family: 'Cinzel', serif;
+            font-size: 0.9em;
+            color: var(--water-highlight);
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(91, 163, 217, 0.3);
+            text-transform: uppercase;
+        }
+        
+        /* Canvas */
+        .canvas-container {
+            position: relative;
+            background: linear-gradient(180deg, #0a1525 0%, #1a3045 100%);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid rgba(91, 163, 217, 0.4);
+        }
+        
+        #waterCanvas {
+            display: block;
+            width: 100%;
+            height: 550px;
+            cursor: pointer;
+        }
+        
+        /* Faith Meter */
+        .faith-meter {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 18px;
+            border-radius: 6px;
+            border: 1px solid var(--faith-green);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75em;
+            width: 160px;
+        }
+        
+        .faith-label {
+            color: #888;
+            font-size: 0.8em;
+            letter-spacing: 1px;
+        }
+        
+        .faith-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--faith-green);
+            text-shadow: 0 0 10px currentColor;
+            transition: color 0.3s;
+        }
+        
+        .faith-value.low {
+            color: var(--doubt-red);
+        }
+        
+        .faith-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .faith-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--doubt-red), #fbbf24, var(--faith-green));
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        /* Surface Tension Display */
+        .tension-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 12px 18px;
+            border-radius: 6px;
+            border: 1px solid var(--water-highlight);
+            text-align: center;
+        }
+        
+        .tension-label {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7em;
+            color: #888;
+            letter-spacing: 1px;
+        }
+        
+        .tension-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4em;
+            font-weight: 700;
+            color: var(--water-highlight);
+        }
+        
+        .tension-unit {
+            font-size: 0.6em;
+            color: #666;
+            display: block;
+        }
+        
+        /* Character Status */
+        .character-status {
+            position: absolute;
+            top: 100px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 0.85em;
+        }
+        
+        .char-name {
+            font-family: 'Cinzel', serif;
+            color: var(--divine-gold);
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        .char-state {
+            color: #aaa;
+            font-style: italic;
+        }
+        
+        /* Physics Readout */
+        .physics-readout {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 0.85em;
+        }
+        
+        .phys-item {
+            text-align: center;
+        }
+        
+        .phys-label {
+            font-size: 0.75em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .phys-value {
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        
+        /* Controls */
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .control-label span:last-child {
+            color: var(--water-highlight);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8em;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: linear-gradient(90deg, var(--doubt-red), var(--faith-green));
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--divine-gold);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        input[type="range"].storm {
+            background: linear-gradient(90deg, #4682b4, #1a3a5c);
+        }
+        
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 10px;
+            border: 1px solid var(--water-highlight);
+            background: rgba(91, 163, 217, 0.1);
+            color: var(--water-highlight);
+            font-family: 'Cinzel', serif;
+            font-size: 0.9em;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        
+        .btn:hover {
+            background: rgba(91, 163, 217, 0.25);
+            box-shadow: 0 0 20px rgba(91, 163, 217, 0.3);
+        }
+        
+        .btn.active {
+            background: var(--water-highlight);
+            color: #000;
+        }
+        
+        .btn.divine {
+            border-color: var(--divine-gold);
+            color: var(--divine-gold);
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        .btn.divine:hover {
+            background: rgba(255, 215, 0, 0.25);
+        }
+        
+        /* Character Buttons */
+        .char-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .char-btn {
+            padding: 10px;
+            font-size: 0.8em;
+        }
+        
+        /* Stats */
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-label {
+            color: #888;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', monospace;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        
+        /* Event Log */
+        .event-log {
+            max-height: 180px;
+            overflow-y: auto;
+            font-size: 0.85em;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .log-entry {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-entry.faith { color: var(--faith-green); }
+        .log-entry.doubt { color: var(--doubt-red); }
+        .log-entry.divine { color: var(--divine-gold); }
+        .log-entry.physics { color: var(--water-highlight); }
+        
+        /* Base Info */
+        .base-info {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        
+        .base-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            font-size: 0.85em;
+        }
+        
+        .base-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 8px;
+            display: inline-block;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #555;
+            font-size: 0.85em;
+            border-top: 1px solid rgba(91, 163, 217, 0.2);
+            margin-top: 20px;
+        }
+        
+        .footer span {
+            color: var(--divine-gold);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--water-highlight);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="demo-id">BASE-X ENGINE DEMO • BIBLE NT VR</div>
+            <h1>WALKING ON WATER</h1>
+            <div class="subtitle">Faith-Based Surface Tension at Human Scale</div>
+            <div class="scripture">"Lord, if it is you, command me to come to you on the water." — Matthew 14:28</div>
+        </div>
+        
+        <div class="main-grid">
+            <!-- Left Panel: Controls -->
+            <div class="panel">
+                <div class="panel-title">✝ Faith Controls</div>
+                
+                <div class="char-buttons">
+                    <button class="btn char-btn active" id="btnJesus">Jesus</button>
+                    <button class="btn char-btn" id="btnPeter">Peter</button>
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Faith Level</span>
+                        <span id="faithValue">100%</span>
+                    </div>
+                    <input type="range" id="faithSlider" min="0" max="100" value="100">
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Storm Intensity</span>
+                        <span id="stormValue">50%</span>
+                    </div>
+                    <input type="range" class="storm" id="stormSlider" min="0" max="100" value="50">
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Wind Speed</span>
+                        <span id="windValue">15 m/s</span>
+                    </div>
+                    <input type="range" class="storm" id="windSlider" min="0" max="30" value="15">
+                </div>
+                
+                <div class="panel-title" style="margin-top: 20px;">〰 Actions</div>
+                
+                <button class="btn" id="btnStep">Take Step Forward</button>
+                <button class="btn" id="btnLookDown">Look at Waves (↓ Faith)</button>
+                <button class="btn divine" id="btnLookUp">Look to Jesus (↑ Faith)</button>
+                <button class="btn" id="btnCry">Cry Out: "Lord, Save Me!"</button>
+                
+                <div class="panel-title" style="margin-top: 20px;">⚙ Simulation</div>
+                
+                <button class="btn" id="btnReset">Reset Scene</button>
+                <button class="btn" id="btnCalm">Jesus Calms Storm</button>
+                
+                <div class="base-info">
+                    <div class="panel-title" style="margin: 0 0 10px 0; padding: 0; border: none;">Base-X Physics</div>
+                    <div class="base-row">
+                        <span><span class="base-indicator" style="background: var(--base-64);"></span>Base-64</span>
+                        <span style="color: #888;">Divine Walking</span>
+                    </div>
+                    <div class="base-row">
+                        <span><span class="base-indicator" style="background: var(--base-48);"></span>Base-48</span>
+                        <span style="color: #888;">Faith Surface</span>
+                    </div>
+                    <div class="base-row">
+                        <span><span class="base-indicator" style="background: var(--base-32);"></span>Base-32</span>
+                        <span style="color: #888;">Normal Water</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Center: Canvas -->
+            <div class="canvas-container">
+                <canvas id="waterCanvas"></canvas>
+                
+                <div class="faith-meter">
+                    <div class="faith-label">FAITH LEVEL</div>
+                    <div class="faith-value" id="faithDisplay">100%</div>
+                    <div class="faith-bar">
+                        <div class="faith-fill" id="faithFill" style="width: 100%"></div>
+                    </div>
+                </div>
+                
+                <div class="tension-display">
+                    <div class="tension-label">SURFACE TENSION</div>
+                    <div class="tension-value" id="tensionValue">∞</div>
+                    <span class="tension-unit">N/m (Divine)</span>
+                </div>
+                
+                <div class="character-status" id="charStatus">
+                    <div class="char-name">JESUS</div>
+                    <div class="char-state">Walking on water</div>
+                </div>
+                
+                <div class="physics-readout">
+                    <div class="phys-item">
+                        <div class="phys-label">Weight</div>
+                        <div class="phys-value" id="weightValue">70 kg</div>
+                    </div>
+                    <div class="phys-item">
+                        <div class="phys-label">Buoyancy</div>
+                        <div class="phys-value" id="buoyancyValue">686 N</div>
+                    </div>
+                    <div class="phys-item">
+                        <div class="phys-label">Submersion</div>
+                        <div class="phys-value" id="submersionValue">0%</div>
+                    </div>
+                    <div class="phys-item">
+                        <div class="phys-label">Wave Height</div>
+                        <div class="phys-value" id="waveHeight">1.2 m</div>
+                    </div>
+                    <div class="phys-item">
+                        <div class="phys-label">Active Base</div>
+                        <div class="phys-value" id="activeBase">B-64</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Stats -->
+            <div class="panel">
+                <div class="panel-title">📊 Divine Physics</div>
+                
+                <div class="stat-row">
+                    <span class="stat-label">Steps Taken</span>
+                    <span class="stat-value" id="stepsTaken">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Distance Walked</span>
+                    <span class="stat-value" id="distanceWalked">0 m</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Time on Water</span>
+                    <span class="stat-value" id="timeOnWater">0:00</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Times Sunk</span>
+                    <span class="stat-value" id="timesSunk">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Divine Rescues</span>
+                    <span class="stat-value" id="divineRescues">0</span>
+                </div>
+                
+                <div class="panel-title" style="margin-top: 20px;">🔬 DRO Analysis</div>
+                
+                <div class="stat-row">
+                    <span class="stat-label">Faith Factor</span>
+                    <span class="stat-value" id="faithFactor">1.00</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Storm Factor</span>
+                    <span class="stat-value" id="stormFactor">0.50</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Divine Presence</span>
+                    <span class="stat-value" id="divinePresence">1.00</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Tension Multiplier</span>
+                    <span class="stat-value" id="tensionMult">∞</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Base Transitions</span>
+                    <span class="stat-value" id="baseTransitions">0</span>
+                </div>
+                
+                <div class="panel-title" style="margin-top: 20px;">📜 Event Log</div>
+                <div class="event-log" id="eventLog">
+                    <div class="log-entry divine">The fourth watch of the night...</div>
+                    <div class="log-entry">Disciples see a figure on the water</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <strong>BNT-002: Water Walk</strong> | Base-X Game Engine Demo Suite | 
+            <span>Troll Hunter Gaming LLC</span> | Patent Pending Technology
+        </div>
+    </div>
+    
+    <script>
+        // ============================================
+        // BASE-X WATER WALK ENGINE
+        // BNT-002 Demo - Faith-Based Surface Tension
+        // ============================================
+        
+        const canvas = document.getElementById('waterCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // High DPI
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = 550 * dpr;
+            canvas.style.height = '550px';
+            ctx.scale(dpr, dpr);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // ============================================
+        // BASE-X SURFACE TENSION PHYSICS
+        // ============================================
+        
+        class BaseXSurfaceTension {
+            constructor() {
+                this.base = 64;
+                this.normalTension = 0.072; // N/m - normal water
+                this.divineTension = Infinity; // Divine intervention
+            }
+            
+            setBase(newBase) {
+                this.base = newBase;
+            }
+            
+            // Calculate effective surface tension based on faith
+            calculateTension(faith, divinePresence) {
+                if (faith >= 0.95 && divinePresence >= 0.9) {
+                    // Perfect faith + divine presence = infinite tension (can walk)
+                    return Infinity;
+                }
+                
+                // Faith amplifies surface tension exponentially
+                // Normal water: 0.072 N/m
+                // With faith: can support human weight
+                
+                const faithMultiplier = Math.pow(faith, 3) * divinePresence;
+                const effectiveTension = this.normalTension * (1 + faithMultiplier * 1000000);
+                
+                return this.quantize(effectiveTension);
+            }
+            
+            // Calculate if surface can support weight
+            canSupport(weight, footArea, tension, faith) {
+                if (tension === Infinity) return true;
+                
+                // Surface tension force = tension * perimeter
+                // Simplified: F = γ * 2πr (for circular footprint)
+                const footRadius = Math.sqrt(footArea / Math.PI);
+                const tensionForce = tension * 2 * Math.PI * footRadius;
+                
+                // Faith adds divine support force
+                const divineForce = faith * weight * 9.81;
+                
+                const totalSupport = tensionForce + divineForce;
+                const requiredForce = weight * 9.81;
+                
+                return totalSupport >= requiredForce;
+            }
+            
+            // Calculate submersion depth
+            calculateSubmersion(weight, faith, tension) {
+                if (faith >= 0.95) return 0;
+                if (faith <= 0) return 1; // Fully submerged
+                
+                // Submersion inversely proportional to faith
+                const submersion = Math.pow(1 - faith, 2);
+                return this.quantize(Math.min(1, submersion));
+            }
+            
+            quantize(value) {
+                if (value === Infinity) return Infinity;
+                const factor = Math.pow(this.base, 4);
+                return Math.round(value * factor) / factor;
+            }
+        }
+        
+        // ============================================
+        // DIVINE RADIX OPTIMIZER FOR WATER WALK
+        // ============================================
+        
+        class WaterWalkDRO {
+            constructor() {
+                this.currentBase = 64;
+                this.transitionCount = 0;
+                
+                this.phaseRequirements = {
+                    'DIVINE_WALK': 64,      // Jesus walking - maximum
+                    'FAITH_WALK': 48,       // Peter with faith
+                    'DOUBTING': 32,         // Faith wavering
+                    'SINKING': 32,          // Going under
+                    'RESCUED': 64,          // Divine intervention
+                    'NORMAL_WATER': 32      // Standard water physics
+                };
+            }
+            
+            calculateOptimalBase(state) {
+                const { phase, faith, stormIntensity, isDivine } = state;
+                
+                let baseRequirement = this.phaseRequirements[phase] || 32;
+                
+                // Divine characters always get max precision
+                if (isDivine) {
+                    baseRequirement = 64;
+                }
+                
+                // Faith increases precision needs
+                baseRequirement = Math.max(baseRequirement, Math.floor(32 + faith * 32));
+                
+                // Storm increases precision needs
+                baseRequirement = Math.max(baseRequirement, Math.floor(32 + stormIntensity * 16));
+                
+                // Clamp
+                baseRequirement = Math.min(64, Math.max(32, baseRequirement));
+                
+                // Snap to valid
+                const validBases = [32, 48, 64];
+                let closest = validBases[0];
+                for (const b of validBases) {
+                    if (Math.abs(b - baseRequirement) < Math.abs(closest - baseRequirement)) {
+                        closest = b;
+                    }
+                }
+                
+                if (closest !== this.currentBase) {
+                    this.transitionCount++;
+                }
+                
+                this.currentBase = closest;
+                return closest;
+            }
+            
+            getBaseColor(base) {
+                if (base >= 64) return '#ffd700';
+                if (base >= 48) return '#5ba3d9';
+                return '#3b82f6';
+            }
+        }
+        
+        // ============================================
+        // CHARACTER CLASS
+        // ============================================
+        
+        class WaterWalker {
+            constructor(name, isDivine = false) {
+                this.name = name;
+                this.isDivine = isDivine;
+                this.x = 200;
+                this.y = 0; // Relative to water surface
+                this.targetY = 0;
+                this.vx = 0;
+                this.vy = 0;
+                this.faith = isDivine ? 1.0 : 0.8;
+                this.weight = 70; // kg
+                this.footArea = 0.04; // m² (both feet)
+                this.phase = isDivine ? 'DIVINE_WALK' : 'FAITH_WALK';
+                this.stepsTaken = 0;
+                this.distance = 0;
+                this.walkCycle = 0;
+                this.isSinking = false;
+                this.timesSunk = 0;
+                this.rescued = 0;
+            }
+            
+            update(dt, surfaceTension, stormIntensity) {
+                this.walkCycle += dt * 3;
+                
+                // Calculate if can stand on water
+                const canStand = surfaceTension.canSupport(
+                    this.weight, 
+                    this.footArea, 
+                    surfaceTension.calculateTension(this.faith, this.isDivine ? 1 : this.faith),
+                    this.faith
+                );
+                
+                // Calculate submersion
+                const submersion = surfaceTension.calculateSubmersion(
+                    this.weight,
+                    this.faith,
+                    surfaceTension.divineTension
+                );
+                
+                // Target Y position (0 = on surface, positive = submerged)
+                this.targetY = submersion * 150; // Max 150px underwater
+                
+                // Smooth movement to target
+                this.y += (this.targetY - this.y) * dt * 3;
+                
+                // Update phase
+                if (this.isDivine) {
+                    this.phase = 'DIVINE_WALK';
+                } else if (this.faith >= 0.7) {
+                    this.phase = 'FAITH_WALK';
+                    this.isSinking = false;
+                } else if (this.faith >= 0.3) {
+                    this.phase = 'DOUBTING';
+                    this.isSinking = false;
+                } else {
+                    if (!this.isSinking) {
+                        this.isSinking = true;
+                        this.timesSunk++;
+                    }
+                    this.phase = 'SINKING';
+                }
+                
+                // Storm affects non-divine characters
+                if (!this.isDivine && stormIntensity > 0.5) {
+                    // Fear from storm reduces faith
+                    // (handled externally through UI)
+                }
+                
+                return submersion;
+            }
+            
+            takeStep(stepSize = 30) {
+                if (this.phase !== 'SINKING') {
+                    this.x += stepSize;
+                    this.stepsTaken++;
+                    this.distance += 0.5; // meters
+                    return true;
+                }
+                return false;
+            }
+            
+            lookDown() {
+                if (!this.isDivine) {
+                    this.faith = Math.max(0, this.faith - 0.15);
+                    return true;
+                }
+                return false;
+            }
+            
+            lookUp() {
+                if (!this.isDivine) {
+                    this.faith = Math.min(1, this.faith + 0.2);
+                    if (this.isSinking && this.faith > 0.5) {
+                        this.rescued++;
+                        this.isSinking = false;
+                    }
+                    return true;
+                }
+                return false;
+            }
+            
+            cryOut() {
+                // "Lord, save me!" - immediate divine rescue
+                if (this.isSinking) {
+                    this.faith = 0.7;
+                    this.rescued++;
+                    this.isSinking = false;
+                    return true;
+                }
+                return false;
+            }
+        }
+        
+        // ============================================
+        // WAVE SYSTEM
+        // ============================================
+        
+        class WaveSystem {
+            constructor() {
+                this.waves = [];
+                this.stormIntensity = 0.5;
+                this.windSpeed = 15;
+                this.time = 0;
+                
+                // Generate wave layers
+                for (let i = 0; i < 5; i++) {
+                    this.waves.push({
+                        amplitude: 20 + Math.random() * 30,
+                        frequency: 0.01 + Math.random() * 0.02,
+                        speed: 0.5 + Math.random() * 1,
+                        phase: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+            
+            update(dt) {
+                this.time += dt;
+                
+                // Update wave properties based on storm
+                for (const wave of this.waves) {
+                    wave.amplitude = (20 + Math.random() * 30) * (0.5 + this.stormIntensity);
+                }
+            }
+            
+            getHeightAt(x) {
+                let height = 0;
+                for (const wave of this.waves) {
+                    height += Math.sin(x * wave.frequency + this.time * wave.speed + wave.phase) 
+                              * wave.amplitude * this.stormIntensity;
+                }
+                return height;
+            }
+            
+            getMaxHeight() {
+                let maxH = 0;
+                for (const wave of this.waves) {
+                    maxH += wave.amplitude * this.stormIntensity;
+                }
+                return maxH;
+            }
+        }
+        
+        // ============================================
+        // RENDERER
+        // ============================================
+        
+        class WaterWalkRenderer {
+            constructor(ctx, waveSystem) {
+                this.ctx = ctx;
+                this.waveSystem = waveSystem;
+                this.time = 0;
+                this.raindrops = [];
+                this.divineParticles = [];
+            }
+            
+            render(character, dro, surfaceTension) {
+                this.time += 0.016;
+                const ctx = this.ctx;
+                const w = canvas.width / (window.devicePixelRatio || 1);
+                const h = 550;
+                const waterY = h * 0.55;
+                
+                // Sky/storm background
+                this.drawSky(w, h, this.waveSystem.stormIntensity);
+                
+                // Distant boat
+                this.drawBoat(w - 200, waterY - 40, this.waveSystem.stormIntensity);
+                
+                // Water surface with waves
+                this.drawWater(w, h, waterY);
+                
+                // Rain if stormy
+                if (this.waveSystem.stormIntensity > 0.3) {
+                    this.drawRain(w, h);
+                }
+                
+                // Divine glow around character
+                if (character.isDivine || character.faith > 0.8) {
+                    this.drawDivineAura(character.x, waterY + character.y, character.faith, character.isDivine);
+                }
+                
+                // Character
+                this.drawCharacter(character, waterY);
+                
+                // Footprint ripples
+                this.drawFootprintRipples(character.x, waterY, character.phase);
+                
+                // Divine particles
+                this.updateDivineParticles(character, waterY);
+                
+                // Lightning if very stormy
+                if (this.waveSystem.stormIntensity > 0.7 && Math.random() < 0.005) {
+                    this.drawLightning(w, h);
+                }
+            }
+            
+            drawSky(w, h, storm) {
+                const ctx = this.ctx;
+                
+                // Sky gradient based on storm intensity
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.55);
+                
+                if (storm > 0.7) {
+                    skyGrad.addColorStop(0, '#0a0a15');
+                    skyGrad.addColorStop(1, '#1a1a2e');
+                } else if (storm > 0.4) {
+                    skyGrad.addColorStop(0, '#1a2030');
+                    skyGrad.addColorStop(1, '#2a3a4a');
+                } else {
+                    skyGrad.addColorStop(0, '#0a1525');
+                    skyGrad.addColorStop(1, '#1a3045');
+                }
+                
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, w, h * 0.55);
+                
+                // Storm clouds
+                if (storm > 0.3) {
+                    ctx.fillStyle = `rgba(30, 30, 40, ${storm * 0.5})`;
+                    for (let i = 0; i < 8; i++) {
+                        const cx = (i * w / 6 + this.time * 20) % (w + 200) - 100;
+                        const cy = 50 + Math.sin(i) * 30;
+                        const r = 60 + storm * 40;
+                        
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                        ctx.arc(cx + 40, cy - 10, r * 0.8, 0, Math.PI * 2);
+                        ctx.arc(cx - 30, cy + 10, r * 0.7, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+            
+            drawBoat(x, y, storm) {
+                const ctx = this.ctx;
+                const bobY = Math.sin(this.time * 2) * 5 * storm;
+                const tiltAngle = Math.sin(this.time * 1.5) * 0.1 * storm;
+                
+                ctx.save();
+                ctx.translate(x, y + bobY);
+                ctx.rotate(tiltAngle);
+                
+                // Boat hull
+                ctx.fillStyle = '#4a3728';
+                ctx.beginPath();
+                ctx.moveTo(-40, 0);
+                ctx.quadraticCurveTo(-50, 20, -30, 25);
+                ctx.lineTo(30, 25);
+                ctx.quadraticCurveTo(50, 20, 40, 0);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Mast
+                ctx.fillStyle = '#5a4738';
+                ctx.fillRect(-3, -60, 6, 60);
+                
+                // Sail (partially furled in storm)
+                const sailHeight = 50 * (1 - storm * 0.5);
+                ctx.fillStyle = '#d4c4a8';
+                ctx.beginPath();
+                ctx.moveTo(0, -55);
+                ctx.quadraticCurveTo(25 * (1 - storm * 0.3), -30, 0, -55 + sailHeight);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Disciples (silhouettes)
+                ctx.fillStyle = '#2a2a2a';
+                for (let i = 0; i < 4; i++) {
+                    ctx.beginPath();
+                    ctx.arc(-20 + i * 12, -5, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillRect(-22 + i * 12, -5, 4, 15);
+                }
+                
+                ctx.restore();
+            }
+            
+            drawWater(w, h, waterY) {
+                const ctx = this.ctx;
+                const ws = this.waveSystem;
+                
+                // Water gradient
+                const waterGrad = ctx.createLinearGradient(0, waterY, 0, h);
+                waterGrad.addColorStop(0, '#2d5a7b');
+                waterGrad.addColorStop(0.3, '#1a4060');
+                waterGrad.addColorStop(1, '#0a2a4a');
+                
+                // Draw wave surface
+                ctx.fillStyle = waterGrad;
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                
+                for (let x = 0; x <= w; x += 5) {
+                    const waveH = ws.getHeightAt(x);
+                    ctx.lineTo(x, waterY + waveH);
+                }
+                
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Wave highlights
+                ctx.strokeStyle = 'rgba(91, 163, 217, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let x = 0; x <= w; x += 5) {
+                    const waveH = ws.getHeightAt(x);
+                    if (x === 0) {
+                        ctx.moveTo(x, waterY + waveH);
+                    } else {
+                        ctx.lineTo(x, waterY + waveH);
+                    }
+                }
+                ctx.stroke();
+                
+                // Foam on wave crests
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                for (let x = 0; x < w; x += 30) {
+                    const waveH = ws.getHeightAt(x);
+                    const nextH = ws.getHeightAt(x + 10);
+                    if (waveH < nextH - 5) {
+                        ctx.beginPath();
+                        ctx.ellipse(x + 5, waterY + waveH, 8, 3, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+            
+            drawRain(w, h) {
+                const ctx = this.ctx;
+                const intensity = this.waveSystem.stormIntensity;
+                
+                // Add new raindrops
+                if (this.raindrops.length < intensity * 200) {
+                    this.raindrops.push({
+                        x: Math.random() * w,
+                        y: -10,
+                        speed: 10 + Math.random() * 10,
+                        length: 10 + Math.random() * 15
+                    });
+                }
+                
+                // Update and draw
+                ctx.strokeStyle = 'rgba(150, 180, 220, 0.4)';
+                ctx.lineWidth = 1;
+                
+                this.raindrops = this.raindrops.filter(drop => {
+                    drop.y += drop.speed;
+                    drop.x += this.waveSystem.windSpeed * 0.3;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(drop.x, drop.y);
+                    ctx.lineTo(drop.x + 2, drop.y + drop.length);
+                    ctx.stroke();
+                    
+                    return drop.y < h;
+                });
+            }
+            
+            drawDivineAura(x, y, faith, isDivine) {
+                const ctx = this.ctx;
+                
+                const radius = isDivine ? 80 : 40 + faith * 40;
+                const alpha = isDivine ? 0.4 : faith * 0.3;
+                
+                const aura = ctx.createRadialGradient(x, y - 30, 0, x, y - 30, radius);
+                aura.addColorStop(0, `rgba(255, 248, 220, ${alpha})`);
+                aura.addColorStop(0.5, `rgba(255, 215, 0, ${alpha * 0.5})`);
+                aura.addColorStop(1, 'transparent');
+                
+                ctx.fillStyle = aura;
+                ctx.beginPath();
+                ctx.arc(x, y - 30, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            drawCharacter(character, waterY) {
+                const ctx = this.ctx;
+                const x = character.x;
+                const y = waterY + character.y;
+                
+                // Walking animation
+                const walkOffset = Math.sin(character.walkCycle) * 3;
+                const legOffset = Math.sin(character.walkCycle * 2) * 8;
+                
+                // Robe color
+                const robeColor = character.isDivine ? '#f5f5dc' : '#8b7355';
+                const cloakColor = character.isDivine ? '#daa520' : '#5a4a3a';
+                
+                ctx.save();
+                ctx.translate(x, y + walkOffset);
+                
+                // Shadow/reflection in water
+                if (character.y < 50) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 65, 25, 8, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Legs
+                ctx.fillStyle = robeColor;
+                ctx.fillRect(-8 - legOffset/2, 20, 6, 40);
+                ctx.fillRect(2 + legOffset/2, 20, 6, 40);
+                
+                // Robe body
+                ctx.fillStyle = robeColor;
+                ctx.beginPath();
+                ctx.moveTo(-20, -10);
+                ctx.lineTo(-25, 50);
+                ctx.lineTo(25, 50);
+                ctx.lineTo(20, -10);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Robe detail
+                ctx.strokeStyle = cloakColor;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, -5);
+                ctx.lineTo(0, 45);
+                ctx.stroke();
+                
+                // Arms
+                const armAngle = character.isSinking ? 0.5 : Math.sin(character.walkCycle) * 0.2;
+                
+                ctx.save();
+                ctx.translate(-15, 0);
+                ctx.rotate(-0.3 + armAngle);
+                ctx.fillStyle = robeColor;
+                ctx.fillRect(0, 0, 8, 30);
+                ctx.restore();
+                
+                ctx.save();
+                ctx.translate(15, 0);
+                ctx.rotate(0.3 - armAngle);
+                ctx.fillStyle = robeColor;
+                ctx.fillRect(-8, 0, 8, 30);
+                ctx.restore();
+                
+                // Head
+                ctx.fillStyle = '#d4a574';
+                ctx.beginPath();
+                ctx.arc(0, -25, 15, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Hair
+                ctx.fillStyle = '#3a2a1a';
+                ctx.beginPath();
+                ctx.arc(0, -28, 14, Math.PI, 0, true);
+                ctx.fill();
+                
+                // Long hair
+                ctx.fillRect(-12, -25, 4, 25);
+                ctx.fillRect(8, -25, 4, 25);
+                
+                // Beard
+                ctx.beginPath();
+                ctx.moveTo(-8, -15);
+                ctx.quadraticCurveTo(0, 5, 8, -15);
+                ctx.fill();
+                
+                // Halo for divine
+                if (character.isDivine) {
+                    ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.ellipse(0, -45, 20, 8, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                // Sinking effect - water over legs
+                if (character.y > 20) {
+                    const waterLevel = Math.min(60, character.y - 20);
+                    ctx.fillStyle = 'rgba(45, 90, 123, 0.6)';
+                    ctx.fillRect(-30, 60 - waterLevel, 60, waterLevel + 20);
+                }
+                
+                ctx.restore();
+            }
+            
+            drawFootprintRipples(x, waterY, phase) {
+                if (phase === 'SINKING') return;
+                
+                const ctx = this.ctx;
+                const time = this.time;
+                
+                // Ripples emanating from feet
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                
+                for (let i = 0; i < 3; i++) {
+                    const rippleTime = (time * 2 + i * 0.5) % 2;
+                    const radius = rippleTime * 40;
+                    const alpha = 0.3 * (1 - rippleTime / 2);
+                    
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.beginPath();
+                    ctx.ellipse(x, waterY + 60, radius, radius * 0.3, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            
+            updateDivineParticles(character, waterY) {
+                const ctx = this.ctx;
+                
+                // Spawn divine particles when faith is high
+                if (character.faith > 0.7 && Math.random() < 0.2) {
+                    this.divineParticles.push({
+                        x: character.x + (Math.random() - 0.5) * 60,
+                        y: waterY + character.y + 50,
+                        vy: -1 - Math.random() * 2,
+                        life: 1,
+                        size: 2 + Math.random() * 3
+                    });
+                }
+                
+                // Update and draw
+                this.divineParticles = this.divineParticles.filter(p => {
+                    p.y += p.vy;
+                    p.life -= 0.02;
+                    
+                    const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
+                    glow.addColorStop(0, `rgba(255, 215, 0, ${p.life})`);
+                    glow.addColorStop(1, 'transparent');
+                    
+                    ctx.fillStyle = glow;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    return p.life > 0;
+                });
+            }
+            
+            drawLightning(w, h) {
+                const ctx = this.ctx;
+                
+                ctx.strokeStyle = 'rgba(200, 220, 255, 0.9)';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = '#fff';
+                ctx.shadowBlur = 20;
+                
+                let x = Math.random() * w;
+                let y = 0;
+                
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                
+                while (y < h * 0.5) {
+                    x += (Math.random() - 0.5) * 50;
+                    y += 20 + Math.random() * 30;
+                    ctx.lineTo(x, y);
+                }
+                
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                
+                // Flash
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.fillRect(0, 0, w, h);
+            }
+        }
+        
+        // ============================================
+        // MAIN APPLICATION
+        // ============================================
+        
+        const surfaceTension = new BaseXSurfaceTension();
+        const dro = new WaterWalkDRO();
+        const waveSystem = new WaveSystem();
+        const renderer = new WaterWalkRenderer(ctx, waveSystem);
+        
+        // Characters
+        const jesus = new WaterWalker('Jesus', true);
+        jesus.x = 300;
+        
+        const peter = new WaterWalker('Peter', false);
+        peter.x = 200;
+        peter.faith = 0.85;
+        
+        let activeCharacter = jesus;
+        let startTime = Date.now();
+        
+        // UI Event Listeners
+        document.getElementById('btnJesus').addEventListener('click', () => {
+            activeCharacter = jesus;
+            document.getElementById('btnJesus').classList.add('active');
+            document.getElementById('btnPeter').classList.remove('active');
+            updateCharacterDisplay();
+        });
+        
+        document.getElementById('btnPeter').addEventListener('click', () => {
+            activeCharacter = peter;
+            document.getElementById('btnPeter').classList.add('active');
+            document.getElementById('btnJesus').classList.remove('active');
+            updateCharacterDisplay();
+        });
+        
+        document.getElementById('faithSlider').addEventListener('input', (e) => {
+            if (!activeCharacter.isDivine) {
+                activeCharacter.faith = parseInt(e.target.value) / 100;
+            }
+            document.getElementById('faithValue').textContent = e.target.value + '%';
+        });
+        
+        document.getElementById('stormSlider').addEventListener('input', (e) => {
+            waveSystem.stormIntensity = parseInt(e.target.value) / 100;
+            document.getElementById('stormValue').textContent = e.target.value + '%';
+        });
+        
+        document.getElementById('windSlider').addEventListener('input', (e) => {
+            waveSystem.windSpeed = parseInt(e.target.value);
+            document.getElementById('windValue').textContent = e.target.value + ' m/s';
+        });
+        
+        document.getElementById('btnStep').addEventListener('click', () => {
+            if (activeCharacter.takeStep()) {
+                addLogEntry(`${activeCharacter.name} takes a step forward`, 'faith');
+            } else {
+                addLogEntry(`${activeCharacter.name} cannot walk - sinking!`, 'doubt');
+            }
+        });
+        
+        document.getElementById('btnLookDown').addEventListener('click', () => {
+            if (activeCharacter.lookDown()) {
+                addLogEntry(`${activeCharacter.name} looks at the waves - faith wavers`, 'doubt');
+                document.getElementById('faithSlider').value = activeCharacter.faith * 100;
+                document.getElementById('faithValue').textContent = Math.round(activeCharacter.faith * 100) + '%';
+            }
+        });
+        
+        document.getElementById('btnLookUp').addEventListener('click', () => {
+            if (activeCharacter.lookUp()) {
+                addLogEntry(`${activeCharacter.name} looks to Jesus - faith restored!`, 'divine');
+                document.getElementById('faithSlider').value = activeCharacter.faith * 100;
+                document.getElementById('faithValue').textContent = Math.round(activeCharacter.faith * 100) + '%';
+            }
+        });
+        
+        document.getElementById('btnCry').addEventListener('click', () => {
+            if (activeCharacter.cryOut()) {
+                addLogEntry('"Lord, save me!" - Jesus reaches out', 'divine');
+                document.getElementById('faithSlider').value = activeCharacter.faith * 100;
+                document.getElementById('faithValue').textContent = Math.round(activeCharacter.faith * 100) + '%';
+            } else {
+                addLogEntry(activeCharacter.name + ' calls out...', 'physics');
+            }
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            jesus.x = 300;
+            jesus.y = 0;
+            jesus.stepsTaken = 0;
+            jesus.distance = 0;
+            
+            peter.x = 200;
+            peter.y = 0;
+            peter.faith = 0.85;
+            peter.stepsTaken = 0;
+            peter.distance = 0;
+            peter.timesSunk = 0;
+            peter.rescued = 0;
+            peter.isSinking = false;
+            
+            waveSystem.stormIntensity = 0.5;
+            document.getElementById('stormSlider').value = 50;
+            document.getElementById('stormValue').textContent = '50%';
+            
+            document.getElementById('faithSlider').value = activeCharacter.isDivine ? 100 : 85;
+            document.getElementById('faithValue').textContent = activeCharacter.isDivine ? '100%' : '85%';
+            
+            startTime = Date.now();
+            addLogEntry('Scene reset - Fourth watch of the night', 'physics');
+        });
+        
+        document.getElementById('btnCalm').addEventListener('click', () => {
+            waveSystem.stormIntensity = 0.1;
+            waveSystem.windSpeed = 2;
+            document.getElementById('stormSlider').value = 10;
+            document.getElementById('stormValue').textContent = '10%';
+            document.getElementById('windSlider').value = 2;
+            document.getElementById('windValue').textContent = '2 m/s';
+            addLogEntry('"Peace, be still!" - Storm calms', 'divine');
+        });
+        
+        function updateCharacterDisplay() {
+            document.getElementById('charStatus').innerHTML = `
+                <div class="char-name">${activeCharacter.name.toUpperCase()}</div>
+                <div class="char-state">${activeCharacter.phase.replace('_', ' ')}</div>
+            `;
+            
+            document.getElementById('faithSlider').value = activeCharacter.faith * 100;
+            document.getElementById('faithValue').textContent = Math.round(activeCharacter.faith * 100) + '%';
+            document.getElementById('faithSlider').disabled = activeCharacter.isDivine;
+        }
+        
+        function addLogEntry(text, type) {
+            const log = document.getElementById('eventLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.textContent = text;
+            log.insertBefore(entry, log.firstChild);
+            if (log.children.length > 15) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        // Game Loop
+        let lastTime = 0;
+        
+        function gameLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+            lastTime = timestamp;
+            
+            // Update wave system
+            waveSystem.update(dt);
+            
+            // Update both characters
+            jesus.update(dt, surfaceTension, waveSystem.stormIntensity);
+            const peterSubmersion = peter.update(dt, surfaceTension, waveSystem.stormIntensity);
+            
+            // DRO calculation for active character
+            const state = {
+                phase: activeCharacter.phase,
+                faith: activeCharacter.faith,
+                stormIntensity: waveSystem.stormIntensity,
+                isDivine: activeCharacter.isDivine
+            };
+            
+            const optimalBase = dro.calculateOptimalBase(state);
+            surfaceTension.setBase(optimalBase);
+            
+            // Render
+            renderer.render(activeCharacter, dro, surfaceTension);
+            
+            // Also draw the other character if in view
+            const otherChar = activeCharacter === jesus ? peter : jesus;
+            if (Math.abs(otherChar.x - activeCharacter.x) < 400) {
+                // Draw other character too (simplified)
+            }
+            
+            // Update UI
+            updateUI(activeCharacter, optimalBase, peterSubmersion);
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function updateUI(char, base, submersion) {
+            // Faith display
+            const faithPct = Math.round(char.faith * 100);
+            document.getElementById('faithDisplay').textContent = faithPct + '%';
+            document.getElementById('faithDisplay').className = 'faith-value' + (faithPct < 30 ? ' low' : '');
+            document.getElementById('faithFill').style.width = faithPct + '%';
+            
+            // Surface tension
+            const tension = surfaceTension.calculateTension(char.faith, char.isDivine ? 1 : char.faith);
+            document.getElementById('tensionValue').textContent = tension === Infinity ? '∞' : tension.toFixed(0);
+            
+            // Physics readout
+            document.getElementById('weightValue').textContent = char.weight + ' kg';
+            document.getElementById('buoyancyValue').textContent = (char.weight * 9.81 * char.faith).toFixed(0) + ' N';
+            document.getElementById('submersionValue').textContent = Math.round(char.y / 1.5) + '%';
+            document.getElementById('waveHeight').textContent = (waveSystem.getMaxHeight() / 50).toFixed(1) + ' m';
+            document.getElementById('activeBase').textContent = 'B-' + base;
+            
+            // Stats
+            document.getElementById('stepsTaken').textContent = char.stepsTaken;
+            document.getElementById('distanceWalked').textContent = char.distance.toFixed(1) + ' m';
+            
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const mins = Math.floor(elapsed / 60);
+            const secs = elapsed % 60;
+            document.getElementById('timeOnWater').textContent = mins + ':' + secs.toString().padStart(2, '0');
+            
+            document.getElementById('timesSunk').textContent = peter.timesSunk;
+            document.getElementById('divineRescues').textContent = peter.rescued;
+            
+            // DRO factors
+            document.getElementById('faithFactor').textContent = char.faith.toFixed(2);
+            document.getElementById('stormFactor').textContent = waveSystem.stormIntensity.toFixed(2);
+            document.getElementById('divinePresence').textContent = char.isDivine ? '1.00' : char.faith.toFixed(2);
+            document.getElementById('tensionMult').textContent = tension === Infinity ? '∞' : (tension / 0.072).toFixed(0) + 'x';
+            document.getElementById('baseTransitions').textContent = dro.transitionCount;
+            
+            // Character status
+            document.getElementById('charStatus').innerHTML = `
+                <div class="char-name">${char.name.toUpperCase()}</div>
+                <div class="char-state">${char.phase.replace(/_/g, ' ')}</div>
+            `;
+        }
+        
+        // Start
+        updateCharacterDisplay();
+        requestAnimationFrame(gameLoop);
+        addLogEntry('Jesus walks toward the boat...', 'divine');
+    </script>
+</body>
+</html>

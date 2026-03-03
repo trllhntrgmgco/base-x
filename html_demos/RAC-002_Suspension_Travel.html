@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASE-X ENGINE | RAC-002: Suspension Travel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0a0c;
+            --bg-panel: rgba(12, 12, 15, 0.95);
+            --racing-orange: #ff6622;
+            --chassis-gray: #445566;
+            --spring-yellow: #ddcc00;
+            --damper-blue: #3366aa;
+            --load-green: #00dd66;
+            --warning-yellow: #ddaa00;
+            --danger-red: #dd3344;
+            --accent-cyan: #00bbcc;
+            --text-primary: #e0e4e8;
+            --text-dim: #667788;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            height: 50px;
+            background: linear-gradient(180deg, rgba(255, 102, 34, 0.12), transparent);
+            border-bottom: 1px solid rgba(255, 102, 34, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-badge {
+            background: linear-gradient(135deg, var(--racing-orange), #cc4400);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 10px;
+        }
+        
+        .logo-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        
+        .logo-sub {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-left: 10px;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .stat-value.good { color: var(--load-green); }
+        .stat-value.warn { color: var(--warning-yellow); }
+        .stat-value.bad { color: var(--danger-red); }
+        
+        .stat-label {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .control-panel {
+            width: 260px;
+            background: var(--bg-panel);
+            border-right: 1px solid rgba(255, 102, 34, 0.2);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .panel-section {
+            margin-bottom: 18px;
+        }
+        
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--racing-orange);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255, 102, 34, 0.3);
+        }
+        
+        .surface-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .surface-btn {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 11px;
+            text-align: left;
+        }
+        
+        .surface-btn:hover { background: rgba(255, 102, 34, 0.1); }
+        .surface-btn.active {
+            border-color: var(--racing-orange);
+            background: rgba(255, 102, 34, 0.15);
+        }
+        
+        .surface-title { font-weight: 600; }
+        .surface-desc { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+        
+        .base-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        
+        .base-btn {
+            padding: 8px 5px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            text-align: center;
+            transition: all 0.15s;
+        }
+        
+        .base-btn:hover { background: rgba(255, 255, 255, 0.06); }
+        .base-btn.active {
+            border-color: var(--load-green);
+            background: rgba(0, 221, 102, 0.15);
+            color: var(--load-green);
+        }
+        
+        .slider-group {
+            margin-bottom: 12px;
+        }
+        
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 10px;
+        }
+        
+        .slider-label { color: var(--text-dim); }
+        .slider-value { font-family: 'Share Tech Mono', monospace; color: var(--racing-orange); }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--racing-orange);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .setup-info {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .setup-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .setup-row:last-child { border-bottom: none; }
+        .setup-key { color: var(--text-dim); }
+        .setup-val { font-family: 'Share Tech Mono', monospace; color: var(--racing-orange); }
+        
+        .action-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        
+        .action-btn {
+            padding: 10px;
+            background: rgba(255, 102, 34, 0.15);
+            border: 1px solid rgba(255, 102, 34, 0.4);
+            border-radius: 5px;
+            color: var(--text-primary);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .action-btn:hover { background: rgba(255, 102, 34, 0.25); }
+        .action-btn.full { grid-column: span 2; }
+        
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .canvas-row {
+            flex: 1;
+            display: flex;
+        }
+        
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .canvas-wrapper canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .canvas-label {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            z-index: 10;
+        }
+        
+        .canvas-label.high { color: var(--load-green); border: 1px solid var(--load-green); }
+        .canvas-label.low { color: var(--danger-red); border: 1px solid var(--danger-red); }
+        
+        .travel-meter {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 180px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+        
+        .travel-fill {
+            position: absolute;
+            left: 3px;
+            right: 3px;
+            background: var(--spring-yellow);
+            border-radius: 2px;
+            transition: all 0.05s;
+        }
+        
+        .travel-center {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 2px;
+            background: #ffffff40;
+        }
+        
+        .travel-label {
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: var(--text-dim);
+        }
+        
+        .speed-hud {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 6px;
+        }
+        
+        .speed-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            color: var(--accent-cyan);
+        }
+        
+        .speed-unit {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        
+        .info-panel {
+            width: 240px;
+            background: var(--bg-panel);
+            border-left: 1px solid rgba(255, 102, 34, 0.2);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .wheel-diagram {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .wheel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .wheel-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .wheel-label {
+            font-size: 8px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        
+        .wheel-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            color: var(--spring-yellow);
+        }
+        
+        .wheel-load {
+            font-size: 9px;
+            color: var(--load-green);
+            margin-top: 2px;
+        }
+        
+        .metrics-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .metric-row:last-child { border-bottom: none; }
+        .metric-key { color: var(--text-dim); }
+        .metric-val { font-family: 'Share Tech Mono', monospace; }
+        .metric-val.good { color: var(--load-green); }
+        .metric-val.warn { color: var(--warning-yellow); }
+        .metric-val.bad { color: var(--danger-red); }
+        
+        .damper-graph {
+            height: 80px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-badge">RAC-002</div>
+            <div class="logo-text">SUSPENSION TRAVEL</div>
+            <div class="logo-sub">Spring-Damper Physics</div>
+        </div>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-value" id="travelDisplay">0</div>
+                <div class="stat-label">Travel (mm)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value good" id="loadDisplay">4500</div>
+                <div class="stat-label">Load (N)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="velocityDisplay">0.0</div>
+                <div class="stat-label">Susp Vel (m/s)</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value good" id="jitterDisplay">0.0</div>
+                <div class="stat-label">Jitter (mm)</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="control-panel">
+            <div class="panel-section">
+                <div class="section-title">Road Surface</div>
+                <div class="surface-list">
+                    <button class="surface-btn active" data-surface="smooth">
+                        <div class="surface-title">Smooth Tarmac</div>
+                        <div class="surface-desc">Circuit racing surface</div>
+                    </button>
+                    <button class="surface-btn" data-surface="bumpy">
+                        <div class="surface-title">Bumpy Road</div>
+                        <div class="surface-desc">Worn street surface</div>
+                    </button>
+                    <button class="surface-btn" data-surface="kerb">
+                        <div class="surface-title">Kerb Strike</div>
+                        <div class="surface-desc">Aggressive corner entry</div>
+                    </button>
+                    <button class="surface-btn" data-surface="jump">
+                        <div class="surface-title">Compression Jump</div>
+                        <div class="surface-desc">Rally crest landing</div>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Base</div>
+                <div class="base-grid">
+                    <button class="base-btn" data-base="16">B-16</button>
+                    <button class="base-btn" data-base="24">B-24</button>
+                    <button class="base-btn active" data-base="32">B-32</button>
+                    <button class="base-btn" data-base="40">B-40</button>
+                    <button class="base-btn" data-base="48">B-48</button>
+                    <button class="base-btn" data-base="64">B-64</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Suspension Setup</div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Spring Rate</span>
+                        <span class="slider-value" id="springVal">80 N/mm</span>
+                    </div>
+                    <input type="range" id="springSlider" min="40" max="150" value="80">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Damping (Bump)</span>
+                        <span class="slider-value" id="bumpVal">4000 Ns/m</span>
+                    </div>
+                    <input type="range" id="bumpSlider" min="1000" max="8000" value="4000">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Damping (Rebound)</span>
+                        <span class="slider-value" id="reboundVal">5000 Ns/m</span>
+                    </div>
+                    <input type="range" id="reboundSlider" min="1500" max="10000" value="5000">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span class="slider-label">Speed</span>
+                        <span class="slider-value" id="speedVal">100 km/h</span>
+                    </div>
+                    <input type="range" id="speedSlider" min="0" max="300" value="100">
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Suspension Specs</div>
+                <div class="setup-info">
+                    <div class="setup-row">
+                        <span class="setup-key">Total Travel</span>
+                        <span class="setup-val">120 mm</span>
+                    </div>
+                    <div class="setup-row">
+                        <span class="setup-key">Static Ride Height</span>
+                        <span class="setup-val">60 mm</span>
+                    </div>
+                    <div class="setup-row">
+                        <span class="setup-key">Corner Weight</span>
+                        <span class="setup-val">350 kg</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Actions</div>
+                <div class="action-btns">
+                    <button class="action-btn" id="btnBump">Hit Bump</button>
+                    <button class="action-btn" id="btnDip">Hit Dip</button>
+                    <button class="action-btn" id="btnBrake">Hard Brake</button>
+                    <button class="action-btn" id="btnAccel">Accelerate</button>
+                    <button class="action-btn full" id="btnReset">Reset Position</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-area">
+            <div class="canvas-row">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasHigh"></canvas>
+                    <div class="canvas-label high">HIGH PRECISION (Base-32) — 0.1mm tracking</div>
+                    <div class="travel-meter">
+                        <div class="travel-center"></div>
+                        <div class="travel-fill" id="travelFillHigh"></div>
+                        <div class="travel-label">Travel</div>
+                    </div>
+                    <div class="speed-hud">
+                        <span class="speed-value" id="speedDisplayHigh">100</span>
+                        <span class="speed-unit">km/h</span>
+                    </div>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="canvasLow"></canvas>
+                    <div class="canvas-label low">LOW PRECISION (Base-16) — 2mm tracking</div>
+                    <div class="travel-meter">
+                        <div class="travel-center"></div>
+                        <div class="travel-fill" id="travelFillLow"></div>
+                        <div class="travel-label">Travel</div>
+                    </div>
+                    <div class="speed-hud">
+                        <span class="speed-value" id="speedDisplayLow">100</span>
+                        <span class="speed-unit">km/h</span>
+                    </div>
+                </div>
+            </div>
+            <div class="canvas-row" style="flex: 0.4">
+                <div class="canvas-wrapper">
+                    <canvas id="canvasGraph"></canvas>
+                    <div class="canvas-label" style="color: var(--spring-yellow); border: 1px solid var(--spring-yellow);">
+                        SUSPENSION TRAVEL GRAPH — Position vs Time
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="panel-section">
+                <div class="section-title">Wheel Loads</div>
+                <div class="wheel-diagram">
+                    <div style="font-size: 9px; color: var(--text-dim);">Load Transfer</div>
+                    <div class="wheel-grid">
+                        <div class="wheel-box">
+                            <div class="wheel-label">Front Left</div>
+                            <div class="wheel-value" id="loadFL">0</div>
+                            <div class="wheel-load" id="travelFL">0 mm</div>
+                        </div>
+                        <div class="wheel-box">
+                            <div class="wheel-label">Front Right</div>
+                            <div class="wheel-value" id="loadFR">0</div>
+                            <div class="wheel-load" id="travelFR">0 mm</div>
+                        </div>
+                        <div class="wheel-box">
+                            <div class="wheel-label">Rear Left</div>
+                            <div class="wheel-value" id="loadRL">0</div>
+                            <div class="wheel-load" id="travelRL">0 mm</div>
+                        </div>
+                        <div class="wheel-box">
+                            <div class="wheel-label">Rear Right</div>
+                            <div class="wheel-value" id="loadRR">0</div>
+                            <div class="wheel-load" id="travelRR">0 mm</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Damper Response</div>
+                <div class="damper-graph">
+                    <canvas id="damperCanvas" width="200" height="80"></canvas>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Precision Impact</div>
+                <div class="metrics-box">
+                    <div class="metric-row">
+                        <span class="metric-key">High (B-32)</span>
+                        <span class="metric-val good" id="jitterHigh">0.0 mm</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Low (B-16)</span>
+                        <span class="metric-val bad" id="jitterLow">0.0 mm</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Load Error</span>
+                        <span class="metric-val" id="loadError">0 N</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-key">Damping Error</span>
+                        <span class="metric-val" id="dampError">0%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="section-title">Physics Notes</div>
+                <div class="metrics-box" style="font-size: 9px; line-height: 1.5; color: var(--text-dim);">
+                    <strong style="color: var(--spring-yellow);">Spring Force:</strong><br>
+                    F = k × x (Hooke's Law)
+                    <br><br>
+                    <strong style="color: var(--damper-blue);">Damper Force:</strong><br>
+                    F = c × v (velocity dependent)
+                    <br><br>
+                    <strong style="color: var(--load-green);">Wheel Load:</strong><br>
+                    Weight + Spring Force + Damper Force
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvasHigh = document.getElementById('canvasHigh');
+        const ctxHigh = canvasHigh.getContext('2d');
+        const canvasLow = document.getElementById('canvasLow');
+        const ctxLow = canvasLow.getContext('2d');
+        const canvasGraph = document.getElementById('canvasGraph');
+        const ctxGraph = canvasGraph.getContext('2d');
+        const damperCanvas = document.getElementById('damperCanvas');
+        const damperCtx = damperCanvas.getContext('2d');
+        
+        // Precision (mm)
+        const BASE_PRECISION = {
+            16: 2.0,
+            24: 0.5,
+            32: 0.1,
+            40: 0.05,
+            48: 0.01,
+            64: 0.001
+        };
+        
+        // Surface profiles
+        const SURFACES = {
+            smooth: { amplitude: 2, frequency: 0.5, name: 'Smooth Tarmac' },
+            bumpy: { amplitude: 8, frequency: 2, name: 'Bumpy Road' },
+            kerb: { amplitude: 25, frequency: 4, name: 'Kerb Strike' },
+            jump: { amplitude: 50, frequency: 0.3, name: 'Compression Jump' }
+        };
+        
+        // State
+        let settings = {
+            surface: 'smooth',
+            baseHigh: 32,
+            baseLow: 16,
+            springRate: 80, // N/mm
+            bumpDamping: 4000, // Ns/m
+            reboundDamping: 5000, // Ns/m
+            speed: 100 // km/h
+        };
+        
+        // Suspension constants
+        const TOTAL_TRAVEL = 120; // mm
+        const STATIC_HEIGHT = 60; // mm (neutral position)
+        const CORNER_MASS = 350; // kg
+        const GRAVITY = 9.81;
+        
+        // Simulation state
+        let simHigh = createSuspensionState();
+        let simLow = createSuspensionState();
+        let time = 0;
+        let graphHistory = { high: [], low: [] };
+        
+        function createSuspensionState() {
+            return {
+                position: 0, // mm from neutral (negative = compression, positive = extension)
+                velocity: 0, // mm/s
+                wheels: [
+                    { position: 0, velocity: 0, load: CORNER_MASS * GRAVITY },
+                    { position: 0, velocity: 0, load: CORNER_MASS * GRAVITY },
+                    { position: 0, velocity: 0, load: CORNER_MASS * GRAVITY },
+                    { position: 0, velocity: 0, load: CORNER_MASS * GRAVITY }
+                ],
+                jitterSum: 0,
+                jitterCount: 0
+            };
+        }
+        
+        function resize() {
+            [canvasHigh, canvasLow].forEach(c => {
+                c.width = c.parentElement.clientWidth;
+                c.height = c.parentElement.clientHeight;
+            });
+            canvasGraph.width = canvasGraph.parentElement.clientWidth;
+            canvasGraph.height = canvasGraph.parentElement.clientHeight;
+        }
+        
+        function getRoadHeight(x, surface) {
+            const s = SURFACES[surface];
+            // Composite wave for more realistic surface
+            const h1 = Math.sin(x * s.frequency * 0.01) * s.amplitude;
+            const h2 = Math.sin(x * s.frequency * 0.023 + 1.5) * s.amplitude * 0.5;
+            const h3 = Math.sin(x * s.frequency * 0.047 + 3.2) * s.amplitude * 0.25;
+            return h1 + h2 + h3;
+        }
+        
+        function updateSuspension(sim, precision, dt) {
+            const surface = SURFACES[settings.surface];
+            
+            // Road input based on speed and time
+            const roadX = time * settings.speed * 1000 / 3600; // Convert km/h to mm/s
+            const roadHeight = getRoadHeight(roadX, settings.surface);
+            
+            // Add precision error to road height measurement
+            const roadError = (Math.random() - 0.5) * precision * 2;
+            const measuredRoad = Math.round((roadHeight + roadError) / precision) * precision;
+            
+            // For each wheel
+            for (let i = 0; i < 4; i++) {
+                const wheel = sim.wheels[i];
+                
+                // Phase offset for each wheel
+                const phaseOffset = i * 50;
+                const wheelRoadHeight = getRoadHeight(roadX + phaseOffset, settings.surface);
+                const wheelRoadMeasured = Math.round((wheelRoadHeight + roadError) / precision) * precision;
+                
+                // Spring force (Hooke's Law): F = -k * x
+                const springForce = -settings.springRate * wheel.position;
+                
+                // Damper force: F = -c * v
+                const dampingCoeff = wheel.velocity < 0 ? settings.bumpDamping : settings.reboundDamping;
+                const damperForce = -dampingCoeff * (wheel.velocity / 1000); // Convert mm/s to m/s
+                
+                // Road input force (simplified)
+                const roadForce = (wheelRoadMeasured - wheel.position) * settings.springRate * 0.5;
+                
+                // Total force on wheel
+                const totalForce = springForce + damperForce + roadForce;
+                
+                // Acceleration (F = ma)
+                const accel = totalForce / CORNER_MASS;
+                
+                // Update velocity and position (Euler integration with precision)
+                wheel.velocity += accel * dt * 1000; // mm/s
+                
+                // Quantize velocity to precision
+                wheel.velocity = Math.round(wheel.velocity / (precision * 10)) * (precision * 10);
+                
+                wheel.position += wheel.velocity * dt;
+                
+                // Quantize position to precision
+                wheel.position = Math.round(wheel.position / precision) * precision;
+                
+                // Clamp to travel limits
+                wheel.position = Math.max(-STATIC_HEIGHT, Math.min(TOTAL_TRAVEL - STATIC_HEIGHT, wheel.position));
+                
+                // Calculate wheel load
+                wheel.load = CORNER_MASS * GRAVITY - springForce - damperForce;
+                wheel.load = Math.max(0, wheel.load); // Can't have negative load (wheel lift)
+            }
+            
+            // Calculate average position for display
+            sim.position = sim.wheels.reduce((sum, w) => sum + w.position, 0) / 4;
+            sim.velocity = sim.wheels.reduce((sum, w) => sum + w.velocity, 0) / 4;
+            
+            // Track jitter (high frequency noise)
+            if (sim.jitterCount > 0) {
+                const lastPos = graphHistory.high.length > 0 ? 
+                    graphHistory.high[graphHistory.high.length - 1] : sim.position;
+                sim.jitterSum += Math.abs(sim.position - lastPos);
+            }
+            sim.jitterCount++;
+        }
+        
+        function applyImpulse(sim, amount) {
+            for (const wheel of sim.wheels) {
+                wheel.velocity += amount * (0.8 + Math.random() * 0.4);
+            }
+        }
+        
+        function update() {
+            const dt = 0.016;
+            time += dt;
+            
+            updateSuspension(simHigh, BASE_PRECISION[settings.baseHigh], dt);
+            updateSuspension(simLow, BASE_PRECISION[settings.baseLow], dt);
+            
+            // Record history for graph
+            graphHistory.high.push(simHigh.position);
+            graphHistory.low.push(simLow.position);
+            
+            if (graphHistory.high.length > 300) {
+                graphHistory.high.shift();
+                graphHistory.low.shift();
+            }
+            
+            updateUI();
+        }
+        
+        function updateUI() {
+            // Header stats
+            document.getElementById('travelDisplay').textContent = simHigh.position.toFixed(1);
+            document.getElementById('loadDisplay').textContent = 
+                Math.round(simHigh.wheels[0].load);
+            document.getElementById('velocityDisplay').textContent = 
+                (simHigh.velocity / 1000).toFixed(2);
+            
+            const jitterHigh = simHigh.jitterCount > 10 ? 
+                (simHigh.jitterSum / simHigh.jitterCount).toFixed(2) : '0.0';
+            const jitterLow = simLow.jitterCount > 10 ?
+                (simLow.jitterSum / simLow.jitterCount).toFixed(2) : '0.0';
+            
+            document.getElementById('jitterDisplay').textContent = jitterHigh;
+            document.getElementById('jitterHigh').textContent = jitterHigh + ' mm';
+            document.getElementById('jitterLow').textContent = jitterLow + ' mm';
+            
+            // Travel meters
+            updateTravelMeter('travelFillHigh', simHigh.position);
+            updateTravelMeter('travelFillLow', simLow.position);
+            
+            // Speed displays
+            document.getElementById('speedDisplayHigh').textContent = settings.speed;
+            document.getElementById('speedDisplayLow').textContent = settings.speed;
+            
+            // Wheel loads
+            const labels = ['FL', 'FR', 'RL', 'RR'];
+            for (let i = 0; i < 4; i++) {
+                document.getElementById('load' + labels[i]).textContent = 
+                    Math.round(simHigh.wheels[i].load);
+                document.getElementById('travel' + labels[i]).textContent = 
+                    simHigh.wheels[i].position.toFixed(1) + ' mm';
+            }
+            
+            // Load error
+            const loadError = Math.abs(
+                simHigh.wheels.reduce((s, w) => s + w.load, 0) -
+                simLow.wheels.reduce((s, w) => s + w.load, 0)
+            ) / 4;
+            document.getElementById('loadError').textContent = Math.round(loadError) + ' N';
+            document.getElementById('loadError').className = 'metric-val ' +
+                (loadError < 50 ? 'good' : loadError < 200 ? 'warn' : 'bad');
+            
+            // Damping error
+            const dampError = Math.abs(simHigh.velocity - simLow.velocity) / 
+                (Math.abs(simHigh.velocity) + 1) * 100;
+            document.getElementById('dampError').textContent = dampError.toFixed(1) + '%';
+        }
+        
+        function updateTravelMeter(id, position) {
+            const el = document.getElementById(id);
+            // Map position (-60 to +60) to meter (0 to 100%)
+            const normalized = (position + STATIC_HEIGHT) / TOTAL_TRAVEL;
+            const height = normalized * 100;
+            const top = 100 - height;
+            
+            el.style.top = Math.max(0, Math.min(100, top)) + '%';
+            el.style.height = Math.max(0, Math.min(100, height)) + '%';
+            
+            // Color based on position
+            if (position < -STATIC_HEIGHT + 10) {
+                el.style.background = 'var(--danger-red)'; // Near bump stop
+            } else if (position > STATIC_HEIGHT - 10) {
+                el.style.background = 'var(--danger-red)'; // Near droop stop
+            } else {
+                el.style.background = 'var(--spring-yellow)';
+            }
+        }
+        
+        function render() {
+            renderSuspension(ctxHigh, canvasHigh, simHigh, BASE_PRECISION[settings.baseHigh], 'high');
+            renderSuspension(ctxLow, canvasLow, simLow, BASE_PRECISION[settings.baseLow], 'low');
+            renderGraph();
+            renderDamperCurve();
+        }
+        
+        function renderSuspension(ctx, canvas, sim, precision, type) {
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            // Background
+            ctx.fillStyle = '#0c0c10';
+            ctx.fillRect(0, 0, w, h);
+            
+            // Road surface
+            const roadY = h - 80;
+            ctx.fillStyle = '#333338';
+            ctx.fillRect(0, roadY, w, h - roadY);
+            
+            // Road texture
+            ctx.strokeStyle = '#444448';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < w; x += 30) {
+                ctx.beginPath();
+                ctx.moveTo(x, roadY);
+                ctx.lineTo(x + 15, h);
+                ctx.stroke();
+            }
+            
+            // Draw road profile
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            const roadX = time * settings.speed * 1000 / 3600;
+            for (let x = 0; x < w; x += 5) {
+                const rh = getRoadHeight(roadX + x * 2, settings.surface);
+                const y = roadY - rh * 0.5;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Car body
+            const carY = h / 2 - 50 + sim.position * 0.3;
+            const carX = w / 2;
+            
+            // Chassis
+            ctx.fillStyle = '#445566';
+            ctx.beginPath();
+            ctx.roundRect(carX - 100, carY, 200, 40, 5);
+            ctx.fill();
+            
+            ctx.fillStyle = '#334455';
+            ctx.beginPath();
+            ctx.roundRect(carX - 80, carY - 25, 160, 30, 5);
+            ctx.fill();
+            
+            // Suspension components (left side)
+            const wheelY = roadY - 25;
+            const leftX = carX - 70;
+            const rightX = carX + 70;
+            
+            // Draw suspension for both sides
+            [leftX, rightX].forEach((wx, idx) => {
+                const wheelPos = sim.wheels[idx].position;
+                const wheelActualY = wheelY + wheelPos * 0.5;
+                
+                // Spring
+                ctx.strokeStyle = '#ddcc00';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                const springTop = carY + 40;
+                const springBottom = wheelActualY - 20;
+                const coils = 6;
+                const coilWidth = 15;
+                
+                for (let i = 0; i <= coils; i++) {
+                    const t = i / coils;
+                    const y = springTop + (springBottom - springTop) * t;
+                    const x = wx + (i % 2 === 0 ? -coilWidth : coilWidth);
+                    if (i === 0) ctx.moveTo(wx, springTop);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.lineTo(wx, springBottom);
+                ctx.stroke();
+                
+                // Damper
+                ctx.fillStyle = '#3366aa';
+                ctx.fillRect(wx + 20, springTop + 20, 12, springBottom - springTop - 40);
+                ctx.fillStyle = '#5588cc';
+                ctx.fillRect(wx + 22, springTop + 30, 8, 30);
+                
+                // Control arm
+                ctx.strokeStyle = '#556677';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(wx - 30, wheelActualY);
+                ctx.lineTo(wx + 30, carY + 35);
+                ctx.stroke();
+                
+                // Wheel
+                ctx.fillStyle = '#222';
+                ctx.beginPath();
+                ctx.arc(wx, wheelActualY, 25, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#444';
+                ctx.lineWidth = 8;
+                ctx.stroke();
+                
+                // Tire
+                ctx.fillStyle = '#1a1a1a';
+                ctx.beginPath();
+                ctx.arc(wx, wheelActualY, 20, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Wheel load indicator
+                const loadPct = sim.wheels[idx].load / (CORNER_MASS * GRAVITY * 1.5);
+                ctx.fillStyle = loadPct > 0.8 ? '#00dd66' : loadPct > 0.5 ? '#ddaa00' : '#dd3344';
+                ctx.fillRect(wx - 15, wheelActualY + 30, 30 * loadPct, 5);
+            });
+            
+            // Precision indicator
+            ctx.fillStyle = type === 'high' ? '#00dd6680' : '#ff445580';
+            ctx.font = '10px "Share Tech Mono"';
+            ctx.fillText(`Precision: ±${precision}mm`, 10, h - 90);
+            
+            // Jitter visualization
+            if (precision > 0.5) {
+                ctx.strokeStyle = '#ff445540';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 5; i++) {
+                    const jx = carX + (Math.random() - 0.5) * precision * 20;
+                    const jy = carY + (Math.random() - 0.5) * precision * 20;
+                    ctx.beginPath();
+                    ctx.arc(jx, jy, 3, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        function renderGraph() {
+            const w = canvasGraph.width;
+            const h = canvasGraph.height;
+            
+            ctxGraph.fillStyle = '#0a0a0c';
+            ctxGraph.fillRect(0, 0, w, h);
+            
+            // Grid
+            ctxGraph.strokeStyle = '#ffffff10';
+            ctxGraph.lineWidth = 1;
+            
+            // Horizontal grid (travel values)
+            for (let i = 0; i <= 4; i++) {
+                const y = 40 + (h - 80) * i / 4;
+                ctxGraph.beginPath();
+                ctxGraph.moveTo(50, y);
+                ctxGraph.lineTo(w - 20, y);
+                ctxGraph.stroke();
+            }
+            
+            // Center line (neutral)
+            ctxGraph.strokeStyle = '#ffffff40';
+            ctxGraph.beginPath();
+            ctxGraph.moveTo(50, h / 2);
+            ctxGraph.lineTo(w - 20, h / 2);
+            ctxGraph.stroke();
+            
+            // Labels
+            ctxGraph.fillStyle = '#666';
+            ctxGraph.font = '9px "Share Tech Mono"';
+            ctxGraph.fillText('+60mm', 10, 45);
+            ctxGraph.fillText('0', 25, h / 2 + 4);
+            ctxGraph.fillText('-60mm', 10, h - 35);
+            
+            // Draw history
+            const drawHistory = (history, color) => {
+                if (history.length < 2) return;
+                
+                ctxGraph.strokeStyle = color;
+                ctxGraph.lineWidth = 2;
+                ctxGraph.beginPath();
+                
+                for (let i = 0; i < history.length; i++) {
+                    const x = 50 + (w - 70) * i / 300;
+                    const y = h / 2 - history[i] * (h - 80) / (TOTAL_TRAVEL);
+                    
+                    if (i === 0) ctxGraph.moveTo(x, y);
+                    else ctxGraph.lineTo(x, y);
+                }
+                
+                ctxGraph.stroke();
+            };
+            
+            drawHistory(graphHistory.low, '#ff445580');
+            drawHistory(graphHistory.high, '#00dd88');
+            
+            // Legend
+            ctxGraph.fillStyle = '#00dd88';
+            ctxGraph.fillRect(w - 150, 15, 12, 3);
+            ctxGraph.fillStyle = '#888';
+            ctxGraph.fillText('High Precision', w - 130, 20);
+            
+            ctxGraph.fillStyle = '#ff4455';
+            ctxGraph.fillRect(w - 150, 30, 12, 3);
+            ctxGraph.fillText('Low Precision', w - 130, 35);
+        }
+        
+        function renderDamperCurve() {
+            const w = damperCanvas.width;
+            const h = damperCanvas.height;
+            
+            damperCtx.fillStyle = '#0a0a0c';
+            damperCtx.fillRect(0, 0, w, h);
+            
+            // Axes
+            damperCtx.strokeStyle = '#ffffff30';
+            damperCtx.lineWidth = 1;
+            damperCtx.beginPath();
+            damperCtx.moveTo(w/2, 5);
+            damperCtx.lineTo(w/2, h - 5);
+            damperCtx.moveTo(5, h/2);
+            damperCtx.lineTo(w - 5, h/2);
+            damperCtx.stroke();
+            
+            // Damper curve
+            damperCtx.strokeStyle = '#3366aa';
+            damperCtx.lineWidth = 2;
+            damperCtx.beginPath();
+            
+            for (let x = 0; x < w; x++) {
+                const velocity = (x - w/2) / (w/2) * 2; // -2 to 2 m/s
+                const damping = velocity < 0 ? settings.bumpDamping : settings.reboundDamping;
+                const force = damping * velocity / 5000; // Normalized
+                const y = h/2 - force * (h/2 - 10);
+                
+                if (x === 0) damperCtx.moveTo(x, y);
+                else damperCtx.lineTo(x, y);
+            }
+            
+            damperCtx.stroke();
+            
+            // Current operating point
+            const currentVel = simHigh.velocity / 1000; // m/s
+            const px = w/2 + currentVel * (w/2) / 2;
+            const damping = currentVel < 0 ? settings.bumpDamping : settings.reboundDamping;
+            const py = h/2 - (damping * currentVel / 5000) * (h/2 - 10);
+            
+            damperCtx.fillStyle = '#ff6622';
+            damperCtx.beginPath();
+            damperCtx.arc(px, py, 5, 0, Math.PI * 2);
+            damperCtx.fill();
+            
+            // Labels
+            damperCtx.fillStyle = '#666';
+            damperCtx.font = '8px "Share Tech Mono"';
+            damperCtx.fillText('Bump', 10, h - 5);
+            damperCtx.fillText('Rebound', w - 45, h - 5);
+        }
+        
+        function mainLoop() {
+            update();
+            render();
+            requestAnimationFrame(mainLoop);
+        }
+        
+        // Event handlers
+        document.querySelectorAll('.surface-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.surface-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.surface = btn.dataset.surface;
+            });
+        });
+        
+        document.querySelectorAll('.base-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.base-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                settings.baseHigh = parseInt(btn.dataset.base);
+            });
+        });
+        
+        document.getElementById('springSlider').addEventListener('input', (e) => {
+            settings.springRate = parseInt(e.target.value);
+            document.getElementById('springVal').textContent = settings.springRate + ' N/mm';
+        });
+        
+        document.getElementById('bumpSlider').addEventListener('input', (e) => {
+            settings.bumpDamping = parseInt(e.target.value);
+            document.getElementById('bumpVal').textContent = settings.bumpDamping + ' Ns/m';
+        });
+        
+        document.getElementById('reboundSlider').addEventListener('input', (e) => {
+            settings.reboundDamping = parseInt(e.target.value);
+            document.getElementById('reboundVal').textContent = settings.reboundDamping + ' Ns/m';
+        });
+        
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            settings.speed = parseInt(e.target.value);
+            document.getElementById('speedVal').textContent = settings.speed + ' km/h';
+        });
+        
+        document.getElementById('btnBump').addEventListener('click', () => {
+            applyImpulse(simHigh, -500);
+            applyImpulse(simLow, -500);
+        });
+        
+        document.getElementById('btnDip').addEventListener('click', () => {
+            applyImpulse(simHigh, 500);
+            applyImpulse(simLow, 500);
+        });
+        
+        document.getElementById('btnBrake').addEventListener('click', () => {
+            // Front compression, rear extension
+            simHigh.wheels[0].velocity -= 300;
+            simHigh.wheels[1].velocity -= 300;
+            simHigh.wheels[2].velocity += 200;
+            simHigh.wheels[3].velocity += 200;
+            simLow.wheels[0].velocity -= 300;
+            simLow.wheels[1].velocity -= 300;
+            simLow.wheels[2].velocity += 200;
+            simLow.wheels[3].velocity += 200;
+        });
+        
+        document.getElementById('btnAccel').addEventListener('click', () => {
+            // Front extension, rear compression (squat)
+            simHigh.wheels[0].velocity += 200;
+            simHigh.wheels[1].velocity += 200;
+            simHigh.wheels[2].velocity -= 300;
+            simHigh.wheels[3].velocity -= 300;
+            simLow.wheels[0].velocity += 200;
+            simLow.wheels[1].velocity += 200;
+            simLow.wheels[2].velocity -= 300;
+            simLow.wheels[3].velocity -= 300;
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            simHigh = createSuspensionState();
+            simLow = createSuspensionState();
+            graphHistory = { high: [], low: [] };
+        });
+        
+        // Initialize
+        window.addEventListener('resize', resize);
+        resize();
+        mainLoop();
+    </script>
+</body>
+</html>

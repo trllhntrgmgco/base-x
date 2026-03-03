@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIM-001: Political Vector Visualizer — Base-X Game Engine</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg-deep: #030508;
+  --bg-panel: rgba(8, 14, 28, 0.92);
+  --border-glow: rgba(0, 200, 255, 0.15);
+  --cyan: #00c8ff;
+  --cyan-dim: #00607a;
+  --magenta: #ff00aa;
+  --amber: #ffaa00;
+  --green: #00ff88;
+  --red: #ff3355;
+  --white: #e0e8f0;
+  --white-dim: #607080;
+  --grid-line: rgba(0, 200, 255, 0.04);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--white);
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* BACKGROUND GRID */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(0deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 40%, var(--bg-deep) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* HEADER */
+.header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 54px;
+  background: linear-gradient(180deg, rgba(0,10,20,0.95), rgba(0,10,20,0.7));
+  border-bottom: 1px solid var(--border-glow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.demo-badge {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bg-deep);
+  background: var(--cyan);
+  padding: 2px 8px;
+  letter-spacing: 2px;
+}
+
+.demo-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cyan);
+  letter-spacing: 1px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.engine-tag {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--white-dim);
+  letter-spacing: 1px;
+}
+
+.copyright {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--cyan-dim);
+  letter-spacing: 0.5px;
+}
+
+/* MAIN LAYOUT */
+.main {
+  position: fixed;
+  top: 54px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 260px 1fr 300px;
+  z-index: 1;
+}
+
+/* LEFT PANEL - FACTION LIST */
+.panel-left {
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-glow);
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.panel-left::-webkit-scrollbar { width: 4px; }
+.panel-left::-webkit-scrollbar-track { background: transparent; }
+.panel-left::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 2px; }
+
+.panel-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-glow);
+}
+
+.faction-group-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--white-dim);
+  letter-spacing: 1px;
+  margin-top: 10px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.faction-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--white);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.faction-btn:hover {
+  background: rgba(0, 200, 255, 0.05);
+  border-color: var(--border-glow);
+}
+
+.faction-btn.active {
+  background: rgba(0, 200, 255, 0.1);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.faction-btn.compared {
+  background: rgba(255, 0, 170, 0.08);
+  border-color: var(--magenta);
+  color: var(--magenta);
+}
+
+.faction-icon {
+  font-size: 16px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.faction-dims {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--white-dim);
+  margin-left: auto;
+}
+
+/* CENTER - VISUALIZATION */
+.center-vis {
+  position: relative;
+  overflow: hidden;
+}
+
+canvas#mainVis {
+  width: 100%;
+  height: 100%;
+}
+
+/* DRO OVERLAY */
+.dro-overlay {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  padding: 10px 14px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+}
+
+.dro-label {
+  color: var(--amber);
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+.dro-value {
+  color: var(--green);
+  font-size: 18px;
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+}
+
+.dro-desc {
+  color: var(--white-dim);
+  font-size: 9px;
+  margin-top: 2px;
+}
+
+/* PLAYER VECTOR OVERLAY */
+.player-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 312px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  padding: 10px 14px;
+}
+
+.player-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  color: var(--green);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+.player-vector-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+}
+
+.pv-digit {
+  width: 13px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  transition: all 0.3s;
+}
+
+.pv-digit[data-val="0"] { color: var(--white-dim); background: rgba(96,112,128,0.1); }
+.pv-digit[data-val="1"] { color: var(--amber); background: rgba(255,170,0,0.1); }
+.pv-digit[data-val="2"] { color: var(--cyan); background: rgba(0,200,255,0.15); }
+.pv-digit.shifted { animation: digitShift 0.6s ease; }
+
+@keyframes digitShift {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.8); background: rgba(0,255,136,0.3); }
+  100% { transform: scale(1); }
+}
+
+/* CONTROLS */
+.vis-controls {
+  position: absolute;
+  top: 12px;
+  right: 312px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vis-btn {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  color: var(--white);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.vis-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.vis-btn.active { background: rgba(0,200,255,0.1); border-color: var(--cyan); color: var(--cyan); }
+
+/* RIGHT PANEL - ANALYSIS */
+.panel-right {
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-glow);
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.panel-right::-webkit-scrollbar { width: 4px; }
+.panel-right::-webkit-scrollbar-track { background: transparent; }
+.panel-right::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 2px; }
+
+.analysis-section {
+  margin-bottom: 16px;
+}
+
+.analysis-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--cyan);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-glow);
+}
+
+.faction-detail-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.faction-detail-desc {
+  font-size: 12px;
+  color: var(--white-dim);
+  margin-bottom: 8px;
+}
+
+/* DIMENSION BARS */
+.dim-group {
+  margin-bottom: 10px;
+}
+
+.dim-group-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--amber);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.dim-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.dim-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--white-dim);
+  width: 20px;
+  text-align: right;
+}
+
+.dim-bar-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(255,255,255,0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+.dim-bar-fill {
+  height: 100%;
+  transition: width 0.4s ease, background 0.4s ease;
+}
+
+.dim-bar-fill[data-val="0"] { width: 5%; background: var(--white-dim); opacity: 0.3; }
+.dim-bar-fill[data-val="1"] { width: 50%; background: var(--amber); }
+.dim-bar-fill[data-val="2"] { width: 100%; background: var(--cyan); }
+
+.dim-val {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  width: 12px;
+}
+
+.dim-val[data-val="0"] { color: var(--white-dim); }
+.dim-val[data-val="1"] { color: var(--amber); }
+.dim-val[data-val="2"] { color: var(--cyan); }
+
+/* DISTANCE TABLE */
+.distance-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.distance-table th {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--white-dim);
+  text-align: left;
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--border-glow);
+}
+
+.distance-table td {
+  font-size: 11px;
+  padding: 3px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+}
+
+.distance-table td:last-child {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  text-align: right;
+}
+
+.dist-ally { color: var(--green); }
+.dist-neutral { color: var(--amber); }
+.dist-enemy { color: var(--red); }
+
+/* PLAYER EDITOR PANEL */
+.player-edit {
+  margin-top: 12px;
+}
+
+.player-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.player-edit-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: var(--white-dim);
+  width: 80px;
+}
+
+.player-edit-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  outline: none;
+  border-radius: 2px;
+}
+
+.player-edit-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--green);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.player-edit-val {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  width: 14px;
+  text-align: center;
+  color: var(--green);
+}
+
+/* COMPARE MODE INDICATOR */
+.compare-indicator {
+  position: absolute;
+  top: 70px;
+  left: 12px;
+  background: rgba(255,0,170,0.1);
+  border: 1px solid var(--magenta);
+  padding: 6px 10px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--magenta);
+  display: none;
+}
+
+.compare-indicator.visible { display: block; }
+
+/* QUEST SHIFT POPUP */
+.quest-shift {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-panel);
+  border: 2px solid var(--green);
+  padding: 20px 28px;
+  text-align: center;
+  z-index: 50;
+  display: none;
+  box-shadow: 0 0 40px rgba(0,255,136,0.15);
+}
+
+.quest-shift.visible { display: block; animation: questPop 0.5s ease; }
+
+@keyframes questPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.quest-shift-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 12px;
+  color: var(--green);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.quest-shift-desc {
+  font-size: 13px;
+  color: var(--white);
+  margin-bottom: 12px;
+}
+
+.quest-shift-vector {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--amber);
+  margin-bottom: 12px;
+}
+
+.quest-shift-btn {
+  background: var(--green);
+  color: var(--bg-deep);
+  border: none;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px 20px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
+.quest-shift-btn:hover { filter: brightness(1.2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="demo-badge">SIM-001</div>
+    <div class="demo-title">POLITICAL VECTOR VISUALIZER</div>
+  </div>
+  <div class="header-right">
+    <div class="engine-tag">BASE-X GAME ENGINE · DRO ACTIVE</div>
+    <div class="copyright">© Keenan Dunham & Troll Hunter Gaming LLC</div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <div class="panel-title">28 FACTIONS</div>
+    <div id="factionList"></div>
+  </div>
+
+  <!-- CENTER VISUALIZATION -->
+  <div class="center-vis">
+    <canvas id="mainVis"></canvas>
+
+    <div class="dro-overlay">
+      <div class="dro-label">DRO PRECISION</div>
+      <div class="dro-value" id="droBase">BASE-3</div>
+      <div class="dro-desc">64-DIM TERNARY SPACE</div>
+      <div class="dro-desc" id="droCalcRate">3^64 ≈ 3.4×10³⁰ positions</div>
+    </div>
+
+    <div class="vis-controls">
+      <button class="vis-btn active" onclick="setVisMode('radar')" id="btn-radar">RADAR MAP</button>
+      <button class="vis-btn" onclick="setVisMode('constellation')" id="btn-constellation">CONSTELLATION</button>
+      <button class="vis-btn" onclick="setVisMode('heatmap')" id="btn-heatmap">DIMENSION HEATMAP</button>
+      <button class="vis-btn" onclick="triggerQuestShift()" id="btn-quest">⚡ SIMULATE QUEST</button>
+    </div>
+
+    <div class="compare-indicator" id="compareIndicator">
+      COMPARE MODE · RIGHT-CLICK TO ADD · <span id="compareCount">0</span>/3
+    </div>
+
+    <div class="player-overlay">
+      <div class="player-label">▶ PLAYER VECTOR · 64 DIMENSIONS · BASE-3 TERNARY</div>
+      <div class="player-vector-display" id="playerVectorDisplay"></div>
+    </div>
+
+    <div class="quest-shift" id="questShift">
+      <div class="quest-shift-title">VECTOR SHIFT DETECTED</div>
+      <div class="quest-shift-desc" id="questDesc">Quest: "Corporate Espionage" completed</div>
+      <div class="quest-shift-vector" id="questVector">Dims 22-24 shifted: 1→2, 1→2, 0→1</div>
+      <button class="quest-shift-btn" onclick="closeQuestShift()">ACKNOWLEDGE</button>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+    <div class="analysis-section" id="factionDetail">
+      <div class="analysis-title">SELECTED FACTION</div>
+      <div class="faction-detail-name" id="detailName">—</div>
+      <div class="faction-detail-desc" id="detailDesc">Select a faction to analyze</div>
+    </div>
+
+    <div class="analysis-section" id="dimensionBars">
+      <div class="analysis-title">64-DIM VECTOR BREAKDOWN</div>
+      <div id="dimBarsContainer"></div>
+    </div>
+
+    <div class="analysis-section">
+      <div class="analysis-title">ALLIANCE / CONFLICT DISTANCES</div>
+      <table class="distance-table" id="distanceTable">
+        <thead><tr><th>FACTION</th><th>RELATION</th><th>DIST</th></tr></thead>
+        <tbody id="distanceBody"></tbody>
+      </table>
+    </div>
+
+    <div class="analysis-section">
+      <div class="analysis-title">PLAYER VECTOR EDITOR</div>
+      <div class="player-edit" id="playerEditor"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========================================
+// THE SIMULATION VR MMO — SIM-001
+// 64-DIMENSIONAL POLITICAL VECTOR VISUALIZER
+// Base-X Game Engine © Keenan Dunham & Troll Hunter Gaming LLC
+// ========================================
+
+// DIMENSION CATEGORY DEFINITIONS
+const DIM_CATEGORIES = [
+  { name: "Liberal", dims: [0,1,2], color: "#4488ff" },
+  { name: "Conservative", dims: [3,4,5], color: "#cc4444" },
+  { name: "Liberty", dims: [6,7,8], color: "#ffcc00" },
+  { name: "Authoritarian", dims: [9,10,11], color: "#884488" },
+  { name: "Communism", dims: [12,13,14], color: "#dd2222" },
+  { name: "Fascism", dims: [15,16,17], color: "#555555" },
+  { name: "Green", dims: [18,19,20], color: "#22aa44" },
+  { name: "Corporate", dims: [21,22,23], color: "#ddaa22" },
+  { name: "Crypto", dims: [24,25,26], color: "#ff8800" },
+  { name: "Bank", dims: [27,28,29], color: "#ccaa66" },
+  { name: "Consortium", dims: [30,31,32], color: "#6688aa" },
+  { name: "Citizen", dims: [33,34,35], color: "#44ccaa" },
+  { name: "Activist", dims: [36,37,38], color: "#ff4488" },
+  { name: "Enforcement", dims: [39,40,41], color: "#667788" },
+  { name: "Journalist", dims: [42,43,44], color: "#88aacc" },
+  { name: "Stateheads", dims: [45,46,47], color: "#aa8866" },
+  { name: "Synthetic", dims: [48,49,50], color: "#00eeff" },
+  { name: "Naturalist", dims: [51,52,53], color: "#88cc22" },
+  { name: "Anarchist", dims: [54,55,56], color: "#ff0066" },
+  { name: "Statist", dims: [57,58,59], color: "#6644aa" },
+  { name: "Peacer", dims: [60], color: "#88ffaa" },
+  { name: "War", dims: [61], color: "#ff2222" },
+  { name: "Religious", dims: [62], color: "#ffdd88" },
+  { name: "Atheist", dims: [63], color: "#aabbcc" }
+];
+
+// FACTION GROUP LABELS
+const FACTION_GROUPS = [
+  { label: "CORE POLITICAL", start: 0, end: 6 },
+  { label: "ECONOMIC / ENVIRONMENTAL", start: 6, end: 10 },
+  { label: "POWER STRUCTURES", start: 10, end: 16 },
+  { label: "CARCERAL SYSTEM", start: 16, end: 18 },
+  { label: "STATE PHILOSOPHY", start: 18, end: 20 },
+  { label: "CONFLICT AXIS", start: 20, end: 22 },
+  { label: "FAITH AXIS", start: 22, end: 24 },
+  { label: "TECHNOLOGY AXIS", start: 24, end: 26 }
+];
+
+// 28 FACTIONS WITH 64-DIM BASE-3 VECTORS
+const FACTIONS = [
+  { name: "Liberal", icon: "🗽", desc: "Progressive governance, social change",
+    vec: [2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1] },
+  { name: "Conservative", icon: "🦅", desc: "Traditional values, established order",
+    vec: [0,0,0,2,2,2,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,2,0] },
+  { name: "Liberty", icon: "🔥", desc: "Personal freedom, minimal government",
+    vec: [0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,1,0,0,1] },
+  { name: "Authoritarian", icon: "👁", desc: "Strong central control, order through power",
+    vec: [0,0,0,1,1,1,0,0,0,2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,2,2,2,0,2,1,0] },
+  { name: "Communism", icon: "☭", desc: "Collective ownership, class abolition",
+    vec: [1,1,1,0,0,0,0,0,0,1,1,1,2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,2,2,2,1,1,1,2,2,2,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,1] },
+  { name: "Fascism", icon: "⚡", desc: "Ultranationalist, totalitarian control",
+    vec: [0,0,0,1,1,1,0,0,0,2,2,2,0,0,0,2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,1,1,1,2,2,2,0,0,0,0,0,0,0,0,0,2,2,2,0,2,1,0] },
+  { name: "Green", icon: "🌿", desc: "Environmental protection, sustainability",
+    vec: [1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,1,1,1,2,2,2,2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,2,0,0,1] },
+  { name: "Corporate", icon: "🏢", desc: "Business dominance, profit maximization",
+    vec: [0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,0] },
+  { name: "Crypto", icon: "₿", desc: "Decentralized finance, blockchain governance",
+    vec: [0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,2,2,2,0,0,0,0,0,0,0] },
+  { name: "Bank", icon: "🏦", desc: "Traditional finance, institutional power",
+    vec: [0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] },
+  { name: "Consortium", icon: "🤝", desc: "Multi-faction alliances, power brokers",
+    vec: [1,1,1,1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,1,1,1,2,2,2,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0] },
+  { name: "Citizen", icon: "👤", desc: "Grassroots movements, people power",
+    vec: [1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,1,1] },
+  { name: "Activist", icon: "✊", desc: "Change agents, protest movements",
+    vec: [1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,2,0,0,1] },
+  { name: "Enforcement", icon: "🛡️", desc: "Police/military, security apparatus",
+    vec: [0,0,0,1,1,1,0,0,0,2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,2,2,2,0,1,1,0] },
+  { name: "Journalist", icon: "📰", desc: "Information control, media influence",
+    vec: [1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,1] },
+  { name: "Stateheads", icon: "👑", desc: "Executive leadership, presidential power",
+    vec: [0,0,0,1,1,1,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,2,2,2,0,0,0,0,0,0,0,0,0,2,2,2,0,1,1,0] },
+  { name: "Jailed", icon: "🔒", desc: "The imprisoned, suppressed voices",
+    vec: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0] },
+  { name: "Jailer", icon: "⛓️", desc: "Prison system, punitive justice",
+    vec: [0,0,0,1,1,1,0,0,0,2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,2,2,2,0,1,0,0] },
+  { name: "Anarchist", icon: "Ⓐ", desc: "No rulers, voluntary association",
+    vec: [0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,2,2,2,0,0,0,2,0,0,2] },
+  { name: "Statist", icon: "🏛️", desc: "Strong state, government solutions",
+    vec: [1,1,1,1,1,1,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,2,2,2,0,0,1,0] },
+  { name: "Peacer", icon: "☮️", desc: "Non-violence, diplomatic resolution",
+    vec: [1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,1,1,1,2,2,2,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,1,1] },
+  { name: "War", icon: "⚔️", desc: "Military solution, conflict embracers",
+    vec: [0,0,0,1,1,1,0,0,0,2,2,2,0,0,0,2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,2,0,0] },
+  { name: "Religious", icon: "✝️", desc: "Faith-based governance, divine law",
+    vec: [0,0,0,2,2,2,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,1,0,2,0] },
+  { name: "Atheist", icon: "⚛️", desc: "Secular governance, reason-based",
+    vec: [1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,0,0,2] },
+  { name: "Synthetic", icon: "🤖", desc: "Complete technological adoption, transhumanism, AI integration",
+    vec: [1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,1,1,1,2,2,2,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,2,2,2,0,0,0,0,0,0,1,1,1,0,0,0,2] },
+  { name: "Naturalist", icon: "🌾", desc: "Technology abstinence, organic living, return to nature",
+    vec: [0,0,0,1,1,1,2,2,2,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,1,1,1,0,0,0,2,0,2,1] }
+];
+
+// QUEST EVENTS FOR SIMULATION
+const QUEST_EVENTS = [
+  { name: "Corporate Espionage", desc: "Infiltrated a megacorp server farm", dims: [21,22,23], shift: [1,1,1] },
+  { name: "Street Protest", desc: "Led a march against surveillance laws", dims: [36,37,38], shift: [1,1,0] },
+  { name: "Underground Market", desc: "Traded cryptographic secrets", dims: [24,25,26], shift: [0,1,1] },
+  { name: "Political Rally", desc: "Gave a speech on governance reform", dims: [45,46,47], shift: [1,0,1] },
+  { name: "Environmental Action", desc: "Sabotaged a polluting factory", dims: [18,19,20], shift: [1,1,1] },
+  { name: "Prison Break", desc: "Freed political prisoners from detention", dims: [54,55,56], shift: [1,1,0] },
+  { name: "Peace Negotiations", desc: "Brokered a ceasefire between factions", dims: [60], shift: [1] },
+  { name: "Military Contract", desc: "Supplied weapons to enforcement faction", dims: [39,40,41], shift: [0,1,1] },
+  { name: "Media Leak", desc: "Published classified faction documents", dims: [42,43,44], shift: [1,1,1] },
+  { name: "AGI Council Petition", desc: "Addressed the Seven at their convergence", dims: [30,31,32], shift: [1,1,0] },
+  { name: "Neural Implant Upgrade", desc: "Installed cortical mesh for AGI direct-link", dims: [48,49,50], shift: [1,1,1] },
+  { name: "Off-Grid Commune", desc: "Established tech-free settlement in the wilds", dims: [51,52,53], shift: [1,1,1] },
+  { name: "AI Rights Manifesto", desc: "Published declaration of synthetic personhood", dims: [48,49,50], shift: [0,1,1] },
+  { name: "Luddite Sabotage", desc: "Destroyed server farm to protect natural order", dims: [51,52,53], shift: [1,0,1] }
+];
+
+// STATE
+let selectedFaction = null;
+let comparedFactions = [];
+let playerVector = new Array(64).fill(1); // Start neutral
+let visMode = 'radar';
+let animFrame = 0;
+let canvas, ctx;
+let particles = [];
+
+// Initialize player with some character
+for (let i = 0; i < 64; i++) playerVector[i] = Math.floor(Math.random() * 3);
+
+// EUCLIDEAN DISTANCE IN 64D BASE-3 SPACE
+function vectorDistance(a, b) {
+  let sum = 0;
+  for (let i = 0; i < 64; i++) sum += (a[i] - b[i]) ** 2;
+  return Math.sqrt(sum);
+}
+
+// MAX POSSIBLE DISTANCE IN 64D BASE-3
+const MAX_DIST = Math.sqrt(64 * 4); // sqrt(64 * (2-0)^2) = sqrt(256) = 16
+
+// INIT
+function init() {
+  canvas = document.getElementById('mainVis');
+  ctx = canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  buildFactionList();
+  buildPlayerEditor();
+  updatePlayerVectorDisplay();
+  selectFaction(0);
+  initParticles();
+  animate();
+}
+
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+}
+
+function initParticles() {
+  particles = [];
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * 1200,
+      y: Math.random() * 800,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      size: Math.random() * 2 + 0.5,
+      alpha: Math.random() * 0.3 + 0.05
+    });
+  }
+}
+
+// BUILD FACTION LIST
+function buildFactionList() {
+  const container = document.getElementById('factionList');
+  let html = '';
+  let fIdx = 0;
+  FACTION_GROUPS.forEach(group => {
+    html += `<div class="faction-group-label">${group.label}</div>`;
+    for (let i = group.start; i < group.end; i++) {
+      const f = FACTIONS[i];
+      html += `<button class="faction-btn" id="fbtn-${i}" onclick="selectFaction(${i})" oncontextmenu="toggleCompare(${i}); return false;">
+        <span class="faction-icon">${f.icon}</span>
+        <span>${f.name}</span>
+        <span class="faction-dims">D${DIM_CATEGORIES[i] ? DIM_CATEGORIES[i].dims[0]+1 : '?'}-${DIM_CATEGORIES[i] ? DIM_CATEGORIES[i].dims[DIM_CATEGORIES[i].dims.length-1]+1 : '?'}</span>
+      </button>`;
+    }
+  });
+  container.innerHTML = html;
+}
+
+// SELECT FACTION
+function selectFaction(idx) {
+  selectedFaction = idx;
+  document.querySelectorAll('.faction-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === idx);
+  });
+  updateDetail(idx);
+  updateDimensionBars(idx);
+  updateDistanceTable(idx);
+}
+
+// COMPARE MODE
+function toggleCompare(idx) {
+  const pos = comparedFactions.indexOf(idx);
+  if (pos >= 0) {
+    comparedFactions.splice(pos, 1);
+  } else if (comparedFactions.length < 3) {
+    comparedFactions.push(idx);
+  }
+  document.querySelectorAll('.faction-btn').forEach((btn, i) => {
+    btn.classList.toggle('compared', comparedFactions.includes(i));
+  });
+  document.getElementById('compareCount').textContent = comparedFactions.length;
+  document.getElementById('compareIndicator').classList.toggle('visible', comparedFactions.length > 0);
+}
+
+// UPDATE DETAIL
+function updateDetail(idx) {
+  const f = FACTIONS[idx];
+  document.getElementById('detailName').textContent = `${f.icon} ${f.name}`;
+  document.getElementById('detailName').style.color = DIM_CATEGORIES[idx] ? DIM_CATEGORIES[idx].color : '#fff';
+  document.getElementById('detailDesc').textContent = f.desc;
+}
+
+// DIMENSION BARS
+function updateDimensionBars(idx) {
+  const f = FACTIONS[idx];
+  const container = document.getElementById('dimBarsContainer');
+  let html = '';
+  DIM_CATEGORIES.forEach(cat => {
+    html += `<div class="dim-group"><div class="dim-group-title">${cat.name} [D${cat.dims[0]+1}-${cat.dims[cat.dims.length-1]+1}]</div>`;
+    cat.dims.forEach(d => {
+      const v = f.vec[d];
+      html += `<div class="dim-bar-row">
+        <span class="dim-label">${d+1}</span>
+        <div class="dim-bar-track"><div class="dim-bar-fill" data-val="${v}"></div></div>
+        <span class="dim-val" data-val="${v}">${v}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  container.innerHTML = html;
+}
+
+// DISTANCE TABLE
+function updateDistanceTable(idx) {
+  const f = FACTIONS[idx];
+  const tbody = document.getElementById('distanceBody');
+  let distances = FACTIONS.map((other, i) => ({
+    name: other.name, icon: other.icon, idx: i,
+    dist: vectorDistance(f.vec, other.vec)
+  })).filter(d => d.idx !== idx).sort((a, b) => a.dist - b.dist);
+
+  let html = '';
+  // Show top 5 allies and top 5 enemies
+  const allies = distances.slice(0, 5);
+  const enemies = distances.slice(-5).reverse();
+
+  html += '<tr><td colspan="3" style="font-size:9px;color:#00ff88;letter-spacing:1px;font-family:Share Tech Mono">— CLOSEST ALLIES —</td></tr>';
+  allies.forEach(d => {
+    const norm = d.dist / MAX_DIST;
+    const cls = norm < 0.35 ? 'dist-ally' : norm < 0.6 ? 'dist-neutral' : 'dist-enemy';
+    html += `<tr><td>${d.icon} ${d.name}</td><td class="${cls}">${norm < 0.35 ? 'ALLY' : norm < 0.6 ? 'NEUTRAL' : 'ENEMY'}</td><td class="${cls}">${d.dist.toFixed(2)}</td></tr>`;
+  });
+
+  html += '<tr><td colspan="3" style="font-size:9px;color:#ff3355;letter-spacing:1px;font-family:Share Tech Mono;padding-top:8px">— GREATEST ENEMIES —</td></tr>';
+  enemies.forEach(d => {
+    const norm = d.dist / MAX_DIST;
+    const cls = norm < 0.35 ? 'dist-ally' : norm < 0.6 ? 'dist-neutral' : 'dist-enemy';
+    html += `<tr><td>${d.icon} ${d.name}</td><td class="${cls}">${norm < 0.35 ? 'ALLY' : norm < 0.6 ? 'NEUTRAL' : 'ENEMY'}</td><td class="${cls}">${d.dist.toFixed(2)}</td></tr>`;
+  });
+
+  // Player distance
+  const playerDist = vectorDistance(f.vec, playerVector);
+  const pNorm = playerDist / MAX_DIST;
+  const pCls = pNorm < 0.35 ? 'dist-ally' : pNorm < 0.6 ? 'dist-neutral' : 'dist-enemy';
+  html += `<tr><td colspan="3" style="font-size:9px;color:#00ff88;letter-spacing:1px;font-family:Share Tech Mono;padding-top:8px">— PLAYER DISTANCE —</td></tr>`;
+  html += `<tr><td>▶ YOU</td><td class="${pCls}">${pNorm < 0.35 ? 'ALLY' : pNorm < 0.6 ? 'NEUTRAL' : 'ENEMY'}</td><td class="${pCls}">${playerDist.toFixed(2)}</td></tr>`;
+
+  tbody.innerHTML = html;
+}
+
+// PLAYER VECTOR DISPLAY
+function updatePlayerVectorDisplay() {
+  const container = document.getElementById('playerVectorDisplay');
+  let html = '';
+  playerVector.forEach((v, i) => {
+    html += `<div class="pv-digit" data-val="${v}" id="pvd-${i}">${v}</div>`;
+  });
+  container.innerHTML = html;
+}
+
+// PLAYER EDITOR
+function buildPlayerEditor() {
+  const container = document.getElementById('playerEditor');
+  let html = '';
+  DIM_CATEGORIES.forEach(cat => {
+    cat.dims.forEach(d => {
+      html += `<div class="player-edit-row">
+        <span class="player-edit-label">${cat.name} D${d+1}</span>
+        <input type="range" class="player-edit-slider" min="0" max="2" step="1" value="${playerVector[d]}" onchange="setPlayerDim(${d}, this.value)">
+        <span class="player-edit-val" id="pev-${d}">${playerVector[d]}</span>
+      </div>`;
+    });
+  });
+  container.innerHTML = html;
+}
+
+function setPlayerDim(dim, val) {
+  playerVector[dim] = parseInt(val);
+  document.getElementById(`pev-${dim}`).textContent = val;
+  const digit = document.getElementById(`pvd-${dim}`);
+  if (digit) {
+    digit.textContent = val;
+    digit.dataset.val = val;
+    digit.classList.add('shifted');
+    setTimeout(() => digit.classList.remove('shifted'), 600);
+  }
+  if (selectedFaction !== null) updateDistanceTable(selectedFaction);
+}
+
+// QUEST SIMULATION
+function triggerQuestShift() {
+  const quest = QUEST_EVENTS[Math.floor(Math.random() * QUEST_EVENTS.length)];
+  const shiftDesc = [];
+  quest.dims.forEach((d, i) => {
+    const oldVal = playerVector[d];
+    const newVal = Math.min(2, oldVal + quest.shift[i]);
+    if (newVal !== oldVal) {
+      shiftDesc.push(`D${d+1}: ${oldVal}→${newVal}`);
+      playerVector[d] = newVal;
+      const digit = document.getElementById(`pvd-${d}`);
+      if (digit) {
+        digit.textContent = newVal;
+        digit.dataset.val = newVal;
+        digit.classList.add('shifted');
+        setTimeout(() => digit.classList.remove('shifted'), 600);
+      }
+      const slider = document.querySelector(`.player-edit-slider[onchange*="setPlayerDim(${d}"]`);
+      if (slider) slider.value = newVal;
+      const valSpan = document.getElementById(`pev-${d}`);
+      if (valSpan) valSpan.textContent = newVal;
+    }
+  });
+
+  document.getElementById('questDesc').textContent = `Quest: "${quest.name}" — ${quest.desc}`;
+  document.getElementById('questVector').textContent = shiftDesc.length ? shiftDesc.join(' | ') : 'No shift (already maxed)';
+  document.getElementById('questShift').classList.add('visible');
+
+  if (selectedFaction !== null) updateDistanceTable(selectedFaction);
+}
+
+function closeQuestShift() {
+  document.getElementById('questShift').classList.remove('visible');
+}
+
+// VISUALIZATION MODE
+function setVisMode(mode) {
+  visMode = mode;
+  document.querySelectorAll('.vis-btn').forEach(btn => btn.classList.remove('active'));
+  document.getElementById(`btn-${mode}`).classList.add('active');
+}
+
+// ========================================
+// RENDERING
+// ========================================
+function animate() {
+  animFrame++;
+  const w = canvas.width / window.devicePixelRatio;
+  const h = canvas.height / window.devicePixelRatio;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Background particles
+  drawParticles(w, h);
+
+  if (visMode === 'radar') drawRadar(w, h);
+  else if (visMode === 'constellation') drawConstellation(w, h);
+  else if (visMode === 'heatmap') drawHeatmap(w, h);
+
+  requestAnimationFrame(animate);
+}
+
+function drawParticles(w, h) {
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0) p.x = w;
+    if (p.x > w) p.x = 0;
+    if (p.y < 0) p.y = h;
+    if (p.y > h) p.y = 0;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0, 200, 255, ${p.alpha})`;
+    ctx.fill();
+  });
+}
+
+// RADAR MODE — Show faction vectors as radar chart
+function drawRadar(w, h) {
+  const cx = w / 2 - 20;
+  const cy = h / 2 - 20;
+  const maxR = Math.min(w, h) * 0.35;
+  const cats = DIM_CATEGORIES.filter(c => c.dims.length >= 2); // Only multi-dim categories
+  const numAxes = cats.length;
+  const angleStep = (Math.PI * 2) / numAxes;
+
+  // Draw axis lines and labels
+  cats.forEach((cat, i) => {
+    const angle = i * angleStep - Math.PI / 2;
+    const ex = cx + Math.cos(angle) * maxR;
+    const ey = cy + Math.sin(angle) * maxR;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(ex, ey);
+    ctx.strokeStyle = 'rgba(0, 200, 255, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Label
+    const lx = cx + Math.cos(angle) * (maxR + 20);
+    const ly = cy + Math.sin(angle) * (maxR + 20);
+    ctx.save();
+    ctx.font = '9px "Share Tech Mono"';
+    ctx.fillStyle = cat.color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(cat.name.toUpperCase(), lx, ly);
+    ctx.restore();
+  });
+
+  // Concentric rings
+  [0.33, 0.66, 1.0].forEach(r => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxR * r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 200, 255, 0.05)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Ring labels
+  ctx.font = '8px "Share Tech Mono"';
+  ctx.fillStyle = 'rgba(0,200,255,0.3)';
+  ctx.fillText('0', cx + 4, cy + maxR * 0.33 - 4);
+  ctx.fillText('1', cx + 4, cy + maxR * 0.66 - 4);
+  ctx.fillText('2', cx + 4, cy + maxR - 4);
+
+  // Draw faction radar shapes
+  function drawFactionRadar(vec, color, alpha, lineWidth) {
+    ctx.beginPath();
+    cats.forEach((cat, i) => {
+      const angle = i * angleStep - Math.PI / 2;
+      const avg = cat.dims.reduce((s, d) => s + vec[d], 0) / cat.dims.length;
+      const r = (avg / 2) * maxR;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.globalAlpha = alpha;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = alpha * 0.08;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // Selected faction
+  if (selectedFaction !== null) {
+    const f = FACTIONS[selectedFaction];
+    const col = DIM_CATEGORIES[selectedFaction] ? DIM_CATEGORIES[selectedFaction].color : '#00c8ff';
+    drawFactionRadar(f.vec, col, 0.9, 2);
+  }
+
+  // Compared factions
+  const compColors = ['#ff00aa', '#ff8800', '#00ff88'];
+  comparedFactions.forEach((idx, ci) => {
+    drawFactionRadar(FACTIONS[idx].vec, compColors[ci], 0.6, 1.5);
+  });
+
+  // Player vector
+  drawFactionRadar(playerVector, '#00ff88', 0.7, 2);
+
+  // Player indicator
+  ctx.save();
+  ctx.font = 'bold 10px "Orbitron"';
+  ctx.fillStyle = '#00ff88';
+  ctx.fillText('▶ PLAYER', cx - maxR + 10, cy - maxR + 20);
+  if (selectedFaction !== null) {
+    ctx.fillStyle = DIM_CATEGORIES[selectedFaction] ? DIM_CATEGORIES[selectedFaction].color : '#00c8ff';
+    ctx.fillText(`■ ${FACTIONS[selectedFaction].name.toUpperCase()}`, cx - maxR + 10, cy - maxR + 34);
+  }
+  ctx.restore();
+}
+
+// CONSTELLATION MODE — 2D projection of all factions
+function drawConstellation(w, h) {
+  const padding = 60;
+  const plotW = w - padding * 2;
+  const plotH = h - padding * 2 - 60;
+
+  // Project 64D to 2D using PCA-like approach: Liberty-Authoritarian axis vs Liberal-Conservative axis
+  function project(vec) {
+    // X: Liberty (dims 6-8) minus Authoritarian (dims 9-11)
+    const libScore = (vec[6] + vec[7] + vec[8]) / 3;
+    const authScore = (vec[9] + vec[10] + vec[11]) / 3;
+    const x = (libScore - authScore + 2) / 4; // 0 to 1
+
+    // Y: Liberal (dims 0-2) minus Conservative (dims 3-5)
+    const librlScore = (vec[0] + vec[1] + vec[2]) / 3;
+    const consScore = (vec[3] + vec[4] + vec[5]) / 3;
+    const y = (librlScore - consScore + 2) / 4; // 0 to 1
+
+    return {
+      px: padding + x * plotW,
+      py: padding + 30 + (1 - y) * plotH
+    };
+  }
+
+  // Axis labels
+  ctx.save();
+  ctx.font = '10px "Share Tech Mono"';
+  ctx.fillStyle = 'rgba(0,200,255,0.4)';
+  ctx.textAlign = 'center';
+  ctx.fillText('← AUTHORITARIAN — LIBERTY →', w / 2, h - padding + 30);
+  ctx.save();
+  ctx.translate(padding - 20, h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('← CONSERVATIVE — LIBERAL →', 0, 0);
+  ctx.restore();
+  ctx.restore();
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,200,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const x = padding + (i / 4) * plotW;
+    const y = padding + 30 + (i / 4) * plotH;
+    ctx.beginPath(); ctx.moveTo(x, padding + 30); ctx.lineTo(x, padding + 30 + plotH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(padding, y); ctx.lineTo(padding + plotW, y); ctx.stroke();
+  }
+
+  // Center crosshair
+  ctx.strokeStyle = 'rgba(0,200,255,0.1)';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(w / 2, padding + 30); ctx.lineTo(w / 2, padding + 30 + plotH); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(padding, (padding + 30 + padding + 30 + plotH) / 2); ctx.lineTo(padding + plotW, (padding + 30 + padding + 30 + plotH) / 2); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw connection lines between allies (close factions)
+  FACTIONS.forEach((f, i) => {
+    const pi = project(f.vec);
+    FACTIONS.forEach((g, j) => {
+      if (j <= i) return;
+      const dist = vectorDistance(f.vec, g.vec);
+      if (dist < MAX_DIST * 0.35) {
+        const pj = project(g.vec);
+        ctx.beginPath();
+        ctx.moveTo(pi.px, pi.py);
+        ctx.lineTo(pj.px, pj.py);
+        ctx.strokeStyle = `rgba(0,255,136,${0.08 * (1 - dist / (MAX_DIST * 0.35))})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    });
+  });
+
+  // Draw faction nodes
+  FACTIONS.forEach((f, i) => {
+    const p = project(f.vec);
+    const col = DIM_CATEGORIES[i] ? DIM_CATEGORIES[i].color : '#888';
+    const isSelected = i === selectedFaction;
+    const isCompared = comparedFactions.includes(i);
+    const radius = isSelected ? 10 : isCompared ? 8 : 5;
+
+    // Glow
+    if (isSelected || isCompared) {
+      ctx.beginPath();
+      ctx.arc(p.px, p.py, radius + 6, 0, Math.PI * 2);
+      ctx.fillStyle = isSelected ? `rgba(0,200,255,0.1)` : `rgba(255,0,170,0.08)`;
+      ctx.fill();
+    }
+
+    // Node
+    ctx.beginPath();
+    ctx.arc(p.px, p.py, radius, 0, Math.PI * 2);
+    ctx.fillStyle = col;
+    ctx.globalAlpha = isSelected ? 1 : 0.7;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Label
+    if (isSelected || isCompared || radius > 5) {
+      ctx.font = `${isSelected ? 'bold ' : ''}9px "Share Tech Mono"`;
+      ctx.fillStyle = col;
+      ctx.textAlign = 'center';
+      ctx.fillText(f.name.toUpperCase(), p.px, p.py - radius - 5);
+    }
+    // Icon
+    ctx.font = `${isSelected ? 14 : 11}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(f.icon, p.px, p.py);
+  });
+
+  // Player node
+  const pp = project(playerVector);
+  ctx.beginPath();
+  ctx.arc(pp.px, pp.py, 12, 0, Math.PI * 2);
+  ctx.strokeStyle = '#00ff88';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(0,255,136,0.15)';
+  ctx.fill();
+
+  // Pulse
+  const pulseR = 12 + Math.sin(animFrame * 0.05) * 5;
+  ctx.beginPath();
+  ctx.arc(pp.px, pp.py, pulseR, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(0,255,136,${0.3 - Math.sin(animFrame * 0.05) * 0.15})`;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.font = 'bold 10px "Orbitron"';
+  ctx.fillStyle = '#00ff88';
+  ctx.textAlign = 'center';
+  ctx.fillText('▶ YOU', pp.px, pp.py - 18);
+}
+
+// HEATMAP MODE — Full 64-dim comparison
+function drawHeatmap(w, h) {
+  const padding = 40;
+  const topPad = 30;
+  const cellW = (w - padding * 2) / 64;
+  const rowH = 14;
+  const startY = padding + topPad;
+
+  // Column headers (dim numbers)
+  ctx.font = '7px "Share Tech Mono"';
+  ctx.fillStyle = 'rgba(0,200,255,0.3)';
+  ctx.textAlign = 'center';
+  for (let d = 0; d < 64; d++) {
+    if (d % 3 === 0) {
+      ctx.fillText(d + 1, padding + d * cellW + cellW / 2, startY - 5);
+    }
+  }
+
+  // Category color bar
+  DIM_CATEGORIES.forEach(cat => {
+    cat.dims.forEach(d => {
+      ctx.fillStyle = cat.color;
+      ctx.globalAlpha = 0.15;
+      ctx.fillRect(padding + d * cellW, startY - 16, cellW, 10);
+      ctx.globalAlpha = 1;
+    });
+  });
+
+  // Determine which factions to show
+  let factionsToShow = [];
+  if (selectedFaction !== null) factionsToShow.push({ f: FACTIONS[selectedFaction], label: FACTIONS[selectedFaction].name, isPrimary: true });
+  comparedFactions.forEach(idx => factionsToShow.push({ f: FACTIONS[idx], label: FACTIONS[idx].name, isPrimary: false }));
+  factionsToShow.push({ f: { vec: playerVector, name: '▶ PLAYER' }, label: '▶ PLAYER', isPlayer: true });
+
+  // If no selection, show all
+  if (selectedFaction === null && comparedFactions.length === 0) {
+    FACTIONS.forEach(f => factionsToShow.push({ f, label: f.name, isPrimary: false }));
+  }
+
+  factionsToShow.forEach((item, row) => {
+    const y = startY + row * (rowH + 2);
+    if (y > h - 100) return;
+
+    // Label
+    ctx.font = '9px "Share Tech Mono"';
+    ctx.fillStyle = item.isPlayer ? '#00ff88' : item.isPrimary ? '#00c8ff' : '#607080';
+    ctx.textAlign = 'right';
+    ctx.fillText(item.label.toUpperCase().slice(0, 12), padding - 4, y + rowH / 2 + 3);
+
+    // Cells
+    for (let d = 0; d < 64; d++) {
+      const v = item.f.vec[d];
+      const colors = ['rgba(96,112,128,0.15)', 'rgba(255,170,0,0.5)', 'rgba(0,200,255,0.7)'];
+      ctx.fillStyle = item.isPlayer ? (v === 0 ? 'rgba(96,112,128,0.15)' : v === 1 ? 'rgba(0,255,136,0.4)' : 'rgba(0,255,136,0.8)') : colors[v];
+      ctx.fillRect(padding + d * cellW + 0.5, y, cellW - 1, rowH);
+    }
+  });
+
+  // Legend
+  const legendY = h - 40;
+  ctx.font = '9px "Share Tech Mono"';
+  ctx.fillStyle = '#607080';
+  ctx.textAlign = 'left';
+  ctx.fillText('VALUES:', padding, legendY);
+
+  const legendItems = [
+    { label: '0 = ABSENT', color: 'rgba(96,112,128,0.3)' },
+    { label: '1 = MODERATE', color: 'rgba(255,170,0,0.6)' },
+    { label: '2 = STRONG', color: 'rgba(0,200,255,0.8)' }
+  ];
+  legendItems.forEach((item, i) => {
+    const x = padding + 60 + i * 120;
+    ctx.fillStyle = item.color;
+    ctx.fillRect(x, legendY - 8, 12, 12);
+    ctx.fillStyle = '#607080';
+    ctx.font = '9px "Share Tech Mono"';
+    ctx.fillText(item.label, x + 16, legendY + 2);
+  });
+}
+
+// START
+init();
+</script>
+</body>
+</html>
