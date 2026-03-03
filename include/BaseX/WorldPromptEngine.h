@@ -220,6 +220,43 @@ public:
         if (result.biome.empty())    result.biome.push_back("forest");
         if (result.weather.empty())  result.weather.push_back("clear");
 
+        // ── Implied structures from biome/terrain context ──
+        // If no explicit structures, add contextual ones
+        if (result.structure.empty()) {
+            for (auto& b : result.biome) {
+                if (b == "forest" || b == "enchanted" || b == "jungle"
+                    || b == "bamboo" || b == "taiga" || b == "cherry")
+                    addImplied(result.structure, {"tree", "tree", "tree", "tree", "tree", "tree", "shrub", "shrub", "rock"});
+                else if (b == "desert" || b == "sand" || b == "sandstone")
+                    addImplied(result.structure, {"rock", "rock", "pillar", "ruins"});
+                else if (b == "ice" || b == "snow" || b == "glacial" || b == "frozen" || b == "tundra")
+                    addImplied(result.structure, {"rock", "rock", "pillar", "monolith"});
+                else if (b == "volcanic" || b == "lava" || b == "ash" || b == "obsidian")
+                    addImplied(result.structure, {"rock", "rock", "monolith", "spire"});
+                else if (b == "swamp" || b == "marsh" || b == "moss")
+                    addImplied(result.structure, {"tree", "tree", "tree", "hut", "shrub"});
+                else if (b == "coral" || b == "reef" || b == "ocean")
+                    addImplied(result.structure, {"rock", "rock", "pillar"});
+                else if (b == "savanna" || b == "prairie" || b == "golden")
+                    addImplied(result.structure, {"tree", "tree", "rock", "shrub"});
+                else if (b == "dark" || b == "necro" || b == "crimson")
+                    addImplied(result.structure, {"tomb", "obelisk", "gate", "tree"});
+                else if (b == "steam" || b == "brass" || b == "gear")
+                    addImplied(result.structure, {"tower", "tower", "bridge", "dock"});
+            }
+            // Terrain-based fallback
+            if (result.structure.empty()) {
+                for (auto& t : result.terrain) {
+                    if (t == "mountain" || t == "peak" || t == "ridge")
+                        addImplied(result.structure, {"rock", "rock", "rock", "monolith"});
+                    else if (t == "island" || t == "atoll" || t == "archipelago")
+                        addImplied(result.structure, {"tree", "tree", "tree", "rock", "hut"});
+                    else
+                        addImplied(result.structure, {"rock", "tree", "shrub"});
+                }
+            }
+        }
+
         return result;
     }
 
@@ -293,7 +330,9 @@ private:
             // ── New structures ──
             "aqueduct","minaret","colosseum","amphitheater","monolith",
             "torii","pagoda","ziggurat","dolmen","barrow","keep",
-            "watchtower","cabin","chapel","forge","marketplace"
+            "watchtower","cabin","chapel","forge","marketplace",
+            // ── Nature/foliage (for implied placement) ──
+            "tree","shrub","rock","pillar","boulder","stump","log","mushroom_cluster"
         };
 
         m_weatherKW = {
@@ -311,6 +350,12 @@ private:
         std::transform(out.begin(), out.end(), out.begin(),
                        [](unsigned char c){ return (char)std::tolower(c); });
         return out;
+    }
+
+    static void addImplied(std::vector<std::string>& structures,
+                           std::initializer_list<const char*> items) {
+        for (auto* item : items)
+            structures.push_back(item);
     }
 };
 
@@ -581,33 +626,59 @@ public:
         const std::vector<float>& heightmap,
         int gridSize = WPE_GRID_SIZE)
     {
-        static const float STRUCT_COLORS[][3] = {
-            {0.80f,0.67f,0.40f}, {0.53f,0.53f,0.53f}, {0.67f,0.67f,0.80f},
-            {0.80f,0.53f,0.27f}, {0.53f,0.67f,0.87f}, {0.67f,0.47f,0.27f},
-            {0.73f,0.73f,0.67f}, {0.40f,0.33f,0.27f}, {0.60f,0.47f,0.60f},
-            {0.47f,0.60f,0.47f}
+        // Color palettes by category
+        auto natureColor = [](std::mt19937& rng) -> std::array<float,3> {
+            std::uniform_real_distribution<float> v(0.0f, 0.15f);
+            return {0.15f+v(rng), 0.35f+v(rng), 0.10f+v(rng)}; // greens
         };
-        static const int NUM_COLORS = 10;
+        auto rockColor = [](std::mt19937& rng) -> std::array<float,3> {
+            std::uniform_real_distribution<float> v(0.0f, 0.1f);
+            float base = 0.35f + v(rng);
+            return {base+0.05f, base, base-0.03f}; // grey-brown
+        };
+        auto buildColor = [](std::mt19937& rng, int idx) -> std::array<float,3> {
+            static const float C[][3] = {
+                {0.80f,0.67f,0.40f}, {0.53f,0.53f,0.53f}, {0.67f,0.67f,0.80f},
+                {0.80f,0.53f,0.27f}, {0.53f,0.67f,0.87f}, {0.67f,0.47f,0.27f},
+                {0.73f,0.73f,0.67f}, {0.40f,0.33f,0.27f}, {0.60f,0.47f,0.60f},
+                {0.47f,0.60f,0.47f}
+            };
+            int ci = idx % 10;
+            return {C[ci][0], C[ci][1], C[ci][2]};
+        };
 
         std::mt19937 rng(42);
         std::uniform_int_distribution<int> distPos(2, gridSize - 5);
         std::uniform_real_distribution<float> distSize(8.0f, 20.0f);
+        std::uniform_real_distribution<float> distSizeSmall(4.0f, 10.0f);
 
         std::vector<StructureInstance> out;
 
         for (size_t i = 0; i < parsed.structure.size(); i++) {
+            const auto& type = parsed.structure[i];
+            bool isNature = (type == "tree" || type == "shrub" || type == "stump"
+                          || type == "log" || type == "mushroom_cluster");
+            bool isRock = (type == "rock" || type == "boulder" || type == "pillar");
+
             bool placed = false;
-            for (int attempt = 0; attempt < 50 && !placed; attempt++) {
+            for (int attempt = 0; attempt < 80 && !placed; attempt++) {
                 int gx = distPos(rng);
                 int gy = distPos(rng);
                 float h = heightmap[gy * gridSize + gx];
-                if (h > 0.15f && h < 0.85f) {
-                    int ci = (int)(i % NUM_COLORS);
-                    out.push_back({
-                        parsed.structure[i], gx, gy, h,
-                        distSize(rng),
-                        STRUCT_COLORS[ci][0], STRUCT_COLORS[ci][1], STRUCT_COLORS[ci][2]
-                    });
+
+                // Nature can go almost anywhere above water
+                // Buildings need moderate terrain
+                bool validPos = isNature ? (h > 0.08f) :
+                                isRock   ? (h > 0.05f) :
+                                           (h > 0.15f && h < 0.85f);
+                if (validPos) {
+                    float size = isNature ? distSizeSmall(rng) : distSize(rng);
+                    std::array<float,3> col;
+                    if (isNature) col = natureColor(rng);
+                    else if (isRock) col = rockColor(rng);
+                    else col = buildColor(rng, (int)i);
+
+                    out.push_back({type, gx, gy, h, size, col[0], col[1], col[2]});
                     placed = true;
                 }
             }

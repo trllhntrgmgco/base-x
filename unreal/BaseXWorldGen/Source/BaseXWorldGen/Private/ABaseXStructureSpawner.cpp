@@ -79,11 +79,37 @@ void ABaseXStructureSpawner::SpawnStructures(UBaseXWorldBuilder* Builder)
         // Pick shape by structure type
         enum EShapeType { Shape_Cube, Shape_Cylinder, Shape_Sphere, Shape_Cone };
         EShapeType ShapeType = Shape_Cube;
+        float HeightMult = 1.5f;   // how tall relative to base
+        float WidthMult = 0.8f;    // how wide
 
         if (!Mesh)
         {
             FString T = S.Type.ToLower();
-            if (T.Contains(TEXT("tower")) || T.Contains(TEXT("spire"))
+
+            // Nature/foliage — cone trees, sphere shrubs, sphere rocks
+            if (T.Contains(TEXT("tree")) || T.Contains(TEXT("stump")) || T.Contains(TEXT("log")))
+            {
+                ShapeType = Shape_Cone;
+                Mesh = ConeMesh ? ConeMesh : CylinderMesh;
+                HeightMult = 3.0f;
+                WidthMult = 0.6f;
+            }
+            else if (T.Contains(TEXT("shrub")) || T.Contains(TEXT("mushroom")))
+            {
+                ShapeType = Shape_Sphere;
+                Mesh = SphereMesh;
+                HeightMult = 0.5f;
+                WidthMult = 0.6f;
+            }
+            else if (T.Contains(TEXT("rock")) || T.Contains(TEXT("boulder")))
+            {
+                ShapeType = Shape_Sphere;
+                Mesh = SphereMesh;
+                HeightMult = 0.7f;
+                WidthMult = 0.8f;
+            }
+            // Tall structures
+            else if (T.Contains(TEXT("tower")) || T.Contains(TEXT("spire"))
                 || T.Contains(TEXT("obelisk")) || T.Contains(TEXT("minaret"))
                 || T.Contains(TEXT("lighthouse")) || T.Contains(TEXT("monolith"))
                 || T.Contains(TEXT("pagoda")) || T.Contains(TEXT("pillar"))
@@ -91,24 +117,33 @@ void ABaseXStructureSpawner::SpawnStructures(UBaseXWorldBuilder* Builder)
             {
                 ShapeType = Shape_Cylinder;
                 Mesh = CylinderMesh;
+                HeightMult = 3.0f;
+                WidthMult = 0.3f;
             }
+            // Domed / low structures
             else if (T.Contains(TEXT("dome")) || T.Contains(TEXT("well"))
-                || T.Contains(TEXT("sphere")) || T.Contains(TEXT("altar"))
-                || T.Contains(TEXT("dolmen")) || T.Contains(TEXT("barrow")))
+                || T.Contains(TEXT("altar")) || T.Contains(TEXT("dolmen"))
+                || T.Contains(TEXT("barrow")))
             {
                 ShapeType = Shape_Sphere;
                 Mesh = SphereMesh;
+                HeightMult = 0.6f;
+                WidthMult = 0.8f;
             }
-            else if (T.Contains(TEXT("pyramid")) || T.Contains(TEXT("ziggurat"))
-                || T.Contains(TEXT("spire")) || T.Contains(TEXT("cone")))
+            // Pyramids
+            else if (T.Contains(TEXT("pyramid")) || T.Contains(TEXT("ziggurat")))
             {
                 ShapeType = Shape_Cone;
                 Mesh = ConeMesh ? ConeMesh : CubeMesh;
+                HeightMult = 2.0f;
+                WidthMult = 0.8f;
             }
             else
             {
                 ShapeType = Shape_Cube;
                 Mesh = CubeMesh;
+                HeightMult = 1.5f;
+                WidthMult = 0.8f;
             }
         }
 
@@ -128,24 +163,9 @@ void ABaseXStructureSpawner::SpawnStructures(UBaseXWorldBuilder* Builder)
         {
             Actor->GetStaticMeshComponent()->SetStaticMesh(Mesh);
 
-            // Scale: BasicShapes are 100uu. S.Size is 8-20. Target 3-8 metres.
+            // Scale: BasicShapes are 100uu. S.Size is 8-20. Target visible structures.
             float BaseScale = S.Size * 0.3f * ScaleMult;
-            FVector Scale3D;
-            switch (ShapeType)
-            {
-                case Shape_Cylinder:
-                    Scale3D = FVector(BaseScale * 0.3f, BaseScale * 0.3f, BaseScale * 3.0f);
-                    break;
-                case Shape_Sphere:
-                    Scale3D = FVector(BaseScale * 0.8f, BaseScale * 0.8f, BaseScale * 0.6f);
-                    break;
-                case Shape_Cone:
-                    Scale3D = FVector(BaseScale * 0.8f, BaseScale * 0.8f, BaseScale * 2.0f);
-                    break;
-                default: // Cube
-                    Scale3D = FVector(BaseScale * 0.8f, BaseScale * 0.8f, BaseScale * 1.5f);
-                    break;
-            }
+            FVector Scale3D(BaseScale * WidthMult, BaseScale * WidthMult, BaseScale * HeightMult);
             Actor->SetActorScale3D(Scale3D);
             Actor->SetActorLabel(FString::Printf(TEXT("BX_%s"), *S.Type));
 
