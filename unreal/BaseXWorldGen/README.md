@@ -1,16 +1,39 @@
-# Base-X World Generation — Unreal Engine Plugin
+# Base-X World Prompt Engine — Unreal Engine Plugin
+
+**Version 1.1.0** | Troll Hunter Gaming | [trollhuntergaming.online](https://trollhuntergaming.online)
 
 Complete port of the Base-X `WorldPromptEngine` + `DRO` + ecosystem sky/weather
-pipeline into an Unreal Engine 5 plugin for VR world-building.
+pipeline into an Unreal Engine 5.7 plugin for VR world-building.
+
+NLP prompt-driven procedural world generation with Bring Your Own Assets, 6 terrain sizes, and 24 presets. 186 structure types, 26 terrains, 52 biomes, 38 weather effects. DRO precision scaling. Patent pending.
+
+---
+
+## What's Included
+
+| Feature | Count |
+|---------|-------|
+| Terrain types | 26 |
+| Biomes | 52 |
+| Structure types | 186 |
+| Weather effects | 38 |
+| Terrain sizes | 6 |
+| Built-in presets | 24 |
+
+- **Natural Language Prompts** — type "mountain forest tower mist" and get a world
+- **Bring Your Own Assets (BYOA)** — DataTable-driven structure spawning works with any mesh library
+- **Dynamic Radix Optimization (DRO)** — patent-pending precision scaling (Base-4 to Base-64) adapts fidelity per subsystem
+- **Full Day/Night Cycle** — sun orbit, fog density, and atmosphere respond to weather state
+- **VR-Ready** — tablet interface actor for in-headset world building
 
 ---
 
 ## Plugin Structure
 
 ```
-unreal/BaseXWorldGen/
-├── BaseXWorldGen.uplugin              # Plugin descriptor
-├── ThirdParty/BaseX/                  # ORIGINAL Base-X C++ headers (unchanged)
+Plugins/BaseXWorldGen/
+├── BaseXWorldGen.uplugin              # Plugin descriptor (v1.1.0)
+├── ThirdParty/BaseX/                  # Original Base-X C++ headers (unchanged)
 │   ├── DRO.h                          #   Dynamic Radix Optimization
 │   ├── DRO.cpp                        #   DRO implementation
 │   └── WorldPromptEngine.h            #   NLP → world generation pipeline
@@ -39,60 +62,55 @@ unreal/BaseXWorldGen/
 
 ### 1. Create Unreal Project
 
-```
-1. Open Unreal Engine 5.3+ (or 5.4 for better VR)
+1. Open **Unreal Engine 5.7**
 2. New Project → Games → VR Template (or Blank + add VR pawn later)
-3. C++ project, name it "BaseXWorld" (or anything)
-4. Engine creates:  BaseXWorld/Source/BaseXWorld/
-```
+3. C++ project — name it anything (e.g., "BaseXWorld")
 
-### 2. Copy Plugin Into Project
+### 2. Install the Plugin
 
-```powershell
-# From your Base-X Engine repo:
-Copy-Item -Recurse "unreal\BaseXWorldGen" "C:\UE_Projects\BaseXWorld\Plugins\BaseXWorldGen"
-```
+Copy the `BaseXWorldGen` folder into your project's `Plugins/` directory:
 
-Your project should now look like:
 ```
-BaseXWorld/
+YourProject/
 ├── Plugins/
 │   └── BaseXWorldGen/
 │       ├── BaseXWorldGen.uplugin
 │       ├── ThirdParty/BaseX/...
 │       └── Source/BaseXWorldGen/...
-├── Source/BaseXWorld/...
-└── BaseXWorld.uproject
+├── Source/YourProject/...
+└── YourProject.uproject
 ```
 
 ### 3. Enable the Plugin
 
 Add to your `.uproject`:
+
 ```json
 "Plugins": [
     { "Name": "BaseXWorldGen", "Enabled": true },
-    { "Name": "ProceduralMeshComponent", "Enabled": true },
-    { "Name": "Niagara", "Enabled": true }
+    { "Name": "ProceduralMeshComponent", "Enabled": true }
 ]
 ```
 
 Add to your game module's `Build.cs`:
+
 ```csharp
 PublicDependencyModuleNames.Add("BaseXWorldGen");
 ```
 
 ### 4. Regenerate Project Files
 
-```powershell
-# From the UE project root:
-& "C:\Program Files\Epic Games\UE_5.3\Engine\Build\BatchFiles\GenerateProjectFiles.bat" BaseXWorld.uproject
-```
+Right-click your `.uproject` → **Generate Visual Studio project files**
 
-Or right-click `.uproject` → "Generate Visual Studio project files"
+Or from command line:
+
+```powershell
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\GenerateProjectFiles.bat" YourProject.uproject
+```
 
 ### 5. Build
 
-Open the `.sln` in Visual Studio, build `Development Editor | Win64`.
+Open the `.sln` in Visual Studio, build **Development Editor | Win64**.
 The Base-X C++ headers compile directly — no modifications needed.
 
 ---
@@ -151,7 +169,7 @@ Create `WBP_BaseXTablet` (Widget Blueprint) with:
 | Element | Binding |
 |---------|---------|
 | TextBox "PromptInput" | Bind to `ABaseXVRWorldBuilder::CurrentPrompt` |
-| Buttons 1-8 "Preset1..8" | OnClick → `LoadPreset(0..7)` |
+| Buttons 1–8 "Preset1..8" | OnClick → `LoadPreset(0..7)` |
 | Button "Generate" | OnClick → `Generate()` |
 | Button "Clear" | OnClick → `ClearWorld()` |
 | Slider "StartHour" | OnChanged → `SetStartHour(Value)` |
@@ -170,37 +188,48 @@ Create `WBP_BaseXTablet` (Widget Blueprint) with:
 
 ---
 
-## Architecture: What's Identical to Base-X, What's UE-Only
+## Architecture
 
 | Layer | Files | Source |
 |-------|-------|--------|
-| **Pure C++ (unchanged)** | `DRO.h`, `DRO.cpp`, `WorldPromptEngine.h` | Copied verbatim from `include/BaseX/` |
+| **Pure C++ (unchanged)** | `DRO.h`, `DRO.cpp`, `WorldPromptEngine.h` | Copied verbatim from Base-X engine |
 | **Type bridge** | `FBaseXTypes.h` | USTRUCT mirrors of Base-X structs |
 | **Core wrapper** | `UBaseXWorldBuilder.h/.cpp` | Wraps `WorldPromptEngine` in UObject via PIMPL |
-| **Terrain mesh** | `ABaseXWorldMesh.h/.cpp` | Replaces `renderTerrain()` GL calls with ProceduralMesh |
+| **Terrain mesh** | `ABaseXWorldMesh.h/.cpp` | Replaces GL `renderTerrain()` with ProceduralMesh |
 | **Structures** | `ABaseXStructureSpawner.h/.cpp` | Replaces `renderStructures()` with actor spawning |
 | **Weather** | `UBaseXWeatherController.h/.cpp` | Replaces `renderSky()`/`updateWeather()` with UE atmosphere |
 | **VR orchestrator** | `ABaseXVRWorldBuilder.h/.cpp` | Replaces GLFW main loop + prompt screen |
 
-### Keeping In Sync
+---
+
+## Keeping In Sync with Base-X Engine
 
 When you update `WorldPromptEngine.h` or `DRO.h` in the Base-X repo:
 
 ```powershell
-Copy-Item "include\BaseX\DRO.h" "unreal\BaseXWorldGen\ThirdParty\BaseX\"
-Copy-Item "include\BaseX\WorldPromptEngine.h" "unreal\BaseXWorldGen\ThirdParty\BaseX\"
-Copy-Item "src\physics\DRO.cpp" "unreal\BaseXWorldGen\ThirdParty\BaseX\"
+Copy-Item "include\BaseX\DRO.h" "Plugins\BaseXWorldGen\ThirdParty\BaseX\"
+Copy-Item "include\BaseX\WorldPromptEngine.h" "Plugins\BaseXWorldGen\ThirdParty\BaseX\"
+Copy-Item "src\physics\DRO.cpp" "Plugins\BaseXWorldGen\ThirdParty\BaseX\"
 ```
 
 The UE bridge layer doesn't change unless you add new public API to the engine.
 
 ---
 
-## Next Steps (Future Features)
+## Roadmap
 
-- [ ] **Foliage**: Wire tree placement to UE Foliage system or PCG framework
-- [ ] **Niagara weather**: Spawn rain/snow/mist particle systems from WeatherController
-- [ ] **Landscape import**: Convert heightmap to UE Landscape for LOD streaming
-- [ ] **Multiplayer**: Replicate prompt + generation seed for shared world building
-- [ ] **Save/Load**: Serialize `WorldPromptEngine` state to disk
-- [ ] **AI enhancement**: Wire `NLPPromptParser` to local LLM for richer parsing
+- **Foliage** — Wire tree placement to UE Foliage system or PCG framework
+- **Niagara Weather** — Spawn rain/snow/mist particle systems from WeatherController
+- **Landscape Import** — Convert heightmap to UE Landscape for LOD streaming
+- **Multiplayer** — Replicate prompt + generation seed for shared world building
+- **Save/Load** — Serialize `WorldPromptEngine` state to disk
+- **AI Enhancement** — Wire `NLPPromptParser` to local LLM for richer parsing
+
+---
+
+## Support
+
+- Website: [trollhuntergaming.online](https://trollhuntergaming.online)
+- GitHub: [github.com/trllhntrgmgco/base-x](https://github.com/trllhntrgmgco/base-x)
+
+© 2026 Troll Hunter Gaming LLC. All rights reserved. Patent pending.

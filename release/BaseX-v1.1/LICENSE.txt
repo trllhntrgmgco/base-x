@@ -1,0 +1,108 @@
+﻿BASE-X GAME ENGINE PLUGIN
+ETHICAL TECHNOLOGY END USER LICENSE AGREEMENT (EULA)
+Copyright (c) 2026 Keenan Dunham. All Rights Reserved.
+Troll Hunter Gaming.
+
+1. Agreement
+This End User License Agreement ("Agreement") is a legal agreement between you
+("Licensee") and Troll Hunter Gaming ("Licensor") governing the use of the
+Base-X Game Engine plugin and related software ("Software").
+By installing, copying, downloading, or using the Software, you agree to be
+bound by the terms of this Agreement.
+If you do not agree to these terms, you may not install or use the Software.
+
+2. License Grant
+Licensor grants Licensee a non-exclusive, non-transferable, revocable license
+to install and use the Software solely for the purpose of developing interactive
+media, simulations, games, and related applications using Unreal Engine 5.7 or
+later.
+This license permits use of the Software within commercial or non-commercial
+projects created by Licensee.
+Ownership of the Software remains exclusively with the Licensor.
+
+3. Intellectual Property
+The Base-X Game Engine, including all algorithms, procedural systems, and
+natural language generation technologies, is the intellectual property of
+Keenan Dunham and Troll Hunter Gaming.
+The Software is protected by copyright and applicable intellectual property
+laws.
+Patent pending.
+No ownership rights are transferred under this Agreement.
+
+4. Restrictions
+Licensee shall not:
+  - Modify, adapt, or create derivative works of the Software
+  - Reverse engineer, decompile, or disassemble the Software
+  - Remove copyright notices or proprietary markings
+  - Redistribute, sublicense, rent, lease, or resell the Software itself
+  - Publish the Software source code
+Licensee may distribute compiled applications created using the Software
+provided the Software itself is not redistributed as a standalone product.
+
+5. Ethical Use Restrictions
+The Software is licensed for ethical and creative applications only.
+The following uses are strictly prohibited:
+
+Military and Warfare
+The Software may not be used for:
+  - military training simulations
+  - battlefield simulation
+  - combat modeling
+  - warfare analysis
+  - weapons development
+  - targeting systems
+  - autonomous weapon systems
+  - projects commissioned by military organizations or defense contractors
+
+Surveillance and Monitoring
+The Software may not be used for:
+  - surveillance systems
+  - mass monitoring or tracking of individuals or populations
+  - intelligence gathering systems
+  - automated observation or monitoring platforms
+
+Law Enforcement Training
+The Software may not be used for:
+  - police training simulations
+  - law-enforcement tactical simulations
+  - predictive policing tools
+  - interrogation or enforcement training technologies
+
+Harmful Applications
+The Software may not be used in any project intended to facilitate violence,
+oppression, or harm to individuals or communities.
+
+6. Compliance Representation
+By using the Software, Licensee represents that:
+  - they are not a military organization
+  - they are not developing software for military, surveillance, or
+    law-enforcement simulation purposes
+  - they will not sublicense or provide access to the Software for such uses.
+Violation of these terms will result in immediate termination of the license.
+
+7. Termination
+Licensor may terminate this Agreement immediately if Licensee violates any term
+of this Agreement.
+Upon termination, Licensee must cease all use of the Software and delete all
+copies.
+
+8. Disclaimer of Warranty
+The Software is provided "as is" without warranty of any kind, express or
+implied, including but not limited to warranties of merchantability, fitness
+for a particular purpose, and non-infringement.
+
+9. Limitation of Liability
+In no event shall Troll Hunter Gaming be liable for any indirect, incidental,
+special, or consequential damages arising from the use of the Software.
+
+10. Governing Law
+This Agreement shall be governed by and interpreted in accordance with the
+laws of the United States.
+
+11. Entire Agreement
+This Agreement constitutes the entire agreement between Licensor and Licensee
+regarding the Software and supersedes all prior agreements or understandings.
+
+Troll Hunter Gaming
+Creator: Keenan Dunham
+Copyright (c) 2026

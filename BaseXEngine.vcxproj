@@ -23,13 +23,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -92,15 +92,18 @@
     <ClInclude Include="include\BaseX\GLText.h" />
     <ClInclude Include="include\BaseX\VRSystem.h" />
     <ClInclude Include="include\BaseX\WorldPromptEngine.h" />
+    <ClInclude Include="release\BaseX-v1.1\Source\SBaseXAssetMapper.h" />
     <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\ABaseXStructureSpawner.h" />
     <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\ABaseXVRWorldBuilder.h" />
     <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\ABaseXWorldMesh.h" />
     <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\BaseXWorldGenModule.h" />
     <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\FBaseXTypes.h" />
+    <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\SBaseXAssetMapper.h" />
     <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\UBaseXWeatherController.h" />
     <ClInclude Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Public\UBaseXWorldBuilder.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="release\BaseX-v1.1\Source\SBaseXAssetMapper.cpp" />
     <ClCompile Include="src\core\core.cpp" />
     <ClCompile Include="src\demos\demo.cpp" />
     <ClCompile Include="src\demos\DRO-LOD-SHOWCASE\DRO_LOD_BaseX_Showcase.cpp" />
@@ -112,6 +115,8 @@
     <ClCompile Include="src\demos\golf_demo.cpp" />
     <ClCompile Include="src\demos\graphical_demo_glfw.cpp" />
     <ClCompile Include="src\demos\HLD_003_Safety_glfw.cpp" />
+    <ClCompile Include="src\demos\NEC\NEC_001_Limbo_glfw.cpp" />
+    <ClCompile Include="src\demos\NEC\NEC_101_MeleeCombat_glfw.cpp" />
     <ClCompile Include="src\demos\NEC_002_MeleeCombat_glfw.cpp" />
     <ClCompile Include="src\demos\PhysicsShowcase.cpp" />
     <ClCompile Include="src\demos\PhysicsShowcase_glfw.cpp" />
@@ -149,9 +154,22 @@
     <ClCompile Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\Private\UBaseXWorldBuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include=".github\CODEOWNERS" />
+    <None Include=".github\workflows\build-nec-demos.yml" />
+    <None Include="create_production_project.ps1" />
+    <None Include="docs\COLLABORATION.md" />
+    <None Include="docs\PRODUCTION_WORKFLOW.md" />
+    <None Include="export\NecrotopiaVR\README.md" />
+    <None Include="export\README.md" />
     <None Include="packages.config" />
+    <None Include="pack_marketplace.ps1" />
+    <None Include="pack_v1_release.ps1" />
     <None Include="README.md" />
+    <None Include="release\BaseX-v1.0\MARKETPLACE_DESCRIPTION.md" />
+    <None Include="release\BaseX-v1.0\README.md" />
+    <None Include="release\BaseX-v1.1\MARKETPLACE_DESCRIPTION.md" />
     <None Include="scripts\install_vcpkg_deps.cmake" />
+    <None Include="src\demos\NEC\README.md" />
     <None Include="unreal\BaseXWorldGen\BaseXWorldGen.uplugin" />
     <None Include="unreal\BaseXWorldGen\README.md" />
     <None Include="unreal\BaseXWorldGen\Source\BaseXWorldGen\BaseXWorldGen.Build.cs" />
@@ -161,6 +179,7 @@
   <ItemGroup>
     <Text Include="src\core\CMakeLists.txt" />
     <Text Include="src\demos\CMakeLists.txt" />
+    <Text Include="src\demos\NEC_CMakeLists.txt" />
     <Text Include="src\physics\CMakeLists.txt" />
     <Text Include="src\rendering\CMakeLists.txt" />
     <Text Include="src\utils\CMakeLists.txt" />

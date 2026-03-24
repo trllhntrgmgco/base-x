@@ -60,6 +60,9 @@ struct BASEXWORLDGEN_API FBaseXWeatherState
     bool bHasAurora = false;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX")
+    bool bHasAsh = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX")
     bool bIsScorching = false;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX")

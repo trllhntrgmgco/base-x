@@ -16,6 +16,7 @@
  */
 
 #include <BaseX/DRO.h>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -221,38 +222,93 @@ public:
         if (result.weather.empty())  result.weather.push_back("clear");
 
         // ── Implied structures from biome/terrain context ──
-        // If no explicit structures, add contextual ones
+        // If no explicit structures, add contextual ones using specific types
         if (result.structure.empty()) {
             for (auto& b : result.biome) {
-                if (b == "forest" || b == "enchanted" || b == "jungle"
-                    || b == "bamboo" || b == "taiga" || b == "cherry")
-                    addImplied(result.structure, {"tree", "tree", "tree", "tree", "tree", "tree", "shrub", "shrub", "rock"});
+                if (b == "forest" || b == "enchanted")
+                    addImplied(result.structure, {"oak", "oak", "birch", "elm", "maple", "oak",
+                        "shrub", "shrub", "fern", "mushroom_cluster", "stump", "log", "rock", "flower_bed"});
+                else if (b == "jungle" || b == "tropical")
+                    addImplied(result.structure, {"banyan", "mangrove", "palm", "palm", "banyan",
+                        "vine", "fern", "fern", "moss_patch", "rock", "flower", "root"});
+                else if (b == "bamboo")
+                    addImplied(result.structure, {"pine", "pine", "pine", "pine", "pine",
+                        "fern", "moss_patch", "rock", "lantern", "garden"});
+                else if (b == "taiga")
+                    addImplied(result.structure, {"spruce", "spruce", "pine", "fir", "spruce",
+                        "spruce", "rock", "boulder", "stump", "log", "bush"});
+                else if (b == "cherry")
+                    addImplied(result.structure, {"maple", "maple", "maple", "willow",
+                        "flower_bed", "flower", "garden", "lantern", "torii", "rock"});
                 else if (b == "desert" || b == "sand" || b == "sandstone")
-                    addImplied(result.structure, {"rock", "rock", "pillar", "ruins"});
+                    addImplied(result.structure, {"rock", "outcrop", "boulder", "pillar", "ruins",
+                        "crate", "barrel", "signpost", "broken_pillar"});
+                else if (b == "oasis")
+                    addImplied(result.structure, {"palm", "palm", "palm", "bush", "flower",
+                        "lily_pad", "rock", "tent", "campfire"});
                 else if (b == "ice" || b == "snow" || b == "glacial" || b == "frozen" || b == "tundra")
-                    addImplied(result.structure, {"rock", "rock", "pillar", "monolith"});
+                    addImplied(result.structure, {"rock", "boulder", "outcrop", "pillar", "monolith",
+                        "crystal_cluster", "stalagmite", "bush"});
                 else if (b == "volcanic" || b == "lava" || b == "ash" || b == "obsidian")
-                    addImplied(result.structure, {"rock", "rock", "monolith", "spire"});
+                    addImplied(result.structure, {"rock", "outcrop", "monolith", "spire",
+                        "lava_pool", "volcanic_vent", "geyser", "crystal_cluster"});
                 else if (b == "swamp" || b == "marsh" || b == "moss")
-                    addImplied(result.structure, {"tree", "tree", "tree", "hut", "shrub"});
+                    addImplied(result.structure, {"willow", "mangrove", "willow", "hut",
+                        "cattail", "cattail", "lily_pad", "moss_patch", "stump", "log", "fern"});
                 else if (b == "coral" || b == "reef" || b == "ocean")
-                    addImplied(result.structure, {"rock", "rock", "pillar"});
+                    addImplied(result.structure, {"coral_formation", "coral_formation", "sea_stack",
+                        "rock", "tidepool", "rock_arch", "shipwreck"});
                 else if (b == "savanna" || b == "prairie" || b == "golden")
-                    addImplied(result.structure, {"tree", "tree", "rock", "shrub"});
+                    addImplied(result.structure, {"acacia", "acacia", "baobab", "rock", "boulder",
+                        "grass_tuft", "grass_tuft", "bush", "campfire", "tent"});
                 else if (b == "dark" || b == "necro" || b == "crimson")
-                    addImplied(result.structure, {"tomb", "obelisk", "gate", "tree"});
+                    addImplied(result.structure, {"tomb", "obelisk", "gate", "gravestone", "gravestone",
+                        "sarcophagus", "brazier", "soul_lantern", "broken_pillar", "ruins"});
                 else if (b == "steam" || b == "brass" || b == "gear")
-                    addImplied(result.structure, {"tower", "tower", "bridge", "dock"});
+                    addImplied(result.structure, {"tower", "tower", "bridge", "dock", "lamp_post",
+                        "barrel", "crate", "banner", "chimney", "platform"});
+                else if (b == "cave" || b == "underground" || b == "amethyst" || b == "biolum")
+                    addImplied(result.structure, {"stalagmite", "stalactite", "crystal_cluster",
+                        "crystal_cluster", "geode", "rock", "boulder", "moss_patch", "torch"});
+                else if (b == "fairy" || b == "mushroom")
+                    addImplied(result.structure, {"mushroom_cluster", "mushroom_cluster", "fairy_ring",
+                        "flower_bed", "flower", "lantern", "topiary", "birch", "willow"});
+                else if (b == "floating" || b == "crystal")
+                    addImplied(result.structure, {"crystal_spire", "crystal_cluster", "portal",
+                        "platform", "bridge", "monolith", "runestone"});
+                else if (b == "autumn")
+                    addImplied(result.structure, {"oak", "maple", "birch", "elm", "oak",
+                        "stump", "log", "rock", "fence", "campfire", "lantern"});
+                else if (b == "jade")
+                    addImplied(result.structure, {"pagoda", "torii", "lantern", "pine", "pine",
+                        "rock", "garden", "fountain", "bridge"});
+                else if (b == "rust" || b == "silver")
+                    addImplied(result.structure, {"monolith", "broken_pillar", "rubble", "ruins",
+                        "outcrop", "boulder", "barrel", "crate"});
             }
             // Terrain-based fallback
             if (result.structure.empty()) {
                 for (auto& t : result.terrain) {
                     if (t == "mountain" || t == "peak" || t == "ridge")
-                        addImplied(result.structure, {"rock", "rock", "rock", "monolith"});
+                        addImplied(result.structure, {"rock", "boulder", "outcrop", "monolith",
+                            "spruce", "pine", "crystal_cluster"});
                     else if (t == "island" || t == "atoll" || t == "archipelago")
-                        addImplied(result.structure, {"tree", "tree", "tree", "rock", "hut"});
+                        addImplied(result.structure, {"palm", "palm", "palm", "rock", "hut",
+                            "campfire", "barrel", "anchor", "shipwreck"});
+                    else if (t == "volcano" || t == "caldera")
+                        addImplied(result.structure, {"rock", "lava_pool", "volcanic_vent",
+                            "geyser", "outcrop", "monolith"});
+                    else if (t == "canyon" || t == "gorge" || t == "ravine")
+                        addImplied(result.structure, {"rock", "rock", "outcrop", "cliff_face",
+                            "cave_mouth", "bridge"});
+                    else if (t == "swamp" || t == "marsh")
+                        addImplied(result.structure, {"willow", "mangrove", "cattail",
+                            "lily_pad", "stump", "hut"});
+                    else if (t == "fjord")
+                        addImplied(result.structure, {"pine", "spruce", "rock", "boulder",
+                            "dock", "boathouse", "lighthouse"});
                     else
-                        addImplied(result.structure, {"rock", "tree", "shrub"});
+                        addImplied(result.structure, {"rock", "oak", "shrub", "grass_tuft"});
                 }
             }
         }
@@ -323,25 +379,64 @@ private:
         b("moss",    0.33f,0.47f,0.20f); b("lichen",   0.47f,0.53f,0.33f);
 
         m_structKW = {
+            // ── Architecture: Large / Landmark ──
             "spire","fortress","cathedral","castle","tower","pyramid",
-            "ruins","temple","bridge","dock","throne","tomb","gate",
-            "wall","altar","shrine","palace","citadel","lighthouse",
-            "windmill","hut","tavern","well","statue","obelisk","arch",
-            // ── New structures ──
-            "aqueduct","minaret","colosseum","amphitheater","monolith",
-            "torii","pagoda","ziggurat","dolmen","barrow","keep",
-            "watchtower","cabin","chapel","forge","marketplace",
-            // ── Nature/foliage (for implied placement) ──
-            "tree","shrub","rock","pillar","boulder","stump","log","mushroom_cluster"
+            "temple","palace","citadel","lighthouse","colosseum",
+            "amphitheater","keep","pagoda","ziggurat","minaret",
+            "aqueduct","monastery","arena","mansion","villa",
+            "warehouse","granary","barn","stable","bell_tower",
+            // ── Architecture: Small / Residential ──
+            "hut","tavern","cabin","chapel","forge","marketplace",
+            "windmill","cottage","farmhouse","shack","shed","workshop",
+            "smithy","market_stall","tent","lean_to","outhouse",
+            "guardhouse","barracks","inn","bakery","apothecary",
+            // ── Architecture: Features / Walls ──
+            "bridge","dock","gate","wall","arch","archway","torii",
+            "pier","jetty","wharf","boathouse","platform","stairway",
+            "rampart","gatehouse","drawbridge","colonnade","terrace",
+            "fence","palisade","parapet","battlement","portcullis",
+            // ── Architecture: Domed / Low ──
+            "altar","shrine","dolmen","barrow","dome","cupola",
+            "well","fountain","bird_bath","sundial","gazebo","pergola",
+            // ── Monuments / Decorative ──
+            "throne","statue","obelisk","monolith","pillar","column",
+            "runestone","ward_stone","memorial","cenotaph","cross",
+            "gravestone","headstone","sarcophagus","mausoleum","tomb",
+            // ── Fantasy / Magical ──
+            "portal","crystal_orb","enchanted_well","fairy_ring",
+            "summoning_circle","rift","crystal_spire","soul_lantern",
+            // ── Props / Small Objects ──
+            "torch","lantern","brazier","campfire","bonfire","lamp_post",
+            "banner","flag","signpost","cart","wagon","barrel",
+            "crate","chest","anchor","cannon","catapult","ballista",
+            // ── Ruins / Broken ──
+            "ruins","rubble","crumbled_wall","broken_pillar","ruin_arch",
+            "collapsed_tower","sunken_ship","shipwreck",
+            // ── Nature: Conifers (cone-shaped) ──
+            "tree","pine","spruce","cedar","fir","redwood","cypress",
+            // ── Nature: Broadleaf (sphere canopy) ──
+            "oak","willow","birch","maple","palm","acacia",
+            "baobab","mangrove","elm","banyan","ash_tree","magnolia",
+            // ── Nature: Small Vegetation ──
+            "shrub","bush","hedge","fern","grass_tuft","flower",
+            "vine","cattail","lily_pad","moss_patch","root",
+            "mushroom_cluster","flower_bed","garden","topiary",
+            // ── Nature: Geological ──
+            "rock","boulder","stump","log","outcrop","cliff_face",
+            "cave_mouth","stalagmite","stalactite","crystal_cluster",
+            "geode","hot_spring","geyser","lava_pool","volcanic_vent",
+            "coral_formation","sea_stack","rock_arch","tidepool"
         };
 
         m_weatherKW = {
             "storm","rain","snow","mist","fog","aurora","sun","cloud",
             "ash","lightning","wind","clear","overcast","blizzard",
             "scorching","moonlit","twilight","dawn","dusk",
-            // ── New weather types ──
             "hail","sandstorm","eclipse","rainbow","tornado",
-            "drizzle","hurricane","frost","humid"
+            "drizzle","hurricane","frost","humid",
+            // ── Additional weather ──
+            "sleet","thunder","monsoon","heat_wave","cold_snap",
+            "dust_devil","whiteout","starlit","blood_moon","comet"
         };
     }
 
@@ -654,32 +749,63 @@ public:
 
         std::vector<StructureInstance> out;
 
+        // Categorise structure keywords for colour and placement rules
+        auto isTreeType = [](const std::string& t) {
+            return t == "tree" || t == "pine" || t == "spruce" || t == "cedar"
+                || t == "fir" || t == "redwood" || t == "cypress" || t == "oak"
+                || t == "willow" || t == "birch" || t == "maple" || t == "palm"
+                || t == "acacia" || t == "baobab" || t == "mangrove" || t == "elm"
+                || t == "banyan" || t == "ash_tree" || t == "magnolia";
+        };
+        auto isVegetation = [](const std::string& t) {
+            return t == "shrub" || t == "bush" || t == "hedge" || t == "fern"
+                || t == "grass_tuft" || t == "flower" || t == "vine" || t == "cattail"
+                || t == "lily_pad" || t == "moss_patch" || t == "root"
+                || t == "mushroom_cluster" || t == "flower_bed" || t == "garden"
+                || t == "topiary" || t == "stump" || t == "log" || t == "fairy_ring";
+        };
+        auto isGeological = [](const std::string& t) {
+            return t == "rock" || t == "boulder" || t == "outcrop" || t == "cliff_face"
+                || t == "cave_mouth" || t == "stalagmite" || t == "stalactite"
+                || t == "crystal_cluster" || t == "geode" || t == "hot_spring"
+                || t == "geyser" || t == "lava_pool" || t == "volcanic_vent"
+                || t == "coral_formation" || t == "sea_stack" || t == "rock_arch"
+                || t == "tidepool" || t == "pillar";
+        };
+
         for (size_t i = 0; i < parsed.structure.size(); i++) {
             const auto& type = parsed.structure[i];
-            bool isNature = (type == "tree" || type == "shrub" || type == "stump"
-                          || type == "log" || type == "mushroom_cluster");
-            bool isRock = (type == "rock" || type == "boulder" || type == "pillar");
+            bool isNature = isTreeType(type) || isVegetation(type);
+            bool isRock = isGeological(type);
 
-            bool placed = false;
-            for (int attempt = 0; attempt < 80 && !placed; attempt++) {
-                int gx = distPos(rng);
-                int gy = distPos(rng);
-                float h = heightmap[gy * gridSize + gx];
+            // Determine how many instances to place per keyword
+            int count = 1;
+            if (isNature) count = 6 + (int)(distSizeSmall(rng) * 1.5f);  // 6-21 trees/plants
+            else if (isRock) count = 3 + (int)(distSizeSmall(rng) * 0.8f); // 3-11 rocks
+            else count = 2 + (int)(distSizeSmall(rng) * 0.4f);            // 2-6 buildings
 
-                // Nature can go almost anywhere above water
-                // Buildings need moderate terrain
-                bool validPos = isNature ? (h > 0.08f) :
-                                isRock   ? (h > 0.05f) :
-                                           (h > 0.15f && h < 0.85f);
-                if (validPos) {
-                    float size = isNature ? distSizeSmall(rng) : distSize(rng);
-                    std::array<float,3> col;
-                    if (isNature) col = natureColor(rng);
-                    else if (isRock) col = rockColor(rng);
-                    else col = buildColor(rng, (int)i);
+            for (int inst = 0; inst < count; inst++) {
+                bool placed = false;
+                for (int attempt = 0; attempt < 80 && !placed; attempt++) {
+                    int gx = distPos(rng);
+                    int gy = distPos(rng);
+                    float h = heightmap[gy * gridSize + gx];
 
-                    out.push_back({type, gx, gy, h, size, col[0], col[1], col[2]});
-                    placed = true;
+                    // Nature can go almost anywhere above water
+                    // Buildings need moderate terrain
+                    bool validPos = isNature ? (h > 0.08f) :
+                                    isRock   ? (h > 0.05f) :
+                                               (h > 0.15f && h < 0.85f);
+                    if (validPos) {
+                        float size = isNature ? distSizeSmall(rng) : distSize(rng);
+                        std::array<float,3> col;
+                        if (isNature) col = natureColor(rng);
+                        else if (isRock) col = rockColor(rng);
+                        else col = buildColor(rng, (int)i);
+
+                        out.push_back({type, gx, gy, h, size, col[0], col[1], col[2]});
+                        placed = true;
+                    }
                 }
             }
         }
@@ -697,18 +823,24 @@ public:
     static WeatherState resolve(const ParseResult& parsed) {
         WeatherState ws;
         for (auto& w : parsed.weather) {
-            if (w == "rain" || w == "drizzle")     ws.hasRain = true;
-            if (w == "storm" || w == "hurricane" || w == "tornado") {
+            if (w == "rain" || w == "drizzle" || w == "monsoon")     ws.hasRain = true;
+            if (w == "storm" || w == "hurricane" || w == "tornado" || w == "thunder"
+                || w == "lightning") {
                 ws.hasRain = true; ws.hasStorm = true;
             }
-            if (w == "snow" || w == "blizzard" || w == "frost") ws.hasSnow = true;
+            if (w == "snow" || w == "blizzard" || w == "frost" || w == "sleet"
+                || w == "whiteout" || w == "cold_snap") ws.hasSnow = true;
             if (w == "hail") { ws.hasSnow = true; ws.hasStorm = true; }
-            if (w == "mist" || w == "fog" || w == "humid")      ws.hasMist = true;
-            if (w == "aurora")    ws.hasAurora  = true;
+            if (w == "mist" || w == "fog" || w == "humid" || w == "dust_devil")  ws.hasMist = true;
+            if (w == "overcast" || w == "cloud") { ws.hasMist = true; }
+            if (w == "wind") { ws.hasStorm = false; /* light wind, no storm */ }
+            if (w == "aurora" || w == "comet" || w == "rainbow")    ws.hasAurora  = true;
             if (w == "ash" || w == "sandstorm")    ws.hasAsh = true;
-            if (w == "scorching") ws.isScorching = true;
-            if (w == "moonlit" || w == "eclipse")  ws.isMoonlit = true;
+            if (w == "scorching" || w == "heat_wave" || w == "sun") ws.isScorching = true;
+            if (w == "moonlit" || w == "eclipse" || w == "blood_moon"
+                || w == "starlit")  ws.isMoonlit = true;
             if (w == "dawn" || w == "dusk" || w == "twilight") ws.isDawn = true;
+            // "clear" intentionally produces default (no flags) = sunny
         }
         return ws;
     }
@@ -747,6 +879,7 @@ public:
     // Preset prompts (same as HTML demo)
     static const char* preset(int index) {
         static const char* PRESETS[] = {
+            // v1.0 original 12
             "A volcanic island with obsidian beaches, lava flows, and a crystal spire at the center surrounded by ash clouds",
             "Frozen mountain peaks with glacial valleys, ice caves, an ancient stone fortress, and aurora borealis overhead",
             "A dense enchanted forest with glowing mushrooms, a fairy circle clearing, twisted ancient trees, and soft mist",
@@ -759,10 +892,30 @@ public:
             "Crimson badlands under an eclipse with rust monoliths, a crumbling colosseum, and a sandstorm on the horizon",
             "A tundra archipelago of frost-covered atolls with moss and lichen, a lonely lighthouse, and aurora overhead",
             "A savanna caldera with golden grass, acacia-like dolmen rings, a forge at the center, and humid twilight haze",
+            // v1.1 new 12
+            "A coastal fjord village with wooden docks, a stone lighthouse on the cliff, fishing huts, birch trees, and morning fog rolling off the ocean",
+            "A volcanic canyon with rivers of lava, obsidian rock arches, a ruined aqueduct spanning the gorge, geysers, and thick ash clouds at dawn",
+            "A moonlit swamp with mangrove roots, cattails, lily pads, a sunken shipwreck, moss-covered ruins, fireflies, and humid mist",
+            "A highland castle on a mountain plateau with ramparts, a drawbridge over a gorge, a bell tower, stables, barracks, and snow flurries",
+            "An enchanted coral reef island with tidepool gardens, sea stacks, a coral throne, crystal formations, bioluminescent pools, and a warm drizzle",
+            "A war-torn battlefield with crumbled walls, broken pillars, scattered cannons, a collapsed tower, rubble, scorched earth, and an overcast storm",
+            "A peaceful monastery garden on a terraced hillside with a fountain, pergola, flower beds, topiary hedges, birch trees, and golden sunset light",
+            "A dark elven forest with crystal spires, portal rifts, summoning circles, soul lanterns, enchanted wells, twisted oaks, and aurora overhead",
+            "A frontier trading post at a river crossing with a marketplace, inn, windmill, granary, wagon carts, fences, signposts, and dusty twilight",
+            "A glacial cave system with stalactites, stalagmites, frozen waterfalls, crystal clusters, geodes, an ice altar, and faint bioluminescent glow",
+            "An ancient mesa with a ziggurat at the summit, obelisks lining a colonnade, runestones, a sundial plaza, acacia trees, and a scorching haze",
+            "A haunted archipelago with shipwrecks, gravestones, crumbling docks, a ruined cathedral on the largest isle, dead trees, rain, and rolling thunder",
         };
         return PRESETS[std::clamp(index, 0, (int)PRESET_COUNT - 1)];
     }
-    static constexpr int PRESET_COUNT = 12;
+    static constexpr int PRESET_COUNT = 24;
+
+    // Set the grid resolution before calling beginGeneration().
+    // Clamped to [WPE_GRID_SIZE .. WPE_GRID_SIZE_MAX].
+    void setGridSize(int gs) {
+        m_gridSize = std::clamp(gs, WPE_GRID_SIZE, WPE_GRID_SIZE_MAX);
+    }
+    int gridSize() const { return m_gridSize; }
 
     // Start asynchronous generation from a text prompt
     void beginGeneration(const std::string& prompt) {
@@ -824,6 +977,7 @@ private:
     ParseResult     m_parsed;
     GenPhase        m_phase    = GenPhase::IDLE;
     float           m_phasePct = 0.0f;
+    int             m_gridSize = WPE_GRID_SIZE;
 
     std::vector<float>             m_heightmap;
     std::vector<BiomeCell>         m_biomeMap;
@@ -835,8 +989,8 @@ private:
     void advancePhase() {
         switch (m_phase) {
             case GenPhase::HEIGHTMAP:
-                m_heightmap = HeightmapGenerator::generate(m_parsed, m_parser.terrainDict());
-                m_stats.tileCount = WPE_GRID_CELLS;
+                m_heightmap = HeightmapGenerator::generate(m_parsed, m_parser.terrainDict(), m_gridSize);
+                m_stats.tileCount = m_gridSize * m_gridSize;
                 m_stats.maxElevation = 0.0f;
                 for (float h : m_heightmap)
                     m_stats.maxElevation = std::max(m_stats.maxElevation, h);
@@ -846,14 +1000,14 @@ private:
                 break;
 
             case GenPhase::BIOMES:
-                m_biomeMap = BiomePainter::paint(m_heightmap, m_parsed, m_parser.biomeDict());
+                m_biomeMap = BiomePainter::paint(m_heightmap, m_parsed, m_parser.biomeDict(), m_gridSize);
                 m_stats.biomeCount = (int)m_parsed.biome.size();
                 m_phase = GenPhase::STRUCTURES;
                 m_phasePct = 0.0f;
                 break;
 
             case GenPhase::STRUCTURES:
-                m_structures = StructurePlacer::place(m_parsed, m_heightmap);
+                m_structures = StructurePlacer::place(m_parsed, m_heightmap, m_gridSize);
                 m_stats.structCount = (int)m_structures.size();
                 m_phase = GenPhase::WEATHER;
                 m_phasePct = 0.0f;

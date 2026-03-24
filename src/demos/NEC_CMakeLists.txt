@@ -1,0 +1,65 @@
+# Necrotopia VR - Hell Campaign Demos
+# Copyright 2026 Keenan Dunham & Troll Hunter Gaming. All Rights Reserved.
+
+# ═══════════════════════════════════════════════════════════════════
+# REALM GENERATION DEMOS (NEC_001-009)
+# ═══════════════════════════════════════════════════════════════════
+
+add_executable(NEC_001_Limbo_glfw NEC/NEC_001_Limbo_glfw.cpp)
+target_link_libraries(NEC_001_Limbo_glfw basex_core glfw ${GLFW_LIBRARIES})
+
+# TODO: Add remaining 8 circles
+# add_executable(NEC_002_Lust_glfw NEC/NEC_002_Lust_glfw.cpp)
+# add_executable(NEC_003_Gluttony_glfw NEC/NEC_003_Gluttony_glfw.cpp)
+# ... etc
+
+# ═══════════════════════════════════════════════════════════════════
+# COMBAT SYSTEM DEMOS (NEC_101-110)
+# ═══════════════════════════════════════════════════════════════════
+
+add_executable(NEC_101_MeleeCombat_glfw NEC/NEC_101_MeleeCombat_glfw.cpp)
+target_link_libraries(NEC_101_MeleeCombat_glfw basex_core glfw ${GLFW_LIBRARIES})
+
+# TODO: Add remaining combat demos
+# add_executable(NEC_102_MagicCasting_glfw NEC/NEC_102_MagicCasting_glfw.cpp)
+# add_executable(NEC_103_DemonAI_glfw NEC/NEC_103_DemonAI_glfw.cpp)
+# ... etc
+
+# ═══════════════════════════════════════════════════════════════════
+# MAGIC SYSTEM DEMOS (NEC_201-210)
+# ═══════════════════════════════════════════════════════════════════
+
+# TODO: Add magic system demos
+# add_executable(NEC_201_FireMagic_glfw NEC/NEC_201_FireMagic_glfw.cpp)
+# ... etc
+
+# ═══════════════════════════════════════════════════════════════════
+# CHARACTER SYSTEM DEMOS (NEC_301-310)
+# ═══════════════════════════════════════════════════════════════════
+
+# TODO: Add character system demos
+# add_executable(NEC_301_CharCreation_glfw NEC/NEC_301_CharCreation_glfw.cpp)
+# ... etc
+
+# ═══════════════════════════════════════════════════════════════════
+# PORTAL & NAVIGATION DEMOS (NEC_401-410)
+# ═══════════════════════════════════════════════════════════════════
+
+# TODO: Add portal system demos
+# add_executable(NEC_401_RealmPortals_glfw NEC/NEC_401_RealmPortals_glfw.cpp)
+# ... etc
+
+# ═══════════════════════════════════════════════════════════════════
+# BUILD ALL NEC DEMOS
+# ═══════════════════════════════════════════════════════════════════
+
+add_custom_target(nec_all
+    DEPENDS
+        NEC_001_Limbo_glfw
+        NEC_101_MeleeCombat_glfw
+        # Add more as they're created
+)
+
+message(STATUS "Necrotopia VR demos configured")
+message(STATUS "  - Build all: cmake --build build --target nec_all")
+message(STATUS "  - Run Limbo: ./build/demos/NEC_001_Limbo_glfw")

@@ -27,9 +27,17 @@ void UBaseXWeatherController::ApplyWeatherState(const FBaseXWeatherState& State)
     {
         TargetCloud = 0.7f; TargetSnow = 0.8f; TargetWind = 0.15f;
     }
+    else if (State.bHasAsh)
+    {
+        TargetCloud = 0.9f; TargetMist = 0.5f; TargetWind = 0.4f;
+    }
     else if (State.bHasMist)
     {
         TargetCloud = 0.4f; TargetMist = 0.7f; TargetWind = 0.05f;
+    }
+    else if (State.bIsScorching)
+    {
+        TargetCloud = 0.05f; TargetRain = 0.f; TargetMist = 0.f; TargetWind = 0.05f;
     }
     else
     {
@@ -40,6 +48,12 @@ void UBaseXWeatherController::ApplyWeatherState(const FBaseXWeatherState& State)
     // Time of day hints
     if (State.bIsMoonlit)  TimeOfDay = 22.f;
     if (State.bIsDawn)     TimeOfDay = 6.f;
+
+    // Aurora adds subtle glow (handled in tick via fog color)
+    if (State.bHasAurora)  TargetMist = FMath::Max(TargetMist, 0.2f);
+
+    UE_LOG(LogTemp, Log, TEXT("WeatherController: Cloud=%.1f Rain=%.1f Snow=%.1f Mist=%.1f Wind=%.1f ToD=%.0f"),
+        TargetCloud, TargetRain, TargetSnow, TargetMist, TargetWind, TimeOfDay);
 }
 
 void UBaseXWeatherController::TickComponent(float DeltaTime, ELevelTick TickType,

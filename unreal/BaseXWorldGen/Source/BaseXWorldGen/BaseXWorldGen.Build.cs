@@ -23,7 +23,11 @@ public class BaseXWorldGen : ModuleRules
         {
             "RenderCore",
             "RHI",
-            "ProceduralMeshComponent"
+            "ProceduralMeshComponent",
+            "MeshDescription",
+            "StaticMeshDescription",
+            "MeshConversion",
+            "AssetRegistry"
         });
 
         // Editor-only modules for asset creation

@@ -5,6 +5,39 @@ include_directories(${CMAKE_BINARY_DIR}/vcpkg_installed/x64-windows/include/Bull
 
 file(GLOB_RECURSE DEMO_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
+# ── Whitelist filter ──────────────────────────────────────────────────
+# When RELEASE_DEMO_WHITELIST is set, keep only matching source files.
+if(RELEASE_DEMO_WHITELIST)
+    set(_filtered)
+    foreach(_src IN LISTS DEMO_SOURCES)
+        get_filename_component(_base ${_src} NAME_WE)
+        if(_base IN_LIST RELEASE_DEMO_WHITELIST)
+            list(APPEND _filtered ${_src})
+        endif()
+    endforeach()
+    set(DEMO_SOURCES ${_filtered})
+    message(STATUS "Release whitelist active — building: ${RELEASE_DEMO_WHITELIST}")
+endif()
+# ─────────────────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════
+# PRODUCTION TRACK DEMOS (NEC, BNT, SPT, SIM, HWV, SBX)
+# ═══════════════════════════════════════════════════════════════════
+
+# Necrotopia VR (NEC) - Hell Campaign
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/NEC_CMakeLists.txt")
+    include(NEC_CMakeLists.txt)
+endif()
+
+# TODO: Add other track demos as they're created
+# if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/BNT_CMakeLists.txt")
+#     include(BNT_CMakeLists.txt)  # Bible NT VR
+# endif()
+
+# ═══════════════════════════════════════════════════════════════════
+# GENERIC DEMOS (Existing workflow)
+# ═══════════════════════════════════════════════════════════════════
+
 # Find GLFW for graphical demos
 find_package(glfw3 REQUIRED PATHS "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows")
 

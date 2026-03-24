@@ -128,30 +128,51 @@ void ABaseXWorldMesh::BuildFromWorldBuilder(UBaseXWorldBuilder* Builder)
         TerrainMesh->SetMaterial(0, TerrainMaterial);
     }
 
-    // ── Water plane ──
-    float WS = (GS - 1) * CellSize;
+    // ── Water plane — tessellated grid for smooth material-driven waves ──
+    constexpr int32 WaterTess = 48;  // subdivisions per axis
     float WaterPadding = CellSize * 2.f;
-    TArray<FVector> WVerts = {
-        FVector(-HalfWorld - WaterPadding, -HalfWorld - WaterPadding, WaterH),
-        FVector(HalfWorld + WaterPadding, -HalfWorld - WaterPadding, WaterH),
-        FVector(HalfWorld + WaterPadding, HalfWorld + WaterPadding, WaterH),
-        FVector(-HalfWorld - WaterPadding, HalfWorld + WaterPadding, WaterH)
-    };
-    TArray<int32> WTris = { 0, 1, 2, 0, 2, 3 };
-    TArray<FVector> WNormals = {
-        FVector::UpVector, FVector::UpVector,
-        FVector::UpVector, FVector::UpVector
-    };
-    TArray<FVector2D> WUV = {
-        FVector2D(0, 0), FVector2D(4, 0),
-        FVector2D(4, 4), FVector2D(0, 4)
-    };
-    TArray<FLinearColor> WColors = {
-        FLinearColor(0.1f, 0.3f, 0.6f, 0.6f),
-        FLinearColor(0.1f, 0.3f, 0.6f, 0.6f),
-        FLinearColor(0.15f, 0.35f, 0.65f, 0.6f),
-        FLinearColor(0.15f, 0.35f, 0.65f, 0.6f)
-    };
+    float WaterExtent = HalfWorld + WaterPadding;
+    float WaterStep = (WaterExtent * 2.f) / WaterTess;
+
+    int32 WaterVertCount = (WaterTess + 1) * (WaterTess + 1);
+    TArray<FVector> WVerts;
+    TArray<FVector> WNormals;
+    TArray<FVector2D> WUV;
+    TArray<FLinearColor> WColors;
+    TArray<int32> WTris;
+
+    WVerts.SetNum(WaterVertCount);
+    WNormals.SetNum(WaterVertCount);
+    WUV.SetNum(WaterVertCount);
+    WColors.SetNum(WaterVertCount);
+
+    for (int32 Zy = 0; Zy <= WaterTess; Zy++)
+    {
+        for (int32 Xx = 0; Xx <= WaterTess; Xx++)
+        {
+            int32 Idx = Zy * (WaterTess + 1) + Xx;
+            float Wx = -WaterExtent + Xx * WaterStep;
+            float Wy = -WaterExtent + Zy * WaterStep;
+            WVerts[Idx] = FVector(Wx, Wy, WaterH);
+            WNormals[Idx] = FVector::UpVector;
+            WUV[Idx] = FVector2D((float)Xx / WaterTess * 4.f, (float)Zy / WaterTess * 4.f);
+            WColors[Idx] = FLinearColor(0.1f, 0.3f, 0.6f, 0.6f);
+        }
+    }
+
+    WTris.Reserve(WaterTess * WaterTess * 6);
+    for (int32 Zy = 0; Zy < WaterTess; Zy++)
+    {
+        for (int32 Xx = 0; Xx < WaterTess; Xx++)
+        {
+            int32 V00 = Zy * (WaterTess + 1) + Xx;
+            int32 V10 = V00 + 1;
+            int32 V01 = (Zy + 1) * (WaterTess + 1) + Xx;
+            int32 V11 = V01 + 1;
+            WTris.Add(V00); WTris.Add(V01); WTris.Add(V10);
+            WTris.Add(V10); WTris.Add(V01); WTris.Add(V11);
+        }
+    }
 
     WaterMesh->CreateMeshSection_LinearColor(
         0, WVerts, WTris, WNormals, WUV, WColors, TArray<FProcMeshTangent>(), false);

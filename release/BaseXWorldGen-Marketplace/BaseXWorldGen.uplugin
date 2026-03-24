@@ -1,0 +1,33 @@
+{
+    "FileVersion": 3,
+    "Version": 1,
+    "VersionName": "1.0.0",
+    "FriendlyName": "Base-X World Generation Engine",
+    "Description": "NLP prompt-driven procedural world generation with DRO (Dynamic Radix Optimization) precision scaling. 186 structure types, 26 terrain types, 52 biomes, 38 weather effects. Patent pending.",
+    "Category": "Procedural Generation",
+    "CreatedBy": "Troll Hunter Gaming",
+    "CreatedByURL": "https://trollhuntergaming.com",
+    "DocsURL": "",
+    "MarketplaceURL": "",
+    "SupportURL": "",
+    "EngineVersion": "5.7",
+    "EnabledByDefault": true,
+    "CanContainContent": true,
+    "IsBetaVersion": false,
+    "IsExperimentalVersion": false,
+    "Installed": true,
+    "Modules": [
+        {
+            "Name": "BaseXWorldGen",
+            "Type": "Runtime",
+            "LoadingPhase": "Default",
+            "PlatformAllowList": [ "Win64" ]
+        }
+    ],
+    "Plugins": [
+        {
+            "Name": "ProceduralMeshComponent",
+            "Enabled": true
+        }
+    ]
+}

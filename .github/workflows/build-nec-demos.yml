@@ -1,0 +1,88 @@
+name: Build NEC Demos
+
+on:
+  push:
+    branches: 
+      - master
+      - 'feature/berlin-*'
+      - 'feature/*-nec-*'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'src/demos/NEC/**'
+      - 'src/demos/NEC_CMakeLists.txt'
+      - 'export/NecrotopiaVR/**'
+
+jobs:
+  build-nec:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup vcpkg
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          
+      - name: Install dependencies
+        run: |
+          .\vcpkg\vcpkg install glfw3:x64-windows
+          .\vcpkg\vcpkg install bullet3:x64-windows
+      
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . `
+            -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake `
+            -DVCPKG_TARGET_TRIPLET=x64-windows
+      
+      - name: Build NEC demos
+        run: cmake --build build --config Release --target nec_all
+      
+      - name: Upload NEC demo artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: nec-demos-${{ github.sha }}
+          path: |
+            build/demos/Release/NEC_*.exe
+            export/NecrotopiaVR/*.json
+          retention-days: 30
+      
+      - name: Notify Slack on success
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "✅ NEC Demos built successfully",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*NEC Demo Build Success* :white_check_mark:\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.event.head_commit.message }}\n*Author:* ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+      
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "❌ NEC Demo build FAILED",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*NEC Demo Build Failed* :x:\n*Branch:* ${{ github.ref_name }}\n*Author:* ${{ github.actor }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
+                  }
+                }
+              ]
+            }

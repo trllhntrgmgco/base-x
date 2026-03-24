@@ -9,15 +9,17 @@
  *   - 64×64 isometric heightmap with multi-octave noise
  *   - Biome painting, structure placement, weather particles
  *   - Real-time DRO precision shifting across generation phases
- *   - 8 preset world prompts
+ *   - 12 preset world prompts
+ *   - Clickable tag inventory for terrain, biome, structures, weather
  *
  * Controls:
- *   1-8     : Load preset prompt
- *   Enter   : Generate world from current prompt
- *   Backspace: Delete last character in prompt
- *   R       : Reset / clear world
- *   ESC     : Quit
- *   Type    : Edit prompt text
+ *   1-9,0,-,= : Load preset prompt
+ *   Enter     : Generate world from current prompt
+ *   Backspace : Delete last character in prompt
+ *   R         : Reset / clear world
+ *   ESC       : Quit
+ *   Mouse     : Click tags to add/remove keywords
+ *   Type      : Edit prompt text
  */
 
 #include <GLFW/glfw3.h>
@@ -50,6 +52,61 @@ static std::string g_promptText;
 static float g_time = 0.0f;
 static int g_totalTiles = 0;
 static int g_totalStructs = 0;
+
+// ── Tag inventory UI state ──
+static int g_structTabIdx = 0;  // 0=All, 1..N = subcategory
+
+struct TagHitBox { float x0, y0, x1, y1; std::string keyword; };
+static std::vector<TagHitBox> g_tagHits;
+
+struct StructSubcat { const char* label; std::vector<std::string> keywords; };
+static std::vector<StructSubcat> g_structTabs;
+
+static void buildStructTabs() {
+    struct C { const char* l; std::vector<const char*> kw; };
+    C cats[] = {
+        {"Landmark", {"spire","fortress","cathedral","castle","tower","pyramid",
+            "temple","palace","citadel","lighthouse","colosseum","amphitheater",
+            "keep","pagoda","ziggurat","minaret","aqueduct","monastery","arena",
+            "mansion","villa","warehouse","granary","barn","stable","bell_tower"}},
+        {"Buildings", {"hut","tavern","cabin","chapel","forge","marketplace",
+            "windmill","cottage","farmhouse","shack","shed","workshop","smithy",
+            "market_stall","tent","lean_to","outhouse","guardhouse","barracks",
+            "inn","bakery","apothecary"}},
+        {"Walls", {"bridge","dock","gate","wall","arch","archway","torii",
+            "pier","jetty","wharf","boathouse","platform","stairway","rampart",
+            "gatehouse","drawbridge","colonnade","terrace","fence","palisade",
+            "parapet","battlement","portcullis"}},
+        {"Low/Dome", {"altar","shrine","dolmen","barrow","dome","cupola",
+            "well","fountain","bird_bath","sundial","gazebo","pergola"}},
+        {"Monuments", {"throne","statue","obelisk","monolith","pillar","column",
+            "runestone","ward_stone","memorial","cenotaph","cross","gravestone",
+            "headstone","sarcophagus","mausoleum","tomb"}},
+        {"Fantasy", {"portal","crystal_orb","enchanted_well","fairy_ring",
+            "summoning_circle","rift","crystal_spire","soul_lantern"}},
+        {"Props", {"torch","lantern","brazier","campfire","bonfire","lamp_post",
+            "banner","flag","signpost","cart","wagon","barrel","crate","chest",
+            "anchor","cannon","catapult","ballista"}},
+        {"Ruins", {"ruins","rubble","crumbled_wall","broken_pillar","ruin_arch",
+            "collapsed_tower","sunken_ship","shipwreck"}},
+        {"Trees", {"tree","pine","spruce","cedar","fir","redwood","cypress",
+            "oak","willow","birch","maple","palm","acacia","baobab","mangrove",
+            "elm","banyan","ash_tree","magnolia"}},
+        {"Vegetation", {"shrub","bush","hedge","fern","grass_tuft","flower",
+            "vine","cattail","lily_pad","moss_patch","root","mushroom_cluster",
+            "flower_bed","garden","topiary"}},
+        {"Geological", {"rock","boulder","stump","log","outcrop","cliff_face",
+            "cave_mouth","stalagmite","stalactite","crystal_cluster","geode",
+            "hot_spring","geyser","lava_pool","volcanic_vent","coral_formation",
+            "sea_stack","rock_arch","tidepool"}},
+    };
+    g_structTabs.clear();
+    for (auto& c : cats) {
+        StructSubcat sc; sc.label = c.l;
+        for (auto* k : c.kw) sc.keywords.push_back(k);
+        g_structTabs.push_back(std::move(sc));
+    }
+}
 
 // Weather particles
 struct Particle {
@@ -236,7 +293,7 @@ static void drawSidebar(int winW, int winH) {
     // Prompt text (wrapped)
     if (g_promptText.empty()) {
         setColor(0.40f, 0.53f, 0.40f, 0.3f);
-        gltext::draw("Type a prompt... (1-8 for presets)", cx + 4, cy - 4, 0.9f);
+        gltext::draw("Type or click tags (1-9,0,-,=)", cx + 4, cy - 4, 0.9f);
     } else {
         setColor(0.88f, 0.91f, 0.85f, 0.9f);
         // Simple line wrapping at ~38 chars
@@ -285,9 +342,11 @@ static void drawSidebar(int winW, int winH) {
         "1: Volcanic Island", "2: Frozen Peaks",
         "3: Enchanted Forest","4: Desert Ruins",
         "5: Floating Isles",  "6: Necropolis",
-        "7: Steampunk City",  "8: Crystal Caverns"
+        "7: Steampunk City",  "8: Crystal Caverns",
+        "9: Bamboo Jungle",   "0: Crimson Badlands",
+        "-: Tundra Archipel.", "=: Savanna Caldera"
     };
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 12; i++) {
         float bx = cx + (i % 2) * (pw / 2 + 2);
         float by = cy - (i / 2) * 14;
         setColor(1.0f, 1.0f, 1.0f, 0.04f);
@@ -295,7 +354,7 @@ static void drawSidebar(int winW, int winH) {
         setColor(0.40f, 0.53f, 0.40f, 0.7f);
         gltext::draw(presetNames[i], bx + 3, by, 0.75f);
     }
-    cy -= 4 * 14 + 8;
+    cy -= 6 * 14 + 8;
 
     // ── NLP Parse Result ──
     setColor(0.20f, 0.80f, 0.33f, 0.9f);
@@ -479,31 +538,118 @@ static void drawSky(int canvasW, int canvasH) {
 
 static void drawIdleScreen(float canvasW, float canvasH) {
     float midX = canvasW * 0.5f;
-    float midY = FOOTER_H + canvasH * 0.5f;
 
-    // Floating circles
-    for (int i = 0; i < 20; i++) {
-        float x = std::sin(i * 1.7f + g_time * 0.3f) * canvasW * 0.3f + midX;
-        float y = std::cos(i * 2.1f + g_time * 0.2f) * canvasH * 0.3f + midY;
-        float radius = 30.0f + std::sin(g_time + i) * 10.0f;
-        setColor(0.20f, 0.80f, 0.33f, 0.05f);
-        // Approximate circle with triangle fan
-        glBegin(GL_TRIANGLE_FAN);
-        glVertex2f(x, y);
-        for (int j = 0; j <= 24; j++) {
-            float a = j * (2.0f * PI / 24.0f);
-            glVertex2f(x + std::cos(a) * radius, y + std::sin(a) * radius);
+    // ── Tag Inventory Panel ──
+    if (g_structTabs.empty()) buildStructTabs();
+    g_tagHits.clear();
+
+    const auto& parser = g_engine.parser();
+    std::string lower = g_promptText;
+    std::transform(lower.begin(), lower.end(), lower.begin(),
+        [](unsigned char c){ return (char)std::tolower(c); });
+
+    // Helper: draw a row of clickable tags that wrap. Returns new y.
+    auto drawClickTags = [&](const char* label, const std::vector<std::string>& tags,
+                             float x, float y, float maxW,
+                             float tr, float tg, float tb) -> float {
+        setColor(tr*0.5f, tg*0.5f, tb*0.5f, 0.7f);
+        gltext::draw(label, x, y, 1.0f);
+        y -= 13;
+        float px = x;
+        for (const auto& tag : tags) {
+            float tw = gltext::textWidth(tag.c_str(), 0.8f) + 8;
+            if (px + tw > x + maxW) { px = x; y -= 12; }
+            bool active = lower.find(tag) != std::string::npos;
+            float bx0 = px, by0 = y - 1, bx1 = px + tw, by1 = y + 9;
+            if (active) setColor(tr*0.3f, tg*0.3f, tb*0.3f, 0.8f);
+            else        setColor(0.08f, 0.10f, 0.07f, 0.6f);
+            drawRect(bx0, by0, tw, 10);
+            if (active) setColor(tr, tg, tb, 0.9f);
+            else        setColor(0.25f, 0.30f, 0.25f, 0.5f);
+            glBegin(GL_LINE_LOOP);
+            glVertex2f(bx0,by0);glVertex2f(bx1,by0);glVertex2f(bx1,by1);glVertex2f(bx0,by1);
+            glEnd();
+            if (active) setColor(1, 1, 1, 1);
+            else        setColor(0.55f, 0.60f, 0.55f, 0.8f);
+            gltext::draw(tag.c_str(), px + 4, y, 0.8f);
+            g_tagHits.push_back({bx0, by0, bx1, by1, tag});
+            px += tw + 3;
         }
-        glEnd();
+        return y - 16;
+    };
+
+    float x = 14.f, y = FOOTER_H + canvasH - 12.f;
+    float maxW = canvasW - 28.f;
+
+    // Title
+    setColor(0.20f, 0.80f, 0.33f, 0.6f);
+    gltext::drawCentered("CLICK TAGS TO BUILD YOUR PROMPT", midX, y, 1.2f);
+    y -= 18;
+
+    // Terrain tags
+    std::vector<std::string> terrainTags;
+    for (auto& kv : parser.terrainDict()) terrainTags.push_back(kv.first);
+    std::sort(terrainTags.begin(), terrainTags.end());
+    y = drawClickTags("TERRAIN", terrainTags, x, y, maxW, 0.20f, 0.80f, 0.33f);
+
+    // Biome tags
+    std::vector<std::string> biomeTags;
+    for (auto& kv : parser.biomeDict()) biomeTags.push_back(kv.first);
+    std::sort(biomeTags.begin(), biomeTags.end());
+    y = drawClickTags("BIOME", biomeTags, x, y, maxW, 0.30f, 0.60f, 1.00f);
+
+    // Structure subcategory tabs
+    setColor(0.45f, 0.35f, 0.15f, 0.7f);
+    gltext::draw("STRUCTURES", x, y, 1.0f);
+    y -= 13;
+    float tabX = x;
+    // "All" tab
+    {
+        bool sel = (g_structTabIdx == 0);
+        float tw = gltext::textWidth("All", 0.8f) + 8;
+        if (sel) setColor(0.30f, 0.25f, 0.08f, 0.9f);
+        else     setColor(0.08f, 0.08f, 0.07f, 0.6f);
+        drawRect(tabX, y - 1, tw, 10);
+        if (sel) setColor(1.f, 0.9f, 0.4f, 1);
+        else     setColor(0.45f, 0.45f, 0.40f, 0.8f);
+        gltext::draw("All", tabX + 4, y, 0.8f);
+        g_tagHits.push_back({tabX, y-1, tabX+tw, y+9, "__tab_0"});
+        tabX += tw + 3;
+    }
+    for (int ti = 0; ti < (int)g_structTabs.size(); ti++) {
+        const char* lbl = g_structTabs[ti].label;
+        float tw = gltext::textWidth(lbl, 0.8f) + 8;
+        if (tabX + tw > x + maxW) { tabX = x; y -= 12; }
+        bool sel = (g_structTabIdx == ti + 1);
+        if (sel) setColor(0.30f, 0.25f, 0.08f, 0.9f);
+        else     setColor(0.08f, 0.08f, 0.07f, 0.6f);
+        drawRect(tabX, y - 1, tw, 10);
+        if (sel) setColor(1.f, 0.9f, 0.4f, 1);
+        else     setColor(0.45f, 0.45f, 0.40f, 0.8f);
+        gltext::draw(lbl, tabX + 4, y, 0.8f);
+        char tid[16]; snprintf(tid, sizeof(tid), "__tab_%d", ti + 1);
+        g_tagHits.push_back({tabX, y-1, tabX+tw, y+9, tid});
+        tabX += tw + 3;
+    }
+    y -= 14;
+
+    // Structure tags for selected tab
+    if (g_structTabIdx == 0) {
+        y = drawClickTags("", parser.structureKeywords(), x, y, maxW, 0.90f, 0.70f, 0.30f);
+    } else {
+        int idx = g_structTabIdx - 1;
+        if (idx >= 0 && idx < (int)g_structTabs.size())
+            y = drawClickTags("", g_structTabs[idx].keywords, x, y, maxW, 0.90f, 0.70f, 0.30f);
     }
 
-    setColor(0.20f, 0.80f, 0.33f, 0.4f);
-    gltext::drawCentered("Enter a prompt to generate your world", midX, midY + 10, 1.5f);
-    setColor(0.20f, 0.80f, 0.33f, 0.2f);
-    gltext::drawCentered("Natural Language -> Procedural Terrain -> Real-Time Generation",
-                         midX, midY - 8, 1.0f);
-    gltext::drawCentered("Press 1-8 for presets, then Enter to generate",
-                         midX, midY - 22, 1.0f);
+    // Weather tags
+    y = drawClickTags("WEATHER", parser.weatherKeywords(), x, y, maxW, 0.80f, 0.40f, 0.80f);
+
+    // Bottom hint
+    y -= 4;
+    setColor(0.20f, 0.80f, 0.33f, 0.25f);
+    gltext::drawCentered("Click tags above  |  Type in sidebar  |  1-9,0,-,= for presets  |  ENTER to generate",
+                         midX, y, 0.9f);
 }
 
 static void drawIsometricWorld(float canvasW, float canvasH) {
@@ -532,9 +678,25 @@ static void drawIsometricWorld(float canvasW, float canvasH) {
             if (phase == BaseX::GenPhase::HEIGHTMAP && (x + y) > genProgress * 2)
                 continue;
 
+            bool isWater = (h < 0.12f);
+
+            // Smooth water wave displacement
+            float waveOffset = 0.0f;
+            if (isWater) {
+                // Layered sine waves for smooth, natural water motion
+                float wx = (float)x / GS;
+                float wy = (float)y / GS;
+                float wave1 = std::sin(wx * 12.0f + g_time * 0.8f) * 0.004f;
+                float wave2 = std::sin(wy * 10.0f + g_time * 0.6f + 1.5f) * 0.003f;
+                float wave3 = std::sin((wx + wy) * 8.0f + g_time * 1.1f) * 0.002f;
+                waveOffset = wave1 + wave2 + wave3;
+            }
+
+            float renderH = isWater ? (h + waveOffset) : h;
+
             // Isometric projection
             float ix = (x - y) * tileW * 0.5f * zoom + ox;
-            float iy = (x + y) * tileH * 0.5f * zoom * -1.0f + oy + h * 80.0f * zoom;
+            float iy = (x + y) * tileH * 0.5f * zoom * -1.0f + oy + renderH * 80.0f * zoom;
 
             // Biome colour
             float cr = 0.27f, cg = 0.53f, cb = 0.20f;
@@ -544,12 +706,30 @@ static void drawIsometricWorld(float canvasW, float canvasH) {
                 cb = bmap[y * GS + x].b;
             }
 
-            float brightness = 0.6f + h * 0.5f;
+            // Water: animated specular highlight and smooth colour shift
+            if (isWater) {
+                float wx = (float)x / GS;
+                float wy = (float)y / GS;
+                // Gentle colour ripple
+                float shimmer = std::sin(wx * 15.0f + wy * 10.0f + g_time * 1.2f) * 0.5f + 0.5f;
+                float specular = shimmer * shimmer * shimmer;  // sharpen for caustic-like highlights
+                cr += specular * 0.08f;
+                cg += specular * 0.10f;
+                cb += specular * 0.15f;
+                // Depth darkening for deeper water
+                float depth = 1.0f - (h / 0.12f);
+                cr *= (1.0f - depth * 0.25f);
+                cg *= (1.0f - depth * 0.15f);
+                cb *= (1.0f - depth * 0.05f);
+            }
+
+            float brightness = 0.6f + renderH * 0.5f;
             float hw = tileW * 0.5f * zoom;
             float hh = tileH * 0.5f * zoom;
 
             // Top face
-            setColor(cr * brightness, cg * brightness, cb * brightness, 1.0f);
+            float alpha = isWater ? 0.85f : 1.0f;
+            setColor(cr * brightness, cg * brightness, cb * brightness, alpha);
             drawDiamond(ix, iy, hw, hh);
 
             // Side faces for height
@@ -721,6 +901,43 @@ static void charCallback(GLFWwindow* /*window*/, unsigned int codepoint) {
     }
 }
 
+static void mouseButtonCallback(GLFWwindow* w, int button, int action, int) {
+    if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS) return;
+    bool isGenerating = g_engine.phase() != BaseX::GenPhase::IDLE &&
+                        g_engine.phase() != BaseX::GenPhase::COMPLETE;
+    if (isGenerating) return;
+
+    double mx, my; glfwGetCursorPos(w, &mx, &my);
+    int ww, wh; glfwGetFramebufferSize(w, &ww, &wh);
+    float cx = (float)mx, cy = (float)(wh - my);
+
+    for (const auto& hit : g_tagHits) {
+        if (cx >= hit.x0 && cx <= hit.x1 && cy >= hit.y0 && cy <= hit.y1) {
+            // Tab switching
+            if (hit.keyword.rfind("__tab_", 0) == 0) {
+                g_structTabIdx = std::atoi(hit.keyword.c_str() + 6);
+                break;
+            }
+            // Normal keyword: toggle in/out of prompt
+            std::string low = g_promptText;
+            std::transform(low.begin(), low.end(), low.begin(),
+                [](unsigned char c){ return (char)std::tolower(c); });
+            size_t pos = low.find(hit.keyword);
+            if (pos != std::string::npos) {
+                size_t end = pos + hit.keyword.size();
+                if (end < g_promptText.size() && g_promptText[end] == ' ') end++;
+                else if (pos > 0 && g_promptText[pos-1] == ' ') pos--;
+                g_promptText.erase(pos, end - pos);
+            } else {
+                if (!g_promptText.empty() && g_promptText.back() != ' ')
+                    g_promptText += ' ';
+                g_promptText += hit.keyword;
+            }
+            break;
+        }
+    }
+}
+
 static void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/) {
     if (action != GLFW_PRESS && action != GLFW_REPEAT) return;
 
@@ -737,9 +954,21 @@ static void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int actio
         return;
     }
 
-    // Preset keys 1-8
-    if (key >= GLFW_KEY_1 && key <= GLFW_KEY_8 && !isGenerating) {
+    // Preset keys 1-9, 0, -, =
+    if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9 && !isGenerating) {
         g_promptText = BaseX::WorldPromptEngine::preset(key - GLFW_KEY_1);
+        return;
+    }
+    if (key == GLFW_KEY_0 && !isGenerating) {
+        g_promptText = BaseX::WorldPromptEngine::preset(9);
+        return;
+    }
+    if (key == GLFW_KEY_MINUS && !isGenerating) {
+        g_promptText = BaseX::WorldPromptEngine::preset(10);
+        return;
+    }
+    if (key == GLFW_KEY_EQUAL && !isGenerating) {
+        g_promptText = BaseX::WorldPromptEngine::preset(11);
         return;
     }
 
@@ -764,7 +993,7 @@ static void keyCallback(GLFWwindow* window, int key, int /*scancode*/, int actio
 
 int main() {
     std::printf("SBX-001: World Prompt Engine — Base-X Engine Demo\n");
-    std::printf("Controls: 1-8 = presets, Enter = generate, R = reset, ESC = quit\n\n");
+    std::printf("Controls: 1-9,0,-,= presets | Click tags | Enter = generate | R = reset | ESC = quit\n\n");
 
     if (!glfwInit()) {
         std::fprintf(stderr, "Failed to initialise GLFW\n");
@@ -782,6 +1011,7 @@ int main() {
     glfwSwapInterval(1); // vsync
     glfwSetCharCallback(window, charCallback);
     glfwSetKeyCallback(window, keyCallback);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
     double lastTime = glfwGetTime();
 
@@ -829,14 +1059,22 @@ int main() {
         // Draw world
         drawSky((int)canvasW, (int)canvasH);
 
-        if (g_engine.heightmap().empty() &&
-            g_engine.phase() == BaseX::GenPhase::IDLE) {
+        bool showInventory = g_engine.phase() == BaseX::GenPhase::IDLE ||
+                             g_engine.phase() == BaseX::GenPhase::COMPLETE;
+
+        if (g_engine.heightmap().empty() && g_engine.phase() == BaseX::GenPhase::IDLE) {
             drawIdleScreen(canvasW, canvasH);
         } else {
             drawIsometricWorld(canvasW, canvasH);
             spawnWeatherParticles(canvasW, canvasH);
             drawWeatherEffects(canvasW, canvasH, dt);
+            // Show tag inventory overlay after generation too
+            if (showInventory && !g_engine.heightmap().empty()) {
+                drawIdleScreen(canvasW, canvasH);
+            }
         }
+
+        if (!showInventory) g_tagHits.clear();
 
         glDisable(GL_SCISSOR_TEST);
 

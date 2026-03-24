@@ -125,6 +125,7 @@ FBaseXWeatherState UBaseXWorldBuilder::GetWeatherState() const
     Out.bHasStorm = W.hasStorm;
     Out.bHasMist = W.hasMist;
     Out.bHasAurora = W.hasAurora;
+    Out.bHasAsh = W.hasAsh;
     Out.bIsScorching = W.isScorching;
     Out.bIsMoonlit = W.isMoonlit;
     Out.bIsDawn = W.isDawn;
@@ -165,12 +166,18 @@ TArray<FBaseXStructurePlacement> UBaseXWorldBuilder::GetStructurePlacements() co
 
 int32 UBaseXWorldBuilder::GetGridSize() const
 {
-    return BaseX::WPE_GRID_SIZE;
+    return RequestedGridSize;
+}
+
+void UBaseXWorldBuilder::SetGridSize(int32 NewSize)
+{
+    RequestedGridSize = FMath::Clamp(NewSize, 16, 512);
+    UE_LOG(LogTemp, Log, TEXT("UBaseXWorldBuilder: Grid size set to %d"), RequestedGridSize);
 }
 
 float UBaseXWorldBuilder::GetHeightAt(int32 X, int32 Y) const
 {
-    const int32 GS = BaseX::WPE_GRID_SIZE;
+    const int32 GS = RequestedGridSize;
     int32 Idx = Y * GS + X;
     if (CachedHeightmap.IsValidIndex(Idx)) return CachedHeightmap[Idx];
     return 0.f;
@@ -178,7 +185,7 @@ float UBaseXWorldBuilder::GetHeightAt(int32 X, int32 Y) const
 
 FLinearColor UBaseXWorldBuilder::GetBiomeColorAt(int32 X, int32 Y) const
 {
-    const int32 GS = BaseX::WPE_GRID_SIZE;
+    const int32 GS = RequestedGridSize;
     int32 Idx = Y * GS + X;
     if (CachedBiomeColors.IsValidIndex(Idx)) return CachedBiomeColors[Idx];
     return FLinearColor::Black;
@@ -257,18 +264,20 @@ EBaseXRadixBase UBaseXWorldBuilder::GetOptimalRadix(float Distance) const
 
 void UBaseXWorldBuilder::CacheResults()
 {
-    const int32 GS = BaseX::WPE_GRID_SIZE;
+    const int32 GS = RequestedGridSize;
     const int32 Total = GS * GS;
 
     // Heightmap
     const auto& HMap = Impl->Engine.heightmap();
-    CachedHeightmap.SetNum(Total);
-    for (int32 I = 0; I < Total; I++)
+    const int32 Available = FMath::Min(Total, (int32)HMap.size());
+    CachedHeightmap.SetNumZeroed(Total);
+    for (int32 I = 0; I < Available; I++)
         CachedHeightmap[I] = HMap[I];
 
     // Biome colors
     const auto& BMap = Impl->Engine.biomeMap();
-    CachedBiomeColors.SetNum(Total);
-    for (int32 I = 0; I < Total; I++)
+    const int32 BAvailable = FMath::Min(Total, (int32)BMap.size());
+    CachedBiomeColors.SetNumZeroed(Total);
+    for (int32 I = 0; I < BAvailable; I++)
         CachedBiomeColors[I] = FLinearColor(BMap[I].r, BMap[I].g, BMap[I].b, 1.f);
 }

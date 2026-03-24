@@ -88,6 +88,9 @@ else()
     set(HAVE_BULLET3 OFF)
 endif()
 
+# v1.0 release demo whitelist (semicolon-separated basenames; empty = build all)
+set(RELEASE_DEMO_WHITELIST "" CACHE STRING "Semicolon-separated list of demo basenames to build (empty=all)")
+
 # Include directories
 include_directories(
     ${CMAKE_SOURCE_DIR}

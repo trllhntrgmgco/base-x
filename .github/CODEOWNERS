@@ -1,0 +1,57 @@
+# Base-X Engine Code Ownership
+# This file defines who reviews PRs for each area of the codebase.
+
+# ═══════════════════════════════════════════════════════════════════
+# CORE ENGINE - Keenan Only
+# ═══════════════════════════════════════════════════════════════════
+
+/src/core/                  @KeenanDunham
+/src/physics/               @KeenanDunham
+/include/BaseX/             @KeenanDunham
+/src/rendering/             @KeenanDunham
+/src/utils/                 @KeenanDunham
+/src/vr/                    @KeenanDunham
+
+# Proprietary algorithms - NEVER shared
+/src/core/DRO.cpp           @KeenanDunham
+/include/BaseX/DRO.h        @KeenanDunham
+
+# ═══════════════════════════════════════════════════════════════════
+# UNREAL PLUGIN - Keenan Only (Marketplace Product)
+# ═══════════════════════════════════════════════════════════════════
+
+/unreal/BaseXWorldGen/                          @KeenanDunham
+/pack_marketplace.ps1                           @KeenanDunham
+/release/                                       @KeenanDunham
+
+# ═══════════════════════════════════════════════════════════════════
+# NEC DEMOS - Berlin Employee
+# ═══════════════════════════════════════════════════════════════════
+
+/src/demos/NEC/             @BerlinEmployee
+/export/NecrotopiaVR/       @BerlinEmployee
+/docs/NEC_*.md              @BerlinEmployee
+
+# ═══════════════════════════════════════════════════════════════════
+# FUTURE TRACKS (Assign when hired)
+# ═══════════════════════════════════════════════════════════════════
+
+# /src/demos/BNT/           @BibleNTDeveloper
+# /src/demos/SPT/           @SportsDeveloper
+# /src/demos/SIM/           @SimulationDeveloper
+
+# ═══════════════════════════════════════════════════════════════════
+# SHARED FILES - Both Review Required
+# ═══════════════════════════════════════════════════════════════════
+
+/CMakeLists.txt             @KeenanDunham @BerlinEmployee
+/src/demos/CMakeLists.txt   @KeenanDunham @BerlinEmployee
+/README.md                  @KeenanDunham @BerlinEmployee
+/vcpkg.json                 @KeenanDunham @BerlinEmployee
+
+# ═══════════════════════════════════════════════════════════════════
+# DOCUMENTATION - Shared
+# ═══════════════════════════════════════════════════════════════════
+
+/docs/PRODUCTION_WORKFLOW.md    @KeenanDunham @BerlinEmployee
+/docs/README.md                  @KeenanDunham @BerlinEmployee
