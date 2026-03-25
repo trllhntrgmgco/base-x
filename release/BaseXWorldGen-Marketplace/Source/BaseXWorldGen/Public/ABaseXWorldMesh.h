@@ -39,4 +39,8 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX|Mesh")
     bool bEnableCollision = true;
+
+private:
+    UPROPERTY()
+    TArray<TObjectPtr<UProceduralMeshComponent>> TerrainChunks;
 };

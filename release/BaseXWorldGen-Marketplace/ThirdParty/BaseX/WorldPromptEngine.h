@@ -879,6 +879,7 @@ public:
     // Preset prompts (same as HTML demo)
     static const char* preset(int index) {
         static const char* PRESETS[] = {
+            // v1.0 original 12
             "A volcanic island with obsidian beaches, lava flows, and a crystal spire at the center surrounded by ash clouds",
             "Frozen mountain peaks with glacial valleys, ice caves, an ancient stone fortress, and aurora borealis overhead",
             "A dense enchanted forest with glowing mushrooms, a fairy circle clearing, twisted ancient trees, and soft mist",
@@ -891,10 +892,30 @@ public:
             "Crimson badlands under an eclipse with rust monoliths, a crumbling colosseum, and a sandstorm on the horizon",
             "A tundra archipelago of frost-covered atolls with moss and lichen, a lonely lighthouse, and aurora overhead",
             "A savanna caldera with golden grass, acacia-like dolmen rings, a forge at the center, and humid twilight haze",
+            // v1.1 new 12
+            "A coastal fjord village with wooden docks, a stone lighthouse on the cliff, fishing huts, birch trees, and morning fog rolling off the ocean",
+            "A volcanic canyon with rivers of lava, obsidian rock arches, a ruined aqueduct spanning the gorge, geysers, and thick ash clouds at dawn",
+            "A moonlit swamp with mangrove roots, cattails, lily pads, a sunken shipwreck, moss-covered ruins, fireflies, and humid mist",
+            "A highland castle on a mountain plateau with ramparts, a drawbridge over a gorge, a bell tower, stables, barracks, and snow flurries",
+            "An enchanted coral reef island with tidepool gardens, sea stacks, a coral throne, crystal formations, bioluminescent pools, and a warm drizzle",
+            "A war-torn battlefield with crumbled walls, broken pillars, scattered cannons, a collapsed tower, rubble, scorched earth, and an overcast storm",
+            "A peaceful monastery garden on a terraced hillside with a fountain, pergola, flower beds, topiary hedges, birch trees, and golden sunset light",
+            "A dark elven forest with crystal spires, portal rifts, summoning circles, soul lanterns, enchanted wells, twisted oaks, and aurora overhead",
+            "A frontier trading post at a river crossing with a marketplace, inn, windmill, granary, wagon carts, fences, signposts, and dusty twilight",
+            "A glacial cave system with stalactites, stalagmites, frozen waterfalls, crystal clusters, geodes, an ice altar, and faint bioluminescent glow",
+            "An ancient mesa with a ziggurat at the summit, obelisks lining a colonnade, runestones, a sundial plaza, acacia trees, and a scorching haze",
+            "A haunted archipelago with shipwrecks, gravestones, crumbling docks, a ruined cathedral on the largest isle, dead trees, rain, and rolling thunder",
         };
         return PRESETS[std::clamp(index, 0, (int)PRESET_COUNT - 1)];
     }
-    static constexpr int PRESET_COUNT = 12;
+    static constexpr int PRESET_COUNT = 24;
+
+    // Set the grid resolution before calling beginGeneration().
+    // Clamped to [WPE_GRID_SIZE .. WPE_GRID_SIZE_MAX].
+    void setGridSize(int gs) {
+        m_gridSize = std::clamp(gs, WPE_GRID_SIZE, WPE_GRID_SIZE_MAX);
+    }
+    int gridSize() const { return m_gridSize; }
 
     // Start asynchronous generation from a text prompt
     void beginGeneration(const std::string& prompt) {
@@ -956,6 +977,7 @@ private:
     ParseResult     m_parsed;
     GenPhase        m_phase    = GenPhase::IDLE;
     float           m_phasePct = 0.0f;
+    int             m_gridSize = WPE_GRID_SIZE;
 
     std::vector<float>             m_heightmap;
     std::vector<BiomeCell>         m_biomeMap;
@@ -967,8 +989,8 @@ private:
     void advancePhase() {
         switch (m_phase) {
             case GenPhase::HEIGHTMAP:
-                m_heightmap = HeightmapGenerator::generate(m_parsed, m_parser.terrainDict());
-                m_stats.tileCount = WPE_GRID_CELLS;
+                m_heightmap = HeightmapGenerator::generate(m_parsed, m_parser.terrainDict(), m_gridSize);
+                m_stats.tileCount = m_gridSize * m_gridSize;
                 m_stats.maxElevation = 0.0f;
                 for (float h : m_heightmap)
                     m_stats.maxElevation = std::max(m_stats.maxElevation, h);
@@ -978,14 +1000,14 @@ private:
                 break;
 
             case GenPhase::BIOMES:
-                m_biomeMap = BiomePainter::paint(m_heightmap, m_parsed, m_parser.biomeDict());
+                m_biomeMap = BiomePainter::paint(m_heightmap, m_parsed, m_parser.biomeDict(), m_gridSize);
                 m_stats.biomeCount = (int)m_parsed.biome.size();
                 m_phase = GenPhase::STRUCTURES;
                 m_phasePct = 0.0f;
                 break;
 
             case GenPhase::STRUCTURES:
-                m_structures = StructurePlacer::place(m_parsed, m_heightmap);
+                m_structures = StructurePlacer::place(m_parsed, m_heightmap, m_gridSize);
                 m_stats.structCount = (int)m_structures.size();
                 m_phase = GenPhase::WEATHER;
                 m_phasePct = 0.0f;

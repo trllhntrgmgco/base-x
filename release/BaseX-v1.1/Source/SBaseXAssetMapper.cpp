@@ -6,6 +6,7 @@
 #include "UBaseXWorldBuilder.h"
 #include "ABaseXStructureSpawner.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetRegistry/AssetData.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Styling/AppStyle.h"
 #include "Widgets/Input/SEditableTextBox.h"

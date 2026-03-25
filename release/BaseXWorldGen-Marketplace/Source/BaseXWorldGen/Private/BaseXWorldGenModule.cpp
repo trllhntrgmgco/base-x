@@ -1,5 +1,29 @@
-﻿// BaseXWorldGen - Precompiled binary distribution
-// (c) 2026 Keenan Dunham & Troll Hunter Gaming. All Rights Reserved.
-// DRO, LOD, and Base-X Game Engine are patent pending (USPTO).
-// Source code is proprietary. Implementation is in the precompiled DLL.
 #include "BaseXWorldGenModule.h"
+#include "BaseXAssetFactory.h"
+#include "BaseXMeshFactory.h"
+#include "Misc/CoreDelegates.h"
+
+#define LOCTEXT_NAMESPACE "FBaseXWorldGenModule"
+
+void FBaseXWorldGenModule::StartupModule()
+{
+    UE_LOG(LogTemp, Log, TEXT("BaseXWorldGen: Module loaded — DRO + WorldPromptEngine ready"));
+
+#if WITH_EDITOR
+    // Defer asset creation until engine is fully initialized
+    // (GEngine is nullptr during StartupModule)
+    FCoreDelegates::OnPostEngineInit.AddLambda([]()
+    {
+        UE_LOG(LogTemp, Log, TEXT("BaseXWorldGen: Post-engine-init — creating assets..."));
+        BaseXAssets::EnsureMaterialsExist();
+    });
+#endif
+}
+
+void FBaseXWorldGenModule::ShutdownModule()
+{
+}
+
+#undef LOCTEXT_NAMESPACE
+
+IMPLEMENT_MODULE(FBaseXWorldGenModule, BaseXWorldGen)

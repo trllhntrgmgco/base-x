@@ -26,7 +26,8 @@ public class BaseXWorldGen : ModuleRules
             "ProceduralMeshComponent",
             "MeshDescription",
             "StaticMeshDescription",
-            "MeshConversion"
+            "MeshConversion",
+            "AssetRegistry"
         });
 
         // Editor-only modules for asset creation

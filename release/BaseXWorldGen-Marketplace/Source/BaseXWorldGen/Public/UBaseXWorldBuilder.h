@@ -61,6 +61,9 @@ public:
     UFUNCTION(BlueprintPure, Category="BaseX|World")
     int32 GetGridSize() const;
 
+    UFUNCTION(BlueprintCallable, Category="BaseX|World")
+    void SetGridSize(int32 NewSize);
+
     UFUNCTION(BlueprintPure, Category="BaseX|World")
     float GetHeightAt(int32 X, int32 Y) const;
 
@@ -117,6 +120,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX|World")
     float WaterLevel = 0.18f;     // Normalised 0-1
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX|World", meta=(ClampMin="16", ClampMax="256"))
+    int32 RequestedGridSize = 64; // User-configurable terrain size in tiles per side
 
 private:
     // Opaque pointer to Base-X pure C++ objects.

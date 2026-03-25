@@ -1,41 +1,235 @@
-﻿# Base-X World Generation Engine - Unreal Plugin v1.0.0
+# Base-X World Prompt Engine — Unreal Engine Plugin
 
-Copyright 2026 Keenan Dunham and Troll Hunter Gaming. All Rights Reserved.
-DRO (Dynamic Radix Optimization), LOD, and Base-X Game Engine are patent pending (USPTO).
+**Version 1.1.0** | Troll Hunter Gaming | [trollhuntergaming.online](https://trollhuntergaming.online)
 
-## Overview
+Complete port of the Base-X `WorldPromptEngine` + `DRO` + ecosystem sky/weather
+pipeline into an Unreal Engine 5.7 plugin for VR world-building.
 
-NLP prompt-driven procedural world generation for Unreal Engine 5.7.
-Type a natural language description and get a complete 3D world with terrain,
-biomes, structures, and weather - all generated in real-time.
+NLP prompt-driven procedural world generation with Bring Your Own Assets, 6 terrain sizes, and 24 presets. 186 structure types, 26 terrains, 52 biomes, 38 weather effects. DRO precision scaling. Patent pending.
 
-## Features
+---
 
-- 186 structure types with procedural meshes (trees, buildings, ruins, crystals)
-- 26 terrain types (mountain, canyon, volcano, fjord, archipelago)
-- 52 biome types with unique color palettes
-- 38 weather effects (rain, storm, snow, aurora, eclipse)
-- DRO precision scaling - patent-pending radix optimization
-- 12 built-in presets - one-click world generation
-- Fully interactive tag UI - click keywords to build prompts
+## What's Included
 
-## Quick Start
+| Feature | Count |
+|---------|-------|
+| Terrain types | 26 |
+| Biomes | 52 |
+| Structure types | 186 |
+| Weather effects | 38 |
+| Terrain sizes | 6 |
+| Built-in presets | 24 |
 
-1. Enable the plugin in Edit > Plugins
-2. Drop ABaseXPromptDemo into any level
-3. Hit Play
-4. Type a prompt or click tags then Generate World
+- **Natural Language Prompts** — type "mountain forest tower mist" and get a world
+- **Bring Your Own Assets (BYOA)** — DataTable-driven structure spawning works with any mesh library
+- **Dynamic Radix Optimization (DRO)** — patent-pending precision scaling (Base-4 to Base-64) adapts fidelity per subsystem
+- **Full Day/Night Cycle** — sun orbit, fog density, and atmosphere respond to weather state
+- **VR-Ready** — tablet interface actor for in-headset world building
 
-## System Requirements
+---
 
-- Unreal Engine 5.7
-- Windows 10/11 x64
-- Vulkan-capable GPU
+## Plugin Structure
 
-## Legal
+```
+Plugins/BaseXWorldGen/
+├── BaseXWorldGen.uplugin              # Plugin descriptor (v1.1.0)
+├── ThirdParty/BaseX/                  # Original Base-X C++ headers (unchanged)
+│   ├── DRO.h                          #   Dynamic Radix Optimization
+│   ├── DRO.cpp                        #   DRO implementation
+│   └── WorldPromptEngine.h            #   NLP → world generation pipeline
+└── Source/BaseXWorldGen/
+    ├── BaseXWorldGen.Build.cs          # UE build rules
+    ├── Public/
+    │   ├── BaseXWorldGenModule.h       # Module entry
+    │   ├── FBaseXTypes.h               # USTRUCT mirrors of Base-X types
+    │   ├── UBaseXWorldBuilder.h        # Core UObject (wraps WorldPromptEngine)
+    │   ├── ABaseXWorldMesh.h           # ProceduralMeshComponent terrain actor
+    │   ├── ABaseXStructureSpawner.h    # DataTable-driven structure spawning
+    │   ├── UBaseXWeatherController.h   # Weather → UE atmosphere bridge
+    │   └── ABaseXVRWorldBuilder.h      # VR tablet actor (orchestrator)
+    └── Private/
+        ├── BaseXWorldGenModule.cpp
+        ├── UBaseXWorldBuilder.cpp
+        ├── ABaseXWorldMesh.cpp
+        ├── ABaseXStructureSpawner.cpp
+        ├── UBaseXWeatherController.cpp
+        └── ABaseXVRWorldBuilder.cpp
+```
 
-This plugin is distributed as precompiled binaries.
-Source code is proprietary and not included.
-Reverse engineering, decompilation, or redistribution is prohibited.
+---
 
-For licensing inquiries: contact Troll Hunter Gaming
+## Step-by-Step Setup
+
+### 1. Create Unreal Project
+
+1. Open **Unreal Engine 5.7**
+2. New Project → Games → VR Template (or Blank + add VR pawn later)
+3. C++ project — name it anything (e.g., "BaseXWorld")
+
+### 2. Install the Plugin
+
+Copy the `BaseXWorldGen` folder into your project's `Plugins/` directory:
+
+```
+YourProject/
+├── Plugins/
+│   └── BaseXWorldGen/
+│       ├── BaseXWorldGen.uplugin
+│       ├── ThirdParty/BaseX/...
+│       └── Source/BaseXWorldGen/...
+├── Source/YourProject/...
+└── YourProject.uproject
+```
+
+### 3. Enable the Plugin
+
+Add to your `.uproject`:
+
+```json
+"Plugins": [
+    { "Name": "BaseXWorldGen", "Enabled": true },
+    { "Name": "ProceduralMeshComponent", "Enabled": true }
+]
+```
+
+Add to your game module's `Build.cs`:
+
+```csharp
+PublicDependencyModuleNames.Add("BaseXWorldGen");
+```
+
+### 4. Regenerate Project Files
+
+Right-click your `.uproject` → **Generate Visual Studio project files**
+
+Or from command line:
+
+```powershell
+& "C:\Program Files\Epic Games\UE_5.7\Engine\Build\BatchFiles\GenerateProjectFiles.bat" YourProject.uproject
+```
+
+### 5. Build
+
+Open the `.sln` in Visual Studio, build **Development Editor | Win64**.
+The Base-X C++ headers compile directly — no modifications needed.
+
+---
+
+## Quick Test (No VR Required)
+
+### Minimal Blueprint Test
+
+1. Open UE Editor
+2. Create a new Actor Blueprint: `BP_WorldTest`
+3. Add component: `BaseXWeatherController`
+4. In the Event Graph:
+
+```
+BeginPlay:
+  ┌─ Create Object (UBaseXWorldBuilder) → store as variable "Builder"
+  ├─ Builder.GenerateFromPrompt("mountain forest tower mist")
+  └─ Set Timer by Event (0.016, looping) → "TickGen"
+
+TickGen:
+  ┌─ Builder.TickGeneration(0.016)
+  ├─ Branch: Builder.IsComplete?
+  │   ├─ Yes: Spawn Actor (ABaseXWorldMesh) → call BuildFromWorldBuilder(Builder)
+  │   │       Spawn Actor (ABaseXStructureSpawner) → call SpawnStructures(Builder)
+  │   │       WeatherController.ApplyWeatherState(Builder.GetWeatherState())
+  │   │       Clear Timer
+  │   └─ No: continue
+```
+
+5. Drop `BP_WorldTest` in level
+6. Drop a `DirectionalLight` and `ExponentialHeightFog` — assign them to the WeatherController
+7. Hit Play — world generates in ~2 seconds, terrain mesh appears
+
+### What You'll See
+
+- 64×64 ProceduralMesh terrain with biome vertex colors
+- Water plane at the configurable water level
+- Structure actors spawned at valid terrain positions
+- Sun orbiting with day/night cycle
+- Fog density responding to weather state
+
+---
+
+## VR Setup
+
+### 1. Configure the VR Pawn
+
+Use the VR Template pawn, or create one with:
+- `MotionControllerComponent` (left + right hands)
+- `WidgetInteractionComponent` on dominant hand (for tablet UI)
+
+### 2. Create the Tablet UMG Widget
+
+Create `WBP_BaseXTablet` (Widget Blueprint) with:
+
+| Element | Binding |
+|---------|---------|
+| TextBox "PromptInput" | Bind to `ABaseXVRWorldBuilder::CurrentPrompt` |
+| Buttons 1–8 "Preset1..8" | OnClick → `LoadPreset(0..7)` |
+| Button "Generate" | OnClick → `Generate()` |
+| Button "Clear" | OnClick → `ClearWorld()` |
+| Slider "StartHour" | OnChanged → `SetStartHour(Value)` |
+| Slider "DaySpeed" | OnChanged → `SetDaySpeed(Value)` |
+| ProgressBar | Bind to `GetProgress() / 100` |
+| Tag grid (terrain/biome/structure/weather) | Populate from `GetTerrainKeywords()` etc. |
+
+### 3. Place the VR World Builder
+
+1. Drop `ABaseXVRWorldBuilder` in your level
+2. Set `TabletWidgetClass` → `WBP_BaseXTablet`
+3. Set `WorldMeshClass` → `ABaseXWorldMesh` (or a Blueprint child of it)
+4. Set `StructureSpawnerClass` → `ABaseXStructureSpawner`
+5. Assign `SunLight` and `Fog` references on the WeatherController
+6. Hit VR Preview — point at tablet, interact with triggers
+
+---
+
+## Architecture
+
+| Layer | Files | Source |
+|-------|-------|--------|
+| **Pure C++ (unchanged)** | `DRO.h`, `DRO.cpp`, `WorldPromptEngine.h` | Copied verbatim from Base-X engine |
+| **Type bridge** | `FBaseXTypes.h` | USTRUCT mirrors of Base-X structs |
+| **Core wrapper** | `UBaseXWorldBuilder.h/.cpp` | Wraps `WorldPromptEngine` in UObject via PIMPL |
+| **Terrain mesh** | `ABaseXWorldMesh.h/.cpp` | Replaces GL `renderTerrain()` with ProceduralMesh |
+| **Structures** | `ABaseXStructureSpawner.h/.cpp` | Replaces `renderStructures()` with actor spawning |
+| **Weather** | `UBaseXWeatherController.h/.cpp` | Replaces `renderSky()`/`updateWeather()` with UE atmosphere |
+| **VR orchestrator** | `ABaseXVRWorldBuilder.h/.cpp` | Replaces GLFW main loop + prompt screen |
+
+---
+
+## Keeping In Sync with Base-X Engine
+
+When you update `WorldPromptEngine.h` or `DRO.h` in the Base-X repo:
+
+```powershell
+Copy-Item "include\BaseX\DRO.h" "Plugins\BaseXWorldGen\ThirdParty\BaseX\"
+Copy-Item "include\BaseX\WorldPromptEngine.h" "Plugins\BaseXWorldGen\ThirdParty\BaseX\"
+Copy-Item "src\physics\DRO.cpp" "Plugins\BaseXWorldGen\ThirdParty\BaseX\"
+```
+
+The UE bridge layer doesn't change unless you add new public API to the engine.
+
+---
+
+## Roadmap
+
+- **Foliage** — Wire tree placement to UE Foliage system or PCG framework
+- **Niagara Weather** — Spawn rain/snow/mist particle systems from WeatherController
+- **Landscape Import** — Convert heightmap to UE Landscape for LOD streaming
+- **Multiplayer** — Replicate prompt + generation seed for shared world building
+- **Save/Load** — Serialize `WorldPromptEngine` state to disk
+- **AI Enhancement** — Wire `NLPPromptParser` to local LLM for richer parsing
+
+---
+
+## Support
+
+- Website: [trollhuntergaming.online](https://trollhuntergaming.online)
+- GitHub: [github.com/trllhntrgmgco/base-x](https://github.com/trllhntrgmgco/base-x)
+
+© 2026 Troll Hunter Gaming LLC. All rights reserved. Patent pending.

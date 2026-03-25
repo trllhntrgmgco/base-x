@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Engine/DataTable.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "FBaseXTypes.h"
 #include "ABaseXStructureSpawner.generated.h"
 
@@ -57,5 +58,5 @@ public:
 
 private:
     UPROPERTY()
-    TArray<TObjectPtr<AActor>> SpawnedActors;
+    TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> InstancedGroups;
 };
