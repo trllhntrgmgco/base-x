@@ -134,6 +134,31 @@ struct WeatherState {
     bool isScorching = false;
     bool isMoonlit  = false;
     bool isDawn     = false;
+    // v1.2: intensity values for smoother weather control
+    float rainIntensity  = 0.0f;  // 0..1
+    float snowIntensity  = 0.0f;  // 0..1
+    float windIntensity  = 0.0f;  // 0..1
+    float cloudCover     = 0.0f;  // 0..1
+    float visibility     = 1.0f;  // 0 = zero vis, 1 = clear
+    float temperature    = 0.5f;  // 0 = freezing, 1 = scorching
+};
+
+// v1.2: Density level for placement multipliers
+enum class DensityLevel : uint8_t {
+    SPARSE    = 0,   // ~0.25x placement
+    SCATTERED = 1,   // ~0.5x
+    NORMAL    = 2,   // 1x (default)
+    THICK     = 3,   // ~1.5x
+    DENSE     = 4,   // ~2x
+    LUSH      = 5    // ~3x
+};
+
+// v1.2: Per-structure parsed request with optional exact count + position hint
+struct StructureRequest {
+    std::string type;
+    int exactCount        = -1;     // -1 = use category default; >0 = exact
+    bool hasPositionHint  = false;
+    std::string positionHint;       // "center", "edge", "north", etc.
 };
 
 struct ParseResult {
@@ -141,6 +166,9 @@ struct ParseResult {
     std::vector<std::string> biome;
     std::vector<std::string> structure;
     std::vector<std::string> weather;
+    // v1.2: NLP density & structured requests
+    DensityLevel density = DensityLevel::NORMAL;
+    std::vector<StructureRequest> structureRequests;
 };
 
 struct WorldStats {
@@ -197,11 +225,12 @@ inline DROSubsystemState getDROForPhase(GenPhase phase) {
 
 class NLPPromptParser {
 public:
-    NLPPromptParser() { buildDictionaries(); }
+    NLPPromptParser() { buildDictionaries(); buildNumberWords(); buildDensityWords(); buildPositionWords(); }
 
     ParseResult parse(const std::string& prompt) const {
         ParseResult result;
         std::string lower = toLower(prompt);
+        std::vector<std::string> tokens = tokenize(lower);
 
         for (auto& kv : m_terrainKW)
             if (lower.find(kv.first) != std::string::npos)
@@ -215,6 +244,13 @@ public:
         for (auto& kw : m_weatherKW)
             if (lower.find(kw) != std::string::npos)
                 result.weather.push_back(kw);
+
+        // ── v1.2: Density modifier detection ──
+        result.density = parseDensity(lower);
+
+        // ── v1.2: Per-structure count + position extraction ──
+        // Scan tokens for patterns like "2 trees", "two castles", "oak at center"
+        result.structureRequests = parseStructureRequests(tokens);
 
         // Defaults
         if (result.terrain.empty())  result.terrain.push_back("hill");
@@ -451,6 +487,202 @@ private:
                            std::initializer_list<const char*> items) {
         for (auto* item : items)
             structures.push_back(item);
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // v1.2 NUMBER WORDS + DENSITY + POSITION
+    // ════════════════════════════════════════════════════════════
+
+    std::unordered_map<std::string, int> m_numberWords;
+    std::unordered_map<std::string, DensityLevel> m_densityWords;
+    std::unordered_map<std::string, std::string> m_positionWords;
+
+    void buildNumberWords() {
+        m_numberWords = {
+            {"a", 1}, {"an", 1}, {"one", 1}, {"single", 1}, {"lone", 1},
+            {"two", 2}, {"couple", 2}, {"pair", 2},
+            {"three", 3}, {"trio", 3},
+            {"four", 4}, {"five", 5}, {"six", 6}, {"seven", 7},
+            {"eight", 8}, {"nine", 9}, {"ten", 10},
+            {"eleven", 11}, {"twelve", 12}, {"dozen", 12},
+            {"fifteen", 15}, {"twenty", 20},
+            {"hundred", 100}, {"several", 4}, {"handful", 5},
+            {"few", 3}, {"many", 15}, {"some", 4}
+        };
+    }
+
+    void buildDensityWords() {
+        m_densityWords = {
+            {"sparse",    DensityLevel::SPARSE},
+            {"scattered", DensityLevel::SCATTERED},
+            {"thin",      DensityLevel::SCATTERED},
+            {"normal",    DensityLevel::NORMAL},
+            {"thick",     DensityLevel::THICK},
+            {"dense",     DensityLevel::DENSE},
+            {"lush",      DensityLevel::LUSH},
+            {"overgrown", DensityLevel::LUSH},
+            {"packed",    DensityLevel::DENSE},
+            {"crowded",   DensityLevel::DENSE},
+            {"sprawling", DensityLevel::THICK},
+            {"vast",      DensityLevel::THICK},
+            {"barren",    DensityLevel::SPARSE},
+            {"desolate",  DensityLevel::SPARSE},
+            {"empty",     DensityLevel::SPARSE},
+            {"abundant",  DensityLevel::LUSH},
+            {"teeming",   DensityLevel::LUSH},
+        };
+    }
+
+    void buildPositionWords() {
+        m_positionWords = {
+            {"center",     "center"},  {"centre",     "center"},
+            {"middle",     "center"},  {"central",    "center"},
+            {"north",      "north"},   {"south",      "south"},
+            {"east",       "east"},    {"west",       "west"},
+            {"edge",       "edge"},    {"border",     "edge"},
+            {"perimeter",  "edge"},    {"corner",     "corner"},
+            {"summit",     "center"},  {"peak",       "center"},
+            {"shore",      "edge"},    {"coast",      "edge"},
+            {"hilltop",    "center"},  {"cliff",      "edge"},
+        };
+    }
+
+    // Tokenize a lowered prompt into words
+    static std::vector<std::string> tokenize(const std::string& s) {
+        std::vector<std::string> tokens;
+        std::string tok;
+        for (char c : s) {
+            if (std::isalnum((unsigned char)c) || c == '_') {
+                tok += c;
+            } else {
+                if (!tok.empty()) { tokens.push_back(tok); tok.clear(); }
+            }
+        }
+        if (!tok.empty()) tokens.push_back(tok);
+        return tokens;
+    }
+
+    // Try to parse a token as a digit number ("2", "15", etc.)
+    static int parseDigitNumber(const std::string& tok) {
+        if (tok.empty()) return -1;
+        for (char c : tok)
+            if (!std::isdigit((unsigned char)c)) return -1;
+        int val = std::atoi(tok.c_str());
+        return (val > 0 && val <= 1000) ? val : -1;
+    }
+
+    // Detect the highest density modifier in the prompt
+    DensityLevel parseDensity(const std::string& lower) const {
+        DensityLevel best = DensityLevel::NORMAL;
+        for (auto& kv : m_densityWords) {
+            if (lower.find(kv.first) != std::string::npos) {
+                if ((uint8_t)kv.second > (uint8_t)best)
+                    best = kv.second;
+            }
+        }
+        return best;
+    }
+
+    // Check if a token is a known structure keyword (or matches with _)
+    bool isStructureKeyword(const std::string& tok) const {
+        for (auto& kw : m_structKW)
+            if (kw == tok) return true;
+        return false;
+    }
+
+    // Plurals: strip trailing 's' or 'es' to match keyword
+    std::string depluralize(const std::string& tok) const {
+        if (tok.size() > 3 && tok.substr(tok.size()-2) == "es") {
+            std::string base = tok.substr(0, tok.size()-2);
+            if (isStructureKeyword(base)) return base;
+        }
+        if (tok.size() > 2 && tok.back() == 's') {
+            std::string base = tok.substr(0, tok.size()-1);
+            if (isStructureKeyword(base)) return base;
+        }
+        // "trees" -> "tree"
+        if (isStructureKeyword(tok)) return tok;
+        return "";
+    }
+
+    // Parse "2 trees", "two oaks at the center", "a single castle"
+    std::vector<StructureRequest> parseStructureRequests(
+            const std::vector<std::string>& tokens) const {
+        std::vector<StructureRequest> requests;
+        std::unordered_map<std::string, bool> seen;
+
+        for (size_t i = 0; i < tokens.size(); i++) {
+            // Try: [number] [structure]
+            int count = -1;
+            std::string structType;
+            std::string posHint;
+
+            // Check if current token is a number (digit or word)
+            int digitNum = parseDigitNumber(tokens[i]);
+            if (digitNum > 0) {
+                count = digitNum;
+            } else {
+                auto nit = m_numberWords.find(tokens[i]);
+                if (nit != m_numberWords.end())
+                    count = nit->second;
+            }
+
+            // If we found a count, look ahead for a structure keyword
+            if (count > 0 && i + 1 < tokens.size()) {
+                std::string nextTok = tokens[i + 1];
+                std::string resolved = depluralize(nextTok);
+                if (!resolved.empty()) {
+                    structType = resolved;
+                    // Look for position hint after the structure
+                    for (size_t j = i + 2; j < tokens.size() && j <= i + 5; j++) {
+                        auto pit = m_positionWords.find(tokens[j]);
+                        if (pit != m_positionWords.end()) {
+                            posHint = pit->second;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // If no number prefix, check if current token itself is a structure
+            if (structType.empty() && count <= 0) {
+                std::string resolved = depluralize(tokens[i]);
+                if (!resolved.empty()) {
+                    structType = resolved;
+                    count = -1; // use default
+                    // Check token before for a number we might have missed
+                    if (i > 0) {
+                        int prevNum = parseDigitNumber(tokens[i-1]);
+                        if (prevNum <= 0) {
+                            auto nit = m_numberWords.find(tokens[i-1]);
+                            if (nit != m_numberWords.end()) prevNum = nit->second;
+                        }
+                        if (prevNum > 0) count = prevNum;
+                    }
+                    // Position hint lookahead
+                    for (size_t j = i + 1; j < tokens.size() && j <= i + 4; j++) {
+                        auto pit = m_positionWords.find(tokens[j]);
+                        if (pit != m_positionWords.end()) {
+                            posHint = pit->second;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Record the request (deduplicate, keep first/most specific)
+            if (!structType.empty() && seen.find(structType) == seen.end()) {
+                StructureRequest req;
+                req.type = structType;
+                req.exactCount = count;
+                req.hasPositionHint = !posHint.empty();
+                req.positionHint = posHint;
+                requests.push_back(req);
+                seen[structType] = true;
+            }
+        }
+
+        return requests;
     }
 };
 
@@ -749,6 +981,19 @@ public:
 
         std::vector<StructureInstance> out;
 
+        // v1.2: density multiplier from NLP
+        float densityMul = densityMultiplier(parsed.density);
+
+        // v1.2: build exact-count lookup from structureRequests
+        std::unordered_map<std::string, int> exactCounts;
+        std::unordered_map<std::string, std::string> positionHints;
+        for (auto& req : parsed.structureRequests) {
+            if (req.exactCount > 0)
+                exactCounts[req.type] = req.exactCount;
+            if (req.hasPositionHint)
+                positionHints[req.type] = req.positionHint;
+        }
+
         // Categorise structure keywords for colour and placement rules
         auto isTreeType = [](const std::string& t) {
             return t == "tree" || t == "pine" || t == "spruce" || t == "cedar"
@@ -778,17 +1023,41 @@ public:
             bool isNature = isTreeType(type) || isVegetation(type);
             bool isRock = isGeological(type);
 
-            // Determine how many instances to place per keyword
-            int count = 1;
-            if (isNature) count = 6 + (int)(distSizeSmall(rng) * 1.5f);  // 6-21 trees/plants
-            else if (isRock) count = 3 + (int)(distSizeSmall(rng) * 0.8f); // 3-11 rocks
-            else count = 2 + (int)(distSizeSmall(rng) * 0.4f);            // 2-6 buildings
+            // v1.2: check for exact count override first
+            int count;
+            auto ecIt = exactCounts.find(type);
+            if (ecIt != exactCounts.end()) {
+                count = ecIt->second;  // exact user request — no density scaling
+            } else {
+                // Default counts scaled by density multiplier
+                if (isNature) count = (int)((6 + (int)(distSizeSmall(rng) * 1.5f)) * densityMul);
+                else if (isRock) count = (int)((3 + (int)(distSizeSmall(rng) * 0.8f)) * densityMul);
+                else count = (int)((2 + (int)(distSizeSmall(rng) * 0.4f)) * densityMul);
+                count = std::max(1, count);
+            }
+
+            // v1.2: position hint for this structure type
+            std::string posHint;
+            auto phIt = positionHints.find(type);
+            if (phIt != positionHints.end()) posHint = phIt->second;
 
             for (int inst = 0; inst < count; inst++) {
                 bool placed = false;
                 for (int attempt = 0; attempt < 80 && !placed; attempt++) {
-                    int gx = distPos(rng);
-                    int gy = distPos(rng);
+                    int gx, gy;
+
+                    // v1.2: positional placement
+                    if (!posHint.empty()) {
+                        positionFromHint(posHint, gridSize, rng, gx, gy);
+                    } else {
+                        gx = distPos(rng);
+                        gy = distPos(rng);
+                    }
+
+                    // Clamp to valid range
+                    gx = std::clamp(gx, 2, gridSize - 5);
+                    gy = std::clamp(gy, 2, gridSize - 5);
+
                     float h = heightmap[gy * gridSize + gx];
 
                     // Nature can go almost anywhere above water
@@ -811,6 +1080,61 @@ public:
         }
 
         return out;
+    }
+
+private:
+    // v1.2: density enum to float multiplier
+    static float densityMultiplier(DensityLevel d) {
+        switch (d) {
+            case DensityLevel::SPARSE:    return 0.25f;
+            case DensityLevel::SCATTERED: return 0.5f;
+            case DensityLevel::NORMAL:    return 1.0f;
+            case DensityLevel::THICK:     return 1.5f;
+            case DensityLevel::DENSE:     return 2.0f;
+            case DensityLevel::LUSH:      return 3.0f;
+            default:                      return 1.0f;
+        }
+    }
+
+    // v1.2: convert position hint to grid coordinates with scatter
+    static void positionFromHint(const std::string& hint, int gridSize,
+                                  std::mt19937& rng, int& gx, int& gy) {
+        int half = gridSize / 2;
+        int scatter = gridSize / 8;
+        std::uniform_int_distribution<int> jitter(-scatter, scatter);
+
+        if (hint == "center") {
+            gx = half + jitter(rng);
+            gy = half + jitter(rng);
+        } else if (hint == "north") {
+            gx = half + jitter(rng);
+            gy = 3 + std::abs(jitter(rng));
+        } else if (hint == "south") {
+            gx = half + jitter(rng);
+            gy = gridSize - 4 - std::abs(jitter(rng));
+        } else if (hint == "east") {
+            gx = gridSize - 4 - std::abs(jitter(rng));
+            gy = half + jitter(rng);
+        } else if (hint == "west") {
+            gx = 3 + std::abs(jitter(rng));
+            gy = half + jitter(rng);
+        } else if (hint == "edge") {
+            // Place along a random edge
+            int side = std::uniform_int_distribution<int>(0, 3)(rng);
+            int pos = std::uniform_int_distribution<int>(3, gridSize - 4)(rng);
+            if (side == 0)      { gx = pos; gy = 3 + std::abs(jitter(rng)); }
+            else if (side == 1) { gx = pos; gy = gridSize - 4 - std::abs(jitter(rng)); }
+            else if (side == 2) { gx = 3 + std::abs(jitter(rng)); gy = pos; }
+            else                { gx = gridSize - 4 - std::abs(jitter(rng)); gy = pos; }
+        } else if (hint == "corner") {
+            int c = std::uniform_int_distribution<int>(0, 3)(rng);
+            gx = (c & 1) ? gridSize - 4 - std::abs(jitter(rng)) : 3 + std::abs(jitter(rng));
+            gy = (c & 2) ? gridSize - 4 - std::abs(jitter(rng)) : 3 + std::abs(jitter(rng));
+        } else {
+            // Fallback: random
+            gx = std::uniform_int_distribution<int>(2, gridSize - 5)(rng);
+            gy = std::uniform_int_distribution<int>(2, gridSize - 5)(rng);
+        }
     }
 };
 
@@ -841,7 +1165,54 @@ public:
                 || w == "starlit")  ws.isMoonlit = true;
             if (w == "dawn" || w == "dusk" || w == "twilight") ws.isDawn = true;
             // "clear" intentionally produces default (no flags) = sunny
+
+            // v1.2: intensity accumulation per keyword
+            if (w == "drizzle")                           ws.rainIntensity += 0.2f;
+            else if (w == "rain")                         ws.rainIntensity += 0.5f;
+            else if (w == "monsoon" || w == "hurricane")  ws.rainIntensity += 0.9f;
+            else if (w == "storm" || w == "thunder" || w == "lightning")
+                                                          ws.rainIntensity += 0.7f;
+
+            if (w == "frost")                              ws.snowIntensity += 0.15f;
+            else if (w == "sleet" || w == "cold_snap")    ws.snowIntensity += 0.3f;
+            else if (w == "snow")                          ws.snowIntensity += 0.5f;
+            else if (w == "blizzard" || w == "whiteout")  ws.snowIntensity += 0.9f;
+            else if (w == "hail")                          ws.snowIntensity += 0.6f;
+
+            if (w == "wind")                               ws.windIntensity += 0.3f;
+            else if (w == "storm" || w == "thunder")      ws.windIntensity += 0.6f;
+            else if (w == "hurricane" || w == "tornado")  ws.windIntensity += 1.0f;
+            else if (w == "blizzard" || w == "sandstorm") ws.windIntensity += 0.7f;
+
+            if (w == "overcast" || w == "cloud")           ws.cloudCover += 0.5f;
+            else if (w == "storm" || w == "hurricane" || w == "blizzard")
+                                                          ws.cloudCover += 0.9f;
+            else if (w == "rain" || w == "monsoon")       ws.cloudCover += 0.7f;
+            else if (w == "drizzle" || w == "mist")       ws.cloudCover += 0.3f;
+            else if (w == "fog")                           ws.cloudCover += 0.4f;
+            else if (w == "ash" || w == "sandstorm")      ws.cloudCover += 0.6f;
+
+            if (w == "fog" || w == "whiteout")             ws.visibility -= 0.4f;
+            else if (w == "mist" || w == "dust_devil")    ws.visibility -= 0.2f;
+            else if (w == "blizzard" || w == "sandstorm") ws.visibility -= 0.35f;
+            else if (w == "rain" || w == "storm")         ws.visibility -= 0.15f;
+            else if (w == "ash")                           ws.visibility -= 0.25f;
+
+            if (w == "scorching" || w == "heat_wave")      ws.temperature += 0.3f;
+            else if (w == "sun")                           ws.temperature += 0.1f;
+            else if (w == "frost" || w == "cold_snap")    ws.temperature -= 0.2f;
+            else if (w == "snow" || w == "blizzard" || w == "whiteout")
+                                                          ws.temperature -= 0.35f;
         }
+
+        // Clamp intensity values
+        ws.rainIntensity = std::clamp(ws.rainIntensity, 0.0f, 1.0f);
+        ws.snowIntensity = std::clamp(ws.snowIntensity, 0.0f, 1.0f);
+        ws.windIntensity = std::clamp(ws.windIntensity, 0.0f, 1.0f);
+        ws.cloudCover    = std::clamp(ws.cloudCover,    0.0f, 1.0f);
+        ws.visibility    = std::clamp(ws.visibility,    0.0f, 1.0f);
+        ws.temperature   = std::clamp(ws.temperature,   0.0f, 1.0f);
+
         return ws;
     }
 

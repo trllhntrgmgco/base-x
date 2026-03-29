@@ -14,8 +14,21 @@ UBaseXWeatherController::UBaseXWeatherController()
 
 void UBaseXWeatherController::ApplyWeatherState(const FBaseXWeatherState& State)
 {
-    // Map boolean flags to smooth target values (same logic as WLD-012)
-    if (State.bHasStorm)
+    // v1.2: Use intensity floats for primary targets when available,
+    // fall back to boolean-derived defaults for v1.0/v1.1 compatibility.
+    bool hasIntensityData = (State.RainIntensity > 0.f || State.SnowIntensity > 0.f
+                          || State.WindIntensity > 0.f || State.CloudCover > 0.f);
+
+    if (hasIntensityData)
+    {
+        // v1.2 path: smooth intensity-driven targets
+        TargetRain  = State.RainIntensity;
+        TargetSnow  = State.SnowIntensity;
+        TargetWind  = State.WindIntensity;
+        TargetCloud = State.CloudCover;
+        TargetMist  = FMath::Max(0.f, 1.f - State.Visibility) * 0.7f;
+    }
+    else if (State.bHasStorm)
     {
         TargetCloud = 1.f; TargetRain = 1.f; TargetWind = 0.8f;
     }
@@ -52,8 +65,9 @@ void UBaseXWeatherController::ApplyWeatherState(const FBaseXWeatherState& State)
     // Aurora adds subtle glow (handled in tick via fog color)
     if (State.bHasAurora)  TargetMist = FMath::Max(TargetMist, 0.2f);
 
-    UE_LOG(LogTemp, Log, TEXT("WeatherController: Cloud=%.1f Rain=%.1f Snow=%.1f Mist=%.1f Wind=%.1f ToD=%.0f"),
-        TargetCloud, TargetRain, TargetSnow, TargetMist, TargetWind, TimeOfDay);
+    UE_LOG(LogTemp, Log, TEXT("WeatherController v1.2: Cloud=%.2f Rain=%.2f Snow=%.2f Mist=%.2f Wind=%.2f Vis=%.2f Temp=%.2f ToD=%.0f"),
+        TargetCloud, TargetRain, TargetSnow, TargetMist, TargetWind,
+        State.Visibility, State.Temperature, TimeOfDay);
 }
 
 void UBaseXWeatherController::TickComponent(float DeltaTime, ELevelTick TickType,

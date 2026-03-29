@@ -70,6 +70,25 @@ struct BASEXWORLDGEN_API FBaseXWeatherState
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX")
     bool bIsDawn = false;
+
+    // v1.2: intensity values for smoother weather control
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX")
+    float RainIntensity = 0.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX")
+    float SnowIntensity = 0.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX")
+    float WindIntensity = 0.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX")
+    float CloudCover = 0.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX")
+    float Visibility = 1.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BaseX")
+    float Temperature = 0.5f;
 };
 
 // ══════════════════════════════════════════════════════════════════════
@@ -114,6 +133,14 @@ struct BASEXWORLDGEN_API FBaseXParseResult
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="BaseX")
     TArray<FString> WeatherKeywords;
+
+    // v1.2: density level parsed from prompt
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="BaseX")
+    int32 DensityLevel = 2;  // 0=Sparse..5=Lush, default 2=Normal
+
+    // v1.2: number of structures with exact count overrides
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="BaseX")
+    int32 ExactCountOverrides = 0;
 };
 
 // ══════════════════════════════════════════════════════════════════════
